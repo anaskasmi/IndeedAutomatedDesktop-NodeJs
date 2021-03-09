@@ -2,6 +2,8 @@ const puppeteer = require('puppeteer-extra')
 const StealthPlugin = require('puppeteer-extra-plugin-stealth')
 puppeteer.use(StealthPlugin());
 const { normalizeJobs } = require('../utilities/normalizeJobs');
+const { findRangeType } = require('../utilities/findRangeType');
+const { descriptionToArray } = require('../utilities/descriptionToArray');
 
 exports.JobServices = class JobServices {
     browser = null;
@@ -264,92 +266,240 @@ exports.JobServices = class JobServices {
 
     fillIn_paymentType = async(jobDetails_salaryRangeType, jobDetails_SalaryFrom, jobDetails_SalaryTo) => {
         //find the salary Range Type
-        if (!jobDetails_salaryRangeType && jobDetails_SalaryFrom && jobDetails_SalaryTo) {
+        if (jobDetails_salaryRangeType) {
+            let [jobSalaryRangeType] = await this.page.$x(`//*[@id="JobSalaryRangeType"]`);
+            if (jobSalaryRangeType) {
+                await this.page.select(`#JobSalaryRangeType`, jobDetails_salaryRangeType)
+                return true;
+            }
+        } else if (jobDetails_SalaryFrom && jobDetails_SalaryTo) {
             jobDetails_salaryRangeType = findRangeType(jobDetails_SalaryFrom, jobDetails_SalaryTo)
             let [jobSalaryRangeType] = await this.page.$x(`//*[@id="JobSalaryRangeType"]`);
             if (jobSalaryRangeType) {
                 await this.page.select(`#JobSalaryRangeType`, jobDetails_salaryRangeType)
                 return true;
             }
+        } else {
+            return false;
         }
-        return false;
     }
 
-    fillIn_paymentFrom = async() => {
+    fillIn_paymentFrom = async(jobDetails_SalaryFrom) => {
+        let [jobSalary1] = await this.page.$x(`//*[@id="ipl-ComboBox-JobSalary1"]`);
+        if (jobSalary1 && jobDetails_SalaryFrom) {
+            await jobSalary1.click({ clickCount: 3 });
+            await jobSalary1.press('Backspace');
+            await jobSalary1.type(jobDetails_SalaryFrom)
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    fillIn_paymentTo = async(jobDetails_SalaryTo) => {
+        let [jobSalary2] = await this.page.$x(`//*[@id="ipl-ComboBox-JobSalary2"]`);
+        if (jobSalary2 && jobDetails_SalaryTo) {
+            await jobSalary2.click({ clickCount: 3 });
+            await jobSalary2.press('Backspace');
+            await jobSalary2.type(jobDetails_SalaryTo)
+            return true;
+        } else {
+            return false;
+        }
 
     }
 
-    fillIn_paymentTo = async() => {
 
+    fillIn_paymentPer = async(jobDetails_SalaryPer) => {
+        let [jobSalaryPeriod] = await this.page.$x(`//*[@id="JobSalaryPeriod"]`);
+        if (jobSalaryPeriod && jobDetails_SalaryPer) {
+            await this.page.select(`#JobSalaryPeriod`, jobDetails_SalaryPer)
+            return true;
+        } else {
+            return false;
         }
-        //todo
+    }
 
-    fillIn_paymentPer = async() => {
+    fillIn_description = async(jobDescriptionHtml) => {
+        // split description to array 
+        let descriptionArray = descriptionToArray(jobDescriptionHtml);
 
+        //start filling the descritpion
+        await this.page.waitForXPath(`//*[text()='Job Description']`);
+
+        let [descriptionInput] = await this.page.$x(`//*[@id="JobDescription-editor-content"]`);
+        let [boldButton] = await this.page.$x(`//*[@id="JobDescription"]/div/div[1]/button[1]`);
+        let [unorderedListButton] = await this.page.$x(`//*[@id="JobDescription"]/div/div[1]/button[3]`);
+        let newUl;
+        let boldClickedXpath = `//*[@id="JobDescription"]/div/div[1]/button[1]`;
+        let isBoldClicked;
+        //type test and delete 
+        await descriptionInput.type("test");
+        await descriptionInput.click({ clickCount: 3 });
+        await descriptionInput.press('Backspace');
+        //start typing words
+        for (const word of descriptionArray) {
+            switch (word) {
+                case '<p>':
+                    break;
+                case '</p>':
+                    break;
+                case '<b>':
+                    await boldButton.click();
+                    [isBoldClicked] = await this.page.$x(boldClickedXpath);
+                    if (!isBoldClicked) {
+                        console.log('NOOT bold retrying...')
+                        await descriptionInput.type("a");
+                        await descriptionInput.press('Backspace');
+                        await boldButton.click();
+                    }
+                    break;
+                case '</b>':
+                    await boldButton.click();
+                    [isBoldClicked] = await this.page.$x(boldClickedXpath);
+                    if (isBoldClicked) {
+                        console.log('still bold retrying...')
+                        await descriptionInput.type("a");
+                        await descriptionInput.press('Backspace');
+                        await boldButton.click();
+                    }
+                    break;
+                case '<ul>':
+                    newUl = true;
+                    break;
+                case '</ul>':
+                    await unorderedListButton.click();
+                    break;
+                case '<li>':
+                    break;
+                case '</li>':
+                    if (newUl) {
+                        await unorderedListButton.click();
+
+                        await this.page.keyboard.down('ControlLeft');
+                        await this.page.keyboard.down('a');
+
+                        await this.page.keyboard.up('a');
+                        await this.page.keyboard.up('ControlLeft');
+
+                        await this.page.keyboard.press('ArrowRight');
+                        newUl = false;
+                    }
+                    break;
+                case "&amp;":
+                    await descriptionInput.type("&");
+                    break;
+                default:
+                    if (word.trim() == '') {
+                        await this.page.keyboard.press('Enter');
+                    } else {
+                        await descriptionInput.type(word);
+                    }
+                    break;
+            }
         }
-        //todo
+    }
 
-    fillIn_compensation = async() => {
 
+    fillIn_isResumeRequired = async(resumeRequirement) => {
+        if (resumeRequirement != "REQUIRED") {
+            await this.page.waitForXPath(`//*[@id="radio-applicationemailresumerequirement-OPTIONAL"]`);
+            let [resumeOptionalButton] = await this.page.$x(`//*[@id="radio-applicationemailresumerequirement-OPTIONAL"]`);
+            await resumeOptionalButton.click();
+        } else {
+            await this.page.waitForXPath(`radio-applicationemailresumerequirement-REQUIRED`);
+            let [resumeRequiredButton] = await this.page.$x(`radio-applicationemailresumerequirement-REQUIRED`);
+            await resumeRequiredButton.click();
         }
-        //todo
-
-    fillIn_benefits = async() => {
-
-        }
-        //todo
-
-    fillIn_description = async() => {
-
-        }
-        //todo
-
-    fillIn_isResumeRequired = async() => {
-
-        }
-        //todo
+        return true;
+    }
 
     click_confirm = async() => {
-
-        }
-        //todo
+        await this.page.waitForXPath(`//*[@data-tn-element="sheet-next-button"]`);
+        let [confirmButton] = await this.page.$x(`//*[@data-tn-element="sheet-next-button"]`);
+        await confirmButton.click();
+    }
 
     click_advanced = async() => {
-
-        }
-        //todo
+        await this.page.waitForXPath(`//*[@id="ADVANCED"]`);
+        let [budgetAdvancedButton] = await this.page.$x(`//*[@id="ADVANCED"]`);
+        await budgetAdvancedButton.click();
+    }
 
     fillIn_adDurationType = async() => {
-
-        }
-        //todo
+        await this.page.waitForXPath(`//*[@id="jobDurationSelector"]`);
+        await this.page.select(`#jobDurationSelector`, "CUSTOM_END_DATE");
+    }
 
     fillIn_adDurationDate = async() => {
+        //calculate EndDate (today's date + 4 days)
+        let newEndDate = Moment(Moment()).add(4, 'days');
+        //change its Format
+        newEndDate = newEndDate.format('MM/DD/YYYY')
+            //select ad duration = custom end date
+        await this.page.select(`#jobDurationSelector`, "CUSTOM_END_DATE");
+        await this.page.waitForXPath(`//*[@id="endDateContainer-0"]/input`);
+        //fill in the input
+        let [endDateInput] = await this.page.$x(`//*[@id="endDateContainer-0"]/input`);
+        await endDateInput.click({ clickCount: 3 });
+        await endDateInput.press('Backspace');
+        await endDateInput.type(newEndDate)
+    }
 
+    fillIn_CPC = async(budget_maxCPC) => {
+        await this.page.waitForXPath(`//*[@id="maxcpc`);
+        let [maxCPC] = await this.page.$x(`//*[@id="maxcpc"]`);
+        if (budget_maxCPC) {
+            await maxCPC.click({ clickCount: 3 });
+            await maxCPC.press('Backspace');
+            await maxCPC.type(budget_maxCPC);
         }
-        //todo
-
-    fillIn_CPC = async() => {
-
-        }
-        //todo
+    }
 
     fillIn_adBudget = async() => {
-
+        let [budgetInput] = await this.page.$x(`//*[@id="advanced-budget"]`);
+        if (budgetInput && jobToRepost.budget_amount) {
+            let budgetInDollar = Math.ceil(jobToRepost.budget_amount / 100).toString();
+            await budgetInput.click({ clickCount: 3 });
+            await budgetInput.press('Backspace');
+            await budgetInput.type(budgetInDollar)
+            return true;
+        } else {
+            return false;
         }
-        //todo
-
-    click_noThanks = async() => {
-
-        }
-        //todo
-
-    click_notIntersted = async() => {
-
-        }
-        //todo
+    }
 
     closeJob = async() => {
+        await this.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobToRepost.job_id}`, { waitUntil: 'networkidle0' });
+
+
+        await this.page.waitForXPath(`//*[@id="sidebarStatusButton"]/span/span/div/div/div[1]/button`);
+        let [jobStatusMenu] = await this.page.$x(`//*[@id="sidebarStatusButton"]/span/span/div/div/div[1]/button`);
+        await jobStatusMenu.click();
+
+        await this.page.waitForXPath(`//*[@id="sidebarStatusButton"]/span/span/div/div/div[2]/ul/li[2]/a`);
+        let [closeJobOption] = await this.page.$x(`//*[@id="sidebarStatusButton"]/span/span/div/div/div[2]/ul/li[2]/a`);
+        await closeJobOption.click();
+
+        await this.page.waitForXPath(`//*[contains(text(),"I didn't hire anyone")]`);
+        let [IDidntHireChoice] = await this.page.$x(`//*[contains(text(),"I didn't hire anyone")]`)
+        await IDidntHireChoice.click();
+
+
+        await this.page.waitForXPath(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button`);
+        let [continueCloseButton] = await this.page.$x(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button`)
+        await continueCloseButton.click();
+
+
+        await this.page.waitForXPath(`//*[contains(text(),"Other")]`);
+        let other = await this.page.$x(`//*[contains(text(),"Other")]`)
+        other = other[1]
+        await other.click();
+
+        await this.page.waitForXPath(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button/span`);
+        let [closeJobButton] = await this.page.$x(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button/span`)
+        await closeJobButton.click();
+        await this.page.waitForTimeout(2000);
 
     }
 

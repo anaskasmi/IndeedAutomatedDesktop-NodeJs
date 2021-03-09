@@ -266,26 +266,6 @@ exports.JobsController = class JobsController {
         }
     }
 
-    fillIn_compensation = async(req, res) => {
-        req.setTimeout(0);
-        try {
-            await jobServices.fillIn_compensation();
-            return res.status(200).json({ "msg": "compensation filled in successfully" });
-        } catch (error) {
-            return res.status(500).json({ error: error.message });
-        }
-    }
-
-    fillIn_benefits = async(req, res) => {
-        req.setTimeout(0);
-        try {
-            await jobServices.fillIn_benefits();
-            return res.status(200).json({ "msg": "benefits filled in successfully" });
-        } catch (error) {
-            return res.status(500).json({ error: error.message });
-        }
-    }
-
     fillIn_description = async(req, res) => {
         req.setTimeout(0);
         try {
