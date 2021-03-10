@@ -1,53 +1,45 @@
 //packages
 const express = require('express');
 //controllers
-const jobsController = require('../controller/jobsController');
+const JobsController = require('../controller/JobsController');
 //config
 const router = express.Router();
 
-let jobsController = new JobsController();
 
 
 //login routes
-router.get('/getNewBrowser', jobsController.getNewBrowser)
-router.get('/loadCookies', jobsController.loadCookies)
-router.get('/isLoggedIn', jobsController.isLoggedIn)
-router.get('/openLoginPage', jobsController.openLoginPage)
+router.get('/getNewBrowser', JobsController.getNewBrowser)
 
 //scrap data routes
-router.get('/scrapAllJobs', jobsController.scrapAllJobs)
-router.get('/getJobFullDetails', jobsController.getJobFullDetails)
+router.get('/scrapAllJobs', JobsController.scrapAllJobs)
+router.get('/getAllJobsFromDb', JobsController.getAllJobsFromDb)
+router.post('/getJobFullDetails', JobsController.getJobFullDetails)
 
 //reposting routes
-router.get('/openPostJobPage', jobsController.openPostJobPage)
-router.get('/unlockCompanyNameInput', jobsController.unlockCompanyNameInput)
-router.get('/fillIn_CompanyName', jobsController.fillIn_CompanyName)
-router.get('/fillIn_JobTitle', jobsController.fillIn_JobTitle)
-router.get('/fillIn_JobCategory', jobsController.fillIn_JobCategory)
-router.get('/fillIn_RolesLocation', jobsController.fillIn_RolesLocation)
-router.get('/fillIn_IsJobremote', jobsController.fillIn_IsJobremote)
-router.get('/clickSaveAndContinue', jobsController.clickSaveAndContinue)
-router.get('/fillIn_isJobFullTimeOrPartTime', jobsController.fillIn_isJobFullTimeOrPartTime)
-router.get('/fillIn_additionalJobTypes', jobsController.fillIn_additionalJobTypes)
-router.get('/fillIn_schedule', jobsController.fillIn_schedule)
-router.get('/fillIn_hiresNumber', jobsController.fillIn_hiresNumber)
-router.get('/fillIn_deadline', jobsController.fillIn_deadline)
-router.get('/fillIn_paymentType', jobsController.fillIn_paymentType)
-router.get('/fillIn_paymentFrom', jobsController.fillIn_paymentFrom)
-router.get('/fillIn_paymentTo', jobsController.fillIn_paymentTo)
-router.get('/fillIn_paymentPer', jobsController.fillIn_paymentPer)
-router.get('/fillIn_compensation', jobsController.fillIn_compensation)
-router.get('/fillIn_benefits', jobsController.fillIn_benefits)
-router.get('/fillIn_description', jobsController.fillIn_description)
-router.get('/fillIn_isResumeRequired', jobsController.fillIn_isResumeRequired)
-router.get('/click_confirm', jobsController.click_confirm)
-router.get('/click_advanced', jobsController.click_advanced)
-router.get('/fillIn_adDurationType', jobsController.fillIn_adDurationType)
-router.get('/fillIn_adDurationDate', jobsController.fillIn_adDurationDate)
-router.get('/fillIn_CPC', jobsController.fillIn_CPC)
-router.get('/fillIn_adBudget', jobsController.fillIn_adBudget)
-router.get('/click_noThanks', jobsController.click_noThanks)
-router.get('/click_notIntersted', jobsController.click_notIntersted)
-
+router.post('/openPostJobPage', JobsController.openPostJobPage)
+router.post('/unlockCompanyNameInput', JobsController.unlockCompanyNameInput)
+router.post('/fillIn_CompanyName', JobsController.fillIn_CompanyName)
+router.post('/fillIn_JobTitle', JobsController.fillIn_JobTitle)
+router.post('/fillIn_JobCategory', JobsController.fillIn_JobCategory)
+router.post('/fillIn_RolesLocation', JobsController.fillIn_RolesLocation)
+router.post('/fillIn_IsJobremote', JobsController.fillIn_IsJobremote)
+router.post('/clickSaveAndContinue', JobsController.clickSaveAndContinue)
+router.post('/fillIn_isJobFullTimeOrPartTime', JobsController.fillIn_isJobFullTimeOrPartTime)
+router.post('/fillIn_schedule', JobsController.fillIn_schedule)
+router.post('/fillIn_hiresNumber', JobsController.fillIn_hiresNumber)
+router.post('/fillIn_deadline', JobsController.fillIn_deadline)
+router.post('/fillIn_paymentType', JobsController.fillIn_paymentType)
+router.post('/fillIn_paymentFrom', JobsController.fillIn_paymentFrom)
+router.post('/fillIn_paymentTo', JobsController.fillIn_paymentTo)
+router.post('/fillIn_paymentPer', JobsController.fillIn_paymentPer)
+router.post('/fillIn_description', JobsController.fillIn_description)
+router.post('/fillIn_isResumeRequired', JobsController.fillIn_isResumeRequired)
+router.post('/click_confirm', JobsController.click_confirm)
+router.post('/click_advanced', JobsController.click_advanced)
+router.post('/fillIn_adDurationType', JobsController.fillIn_adDurationType)
+router.post('/fillIn_adDurationDate', JobsController.fillIn_adDurationDate)
+router.post('/fillIn_CPC', JobsController.fillIn_CPC)
+router.post('/fillIn_adBudget', JobsController.fillIn_adBudget)
+router.post('/closeJob', JobsController.fillIn_adBudget)
 
 module.exports = router;
