@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer-extra')
 const StealthPlugin = require('puppeteer-extra-plugin-stealth')
 puppeteer.use(StealthPlugin());
 const { normalizeJobs } = require('../utilities/normalizeJobs');
+const { normalizeFullDetailedJob } = require('../utilities/normalizeFullDetailedJob');
 const { findRangeType } = require('../utilities/findRangeType');
 const { descriptionToArray } = require('../utilities/descriptionToArray');
 const { loadCookies } = require('../utilities/loadCookies');
@@ -12,12 +13,14 @@ const Job = require('./../models/Job')
 let browser = null;
 let page = null;
 let JobsServices = {};
+
 //get new browser and set up its params
 JobsServices.getNewBrowser = async() => {
     //allow only one browser and one page to be opened
-    if (this.browser) {
+    if (this.browser && (await this.browser.pages()).length > 0) {
         return;
     }
+
     // get new browser
     this.browser = await puppeteer.launch({
         headless: false,
@@ -49,7 +52,22 @@ JobsServices.getNewBrowser = async() => {
 
     //get new page 
     this.page = await this.browser.newPage();
-    this.page.setDefaultTimeout(0);
+    this.page.setDefaultTimeout(30 * 1000);
+    this.page.on('response', async(response) => {
+        if (response.url().includes('no-dupe-posting')) {
+            this.page.waitForTimeout(3000);
+            let [thiIsADifferentJob] = await this.page.$x(`//*[@for="next-step-radio--continue"]`);
+            if (thiIsADifferentJob) {
+                await thiIsADifferentJob.click()
+            }
+            let [continueButton] = await this.page.$x(`//*[@data-tn-element="sorepost-next-step-continue-continue"]`);
+            if (continueButton) {
+                await continueButton.click()
+                this.page.waitForTimeout(3000);
+            }
+
+        }
+    });
     await this.page.goto('https://employers.indeed.com/');
 }
 
@@ -66,21 +84,56 @@ JobsServices.closeBrowser = async() => {
 
 
 
-JobsServices.openPostJobPage = async(id) => {
-    try {
-        await this.page.goto(`https://employers.indeed.com/j#jobs/view?id=${id}`)
-    } catch (error) {
-        console.log(error)
-    }
+JobsServices.openPostJobPage = async() => {
+    await this.page.goto(`https://employers.indeed.com/p#post-job`)
 }
 
-//todo
-JobsServices.getJobFullDetails = async(id) => {
-    try {
+JobsServices.getJobFullDetails = async(jobId) => {
+    let unormalizedJobFromJobPage;
+    let unormalizedJobFromHomePage;
+    this.page.on('response', function getDetailsFromJobPage(response) {
+        if (response.url().includes('https://employers.indeed.com/p/post-job/edit-job?id=')) {
+            response.json().then((res) => {
+                if (res) {
+                    unormalizedJobFromJobPage = res;
+                }
 
-    } catch (error) {
-        console.log(error)
+            })
+        }
+    });
+    //get missing details from the home page
+    await this.page.goto(`https://employers.indeed.com/p#post-job/edit-job?id=${jobId}`, { waitUntil: 'networkidle0' });
+
+    this.page.on('response', function getDetailsFromHomePage(response) {
+        if (response.url().includes('graph')) {
+            response.json().then((res) => {
+                if (res.data.jobs) {
+                    for (const job of res.data.jobs) {
+                        if (job.id == jobId) {
+                            unormalizedJobFromHomePage = job;
+                        }
+                    }
+                }
+
+            })
+        }
+    });
+    await this.page.goto(`https://employers.indeed.com/j#jobs`, { waitUntil: 'networkidle0' });
+    //second retry
+    if (!unormalizedJobFromHomePage) {
+        await this.page.goto(`https://employers.indeed.com/j#jobs`, { waitUntil: 'networkidle0' });
     }
+    if (!unormalizedJobFromJobPage) {
+        await this.page.goto(`https://employers.indeed.com/p#post-job/edit-job?id=${jobId}`, { waitUntil: 'networkidle0' });
+    }
+    //normalize job
+    let normalizedJob = await normalizeFullDetailedJob(unormalizedJobFromJobPage, unormalizedJobFromHomePage);
+    //delete old job document
+    await Job.findOneAndDelete({ job_id: jobId });
+    //insert the new job document
+    const jobToSave = new Job(normalizedJob);
+    await jobToSave.save();
+    return normalizedJob;
 }
 
 
@@ -106,6 +159,10 @@ JobsServices.scrapAllJobs = async() => {
     });
     await this.page.goto(`https://employers.indeed.com/j#jobs`, { waitUntil: 'networkidle0' });
     let normalizedJobs = await normalizeJobs(jobsArray);
+    //delete old jobs
+    await Job.deleteMany({});
+    //inser new ones
+    await Job.insertMany(normalizedJobs);
     return normalizedJobs;
 
 }
@@ -117,13 +174,16 @@ JobsServices.getAllJobsFromDb = async() => {
 
 JobsServices.unlockCompanyNameInput = async() => {
     //click pencil Icon
+    id = "companyNameChangeRadioButtonPostingOnBehalf"
     await this.page.waitForXPath(`//*[@id="change-company-link"]`);
     let [companyNamePencil] = await this.page.$x(`//*[@id="change-company-link"]`);
-    await companyNamePencil.click();
+    if (companyNamePencil) {
+        await companyNamePencil.click();
+    }
 
     //chose company name change reason
-    await this.page.waitForXPath(`//*[@id="ecl-RadioItem-label-companyNameChangeRadioButtonPostingOnBehalf"]`);
-    let [companyNameChangeReason] = await this.page.$x(`//*[@id="ecl-RadioItem-label-companyNameChangeRadioButtonPostingOnBehalf"]`);
+    await this.page.waitForXPath(`//*[@for="companyNameChangeRadioButtonPostingOnBehalf"]`);
+    let [companyNameChangeReason] = await this.page.$x(`//*[@for="companyNameChangeRadioButtonPostingOnBehalf"]`);
     await companyNameChangeReason.click();
 }
 
@@ -139,14 +199,14 @@ JobsServices.fillIn_JobTitle = async(jobTitle) => {
     let [jobTitleInput] = await this.page.$x(`//*[@id="JobTitle"]`);
     await jobTitleInput.click({ clickCount: 3 });
     await jobTitleInput.press('Backspace');
-    await this.page.keyboard.type(jobTitle, { delay: 20 });
+    await this.page.keyboard.type(jobTitle, { delay: 5 });
     await this.page.keyboard.press('Enter');
 }
 
 JobsServices.fillIn_JobCategory = async() => {
     //todo:make sure this happens after filling the address
     //wait for 3 seconds to make sure that category exists 
-    await this.page.waitForTimout(3 * 1000);
+    await this.page.waitForTimeout(3 * 1000);
     let firstChoice = await this.page.$x(`//*[@name="jobOccupationOption"]`)
     if (firstChoice.length) {
         firstChoice = firstChoice[1];
@@ -155,19 +215,20 @@ JobsServices.fillIn_JobCategory = async() => {
 }
 
 JobsServices.fillIn_RolesLocation = async(location) => {
-    //todo: parse location
-    let city, state;
+
+    let city = location.city;
+    let state = location.state;
     //click on one location option
-    await this.page.waitForXPath(`//*[@id="roleLocationTypeRadiosOneLocation"]`);
-    let [oneLocation] = await this.page.$x(`//*[@id="roleLocationTypeRadiosOneLocation"]`);
+    await this.page.waitForXPath(`//*[@for="roleLocationTypeRadiosOneLocation"]`);
+    let [oneLocation] = await this.page.$x(`//*[@for="roleLocationTypeRadiosOneLocation"]`);
     await oneLocation.click();
     //click dont include the address option
-    await this.page.waitForXPath(`//*[@id='HideExactLocation']`);
-    let [hideExactLocation] = await this.page.$x(`//*[@id='HideExactLocation']`);
+    await this.page.waitForXPath(`//*[@id="ecl-RadioItem-label-HideExactLocation"]`);
+    let [hideExactLocation] = await this.page.$x(`//*[@id="ecl-RadioItem-label-HideExactLocation"]`);
     await hideExactLocation.click();
     //fill in the city 
-    await this.page.waitForXPath(`precise-address-city-input`);
-    let [cityInput] = await this.page.$x(`precise-address-city-input`);
+    await this.page.waitForXPath(`//*[@id="precise-address-city-input"]`);
+    let [cityInput] = await this.page.$x(`//*[@id="precise-address-city-input"]`);
     await cityInput.click({ clickCount: 3 });
     await cityInput.press('Backspace');
     await this.page.keyboard.type(city, { delay: 20 });
@@ -176,15 +237,24 @@ JobsServices.fillIn_RolesLocation = async(location) => {
     await this.page.select('#precise-address-state-input', state)
 
     //wait for Advertising location to apply 
-    await this.page.waitForTimout(3 * 1000);
+    await this.page.waitForTimeout(3 * 1000);
+
 
 
 }
 
 JobsServices.clickSaveAndContinue = async() => {
-    [saveAndContinue] = await page.$x(`//*[text()='Save and continue']`);
-    await saveAndContinue.click();
-    await page.waitForTimeout(3000);
+    [saveAndContinue] = await this.page.$x(`//*[text()='Save and continue']`);
+    await saveAndContinue.click({ clickCount: 3 });
+    await this.page.waitForTimeout(100);
+    try {
+        await saveAndContinue.click();
+
+    } catch (error) {
+
+    }
+    await this.page.waitForTimeout(3000);
+
 }
 
 JobsServices.fillIn_isJobFullTimeOrPartTime = async(jobDetails_WhatTypeOfJobIsIt) => {
@@ -259,6 +329,9 @@ JobsServices.fillIn_paymentFrom = async(jobDetails_SalaryFrom) => {
         await jobSalary1.press('Backspace');
         await jobSalary1.type(jobDetails_SalaryFrom)
         return true;
+    } else if (!jobDetails_SalaryFrom) {
+        await jobSalary1.click({ clickCount: 3 });
+        await jobSalary1.press('Backspace');
     } else {
         return false;
     }
@@ -271,6 +344,10 @@ JobsServices.fillIn_paymentTo = async(jobDetails_SalaryTo) => {
         await jobSalary2.press('Backspace');
         await jobSalary2.type(jobDetails_SalaryTo)
         return true;
+    } else if (!jobDetails_SalaryTo) {
+        await jobSalary2.click({ clickCount: 3 });
+        await jobSalary2.press('Backspace');
+
     } else {
         return false;
     }
@@ -369,16 +446,17 @@ JobsServices.fillIn_description = async(jobDescriptionHtml) => {
 }
 
 
-JobsServices.fillIn_isResumeRequired = async(resumeRequirement) => {
-    if (resumeRequirement != "REQUIRED") {
-        await this.page.waitForXPath(`//*[@id="radio-applicationemailresumerequirement-OPTIONAL"]`);
-        let [resumeOptionalButton] = await this.page.$x(`//*[@id="radio-applicationemailresumerequirement-OPTIONAL"]`);
-        await resumeOptionalButton.click();
-    } else {
-        await this.page.waitForXPath(`radio-applicationemailresumerequirement-REQUIRED`);
-        let [resumeRequiredButton] = await this.page.$x(`radio-applicationemailresumerequirement-REQUIRED`);
-        await resumeRequiredButton.click();
-    }
+JobsServices.fillIn_isResumeRequired = async() => {
+    // if (resumeRequirement != "REQUIRED") {
+    //     await this.page.waitForXPath(`//*[@id="radio-applicationemailresumerequirement-OPTIONAL"]`);
+    //     let [resumeOptionalButton] = await this.page.$x(`//*[@id="radio-applicationemailresumerequirement-OPTIONAL"]`);
+    //     await resumeOptionalButton.click();
+    // } else {
+
+    // }
+    await this.page.waitForXPath(`//*[@id="radio-applicationemailresumerequirement-REQUIRED"]`);
+    let [resumeRequiredButton] = await this.page.$x(`//*[@id="radio-applicationemailresumerequirement-REQUIRED"]`);
+    await resumeRequiredButton.click();
     return true;
 }
 
@@ -424,10 +502,10 @@ JobsServices.fillIn_CPC = async(budget_maxCPC) => {
     }
 }
 
-JobsServices.fillIn_adBudget = async() => {
+JobsServices.fillIn_adBudget = async(budget_amount) => {
     let [budgetInput] = await this.page.$x(`//*[@id="advanced-budget"]`);
-    if (budgetInput && jobToRepost.budget_amount) {
-        let budgetInDollar = Math.ceil(jobToRepost.budget_amount / 100).toString();
+    if (budgetInput && budget_amount) {
+        let budgetInDollar = Math.ceil(budget_amount / 100).toString();
         await budgetInput.click({ clickCount: 3 });
         await budgetInput.press('Backspace');
         await budgetInput.type(budgetInDollar)

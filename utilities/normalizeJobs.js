@@ -19,4 +19,5 @@ module.exports.normalizeJobs = async(jobsArray) => {
         });
         normalizedJobs.push(normalizedJob);
     }
+    return normalizedJobs;
 }

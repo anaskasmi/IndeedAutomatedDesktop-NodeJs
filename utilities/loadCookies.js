@@ -4,7 +4,6 @@ const path = require('path');
 const loadCookies = async(page) => {
     try {
         const COOKIES_URI = path.join('cookies', 'cookies.json');
-        console.log(COOKIES_URI)
         const cookiesString = await fs.readFile(COOKIES_URI);
         const cookies = JSON.parse(cookiesString);
         await page.setCookie(...cookies);
