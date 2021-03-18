@@ -260,12 +260,21 @@ JobsServices.fillIn_RolesLocation = async(location) => {
 }
 
 JobsServices.clickSaveAndContinue = async() => {
-    [saveAndContinue] = await this.page.$x(`//*[text()='Save and continue']`);
-    await saveAndContinue.click({ clickCount: 3 });
+    [saveAndContinue1] = await this.page.$x(`//*[text()='Save and continue']`);
+    [saveAndContinue2] = await this.page.$x(`//*[text()='Continue']`);
+    if (saveAndContinue1) {
+        await saveAndContinue1.click({ clickCount: 3 });
+    } else if (saveAndContinue2) {
+        await saveAndContinue2.click({ clickCount: 3 });
+    }
     await this.page.waitForTimeout(100);
+    //second retry
     try {
-        await saveAndContinue.click();
-
+        if (saveAndContinue1) {
+            await saveAndContinue1.click({ clickCount: 3 });
+        } else if (saveAndContinue2) {
+            await saveAndContinue2.click({ clickCount: 3 });
+        }
     } catch (error) {
 
     }
