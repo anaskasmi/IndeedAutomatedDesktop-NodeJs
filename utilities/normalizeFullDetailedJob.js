@@ -1,6 +1,6 @@
 const Job = require('../models/Job');
 
-module.exports.normalizeFullDetailedJob = async(unormalizedJobFromJobPage, unormalizedJobFromHomePage) => {
+module.exports.normalizeFullDetailedJob = async(unormalizedJobFromJobPage, unormalizedJobFromJobShowPage) => {
     return new Job({
         job_id: unormalizedJobFromJobPage.job.id,
         status: unormalizedJobFromJobPage.job.status,
@@ -33,14 +33,15 @@ module.exports.normalizeFullDetailedJob = async(unormalizedJobFromJobPage, unorm
         jobDescription: unormalizedJobFromJobPage.job.description ? unormalizedJobFromJobPage.job.description : null,
         jobDescriptionHtml: unormalizedJobFromJobPage.job.descriptionHtml,
         //home page
-        country: unormalizedJobFromHomePage ? unormalizedJobFromHomePage.country : null,
-        budget_displayCost: (unormalizedJobFromHomePage.budget && unormalizedJobFromHomePage.budget.displayCost) ? unormalizedJobFromHomePage.budget.displayCost : null,
-        applicationCount: (unormalizedJobFromHomePage.applicationCount) ? unormalizedJobFromHomePage.applicationCount : null,
-        dateCreated: unormalizedJobFromHomePage.dateCreated ? unormalizedJobFromHomePage.dateCreated : null,
-        budget_endDate: (unormalizedJobFromHomePage.budget && unormalizedJobFromHomePage.budget.endDate) ? unormalizedJobFromHomePage.budget.endDate : null,
-        displayLocation: (unormalizedJobFromHomePage.jobLocations && unormalizedJobFromHomePage.jobLocations) ? unormalizedJobFromHomePage.jobLocations : [],
-        budget_amount: (unormalizedJobFromHomePage.budget && unormalizedJobFromHomePage.budget.amount) ? unormalizedJobFromHomePage.budget.amount : null,
+        country: unormalizedJobFromJobShowPage.country || null,
+        budget_displayCost: unormalizedJobFromJobShowPage.displayCost || null,
+        applicationCount: unormalizedJobFromJobShowPage.newCandidateCount,
 
+        dateCreated: unormalizedJobFromJobShowPage.dateCreated || null,
+        budget_endDate: unormalizedJobFromJobShowPage.displayEndDate || null,
+        displayLocation: unormalizedJobFromJobShowPage.locations || null,
+        budget_amount: unormalizedJobFromJobShowPage.budget || null,
+        emails: unormalizedJobFromJobShowPage.emails || null,
     });
 
 

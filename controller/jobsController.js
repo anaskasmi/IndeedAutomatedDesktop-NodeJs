@@ -38,6 +38,7 @@ JobsController.scrapAllJobs = async(req, res) => {
         return res.status(200).json({ "msg": "jobs scraped successfully", "jobs": jobs });
 
     } catch (error) {
+        console.log(error)
         return res.status(500).json({ error: error.message });
     }
 
@@ -61,6 +62,7 @@ JobsController.getJobFullDetails = async(req, res) => {
         let job = await JobsServices.getJobFullDetails(req.body.job_id);
         return res.status(200).json({ "msg": "job full details scraped successfully", "job": job });
     } catch (error) {
+        console.log(error)
         return res.status(500).json({ error: error.message });
     }
 }
@@ -224,7 +226,7 @@ JobsController.fillIn_paymentFrom = async(req, res) => {
 JobsController.fillIn_paymentTo = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.fillIn_paymentTo(req.body.jobDetails_SalaryTo);
+        await JobsServices.fillIn_paymentTo(req.body.jobDetails_SalaryTo, req.body.jobDetails_salaryRangeType);
         return res.status(200).json({ "msg": "payment To, filled in successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -343,7 +345,7 @@ JobsController.click_notIntersted = async(req, res) => {
 JobsController.closeJob = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.closeJob();
+        await JobsServices.closeJob(req.body.jobId);
         return res.status(200).json({ "msg": "Job Closed successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });

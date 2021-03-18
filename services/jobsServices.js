@@ -6,6 +6,8 @@ const { normalizeFullDetailedJob } = require('../utilities/normalizeFullDetailed
 const { findRangeType } = require('../utilities/findRangeType');
 const { descriptionToArray } = require('../utilities/descriptionToArray');
 const { loadCookies } = require('../utilities/loadCookies');
+const Moment = require('moment');
+
 const path = require('path');
 //models
 const Job = require('./../models/Job')
@@ -52,7 +54,7 @@ JobsServices.getNewBrowser = async() => {
 
     //get new page 
     this.page = await this.browser.newPage();
-    this.page.setDefaultTimeout(30 * 1000);
+    this.page.setDefaultTimeout(60 * 1000);
     this.page.on('response', async(response) => {
         if (response.url().includes('no-dupe-posting')) {
             this.page.waitForTimeout(3000);
@@ -89,45 +91,43 @@ JobsServices.openPostJobPage = async() => {
 }
 
 JobsServices.getJobFullDetails = async(jobId) => {
-    let unormalizedJobFromJobPage;
-    let unormalizedJobFromHomePage;
+    let unormalizedJobFromJobEditPage;
+    let unormalizedJobFromJobShowPage;
     this.page.on('response', function getDetailsFromJobPage(response) {
         if (response.url().includes('https://employers.indeed.com/p/post-job/edit-job?id=')) {
             response.json().then((res) => {
                 if (res) {
-                    unormalizedJobFromJobPage = res;
+                    unormalizedJobFromJobEditPage = res;
                 }
 
             })
         }
     });
-    //get missing details from the home page
     await this.page.goto(`https://employers.indeed.com/p#post-job/edit-job?id=${jobId}`, { waitUntil: 'networkidle0' });
 
+    //get missing details from the job page
     this.page.on('response', function getDetailsFromHomePage(response) {
-        if (response.url().includes('graph')) {
+        if (response.url().includes('employers.indeed.com/j/jobs/view?id=')) {
             response.json().then((res) => {
-                if (res.data.jobs) {
-                    for (const job of res.data.jobs) {
-                        if (job.id == jobId) {
-                            unormalizedJobFromHomePage = job;
-                        }
-                    }
+                if (res.job) {
+                    unormalizedJobFromJobShowPage = res.job;
                 }
 
             })
         }
     });
-    await this.page.goto(`https://employers.indeed.com/j#jobs`, { waitUntil: 'networkidle0' });
+    await this.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'networkidle0' });
     //second retry
-    if (!unormalizedJobFromHomePage) {
-        await this.page.goto(`https://employers.indeed.com/j#jobs`, { waitUntil: 'networkidle0' });
+    if (!unormalizedJobFromJobShowPage) {
+        console.log('unormalizedJobFromJobShowPage not found retry...')
+        await this.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'networkidle0' });
     }
-    if (!unormalizedJobFromJobPage) {
+    if (!unormalizedJobFromJobEditPage) {
+        console.log('unormalizedJobFromJobEditPage not found retrying ...')
         await this.page.goto(`https://employers.indeed.com/p#post-job/edit-job?id=${jobId}`, { waitUntil: 'networkidle0' });
     }
     //normalize job
-    let normalizedJob = await normalizeFullDetailedJob(unormalizedJobFromJobPage, unormalizedJobFromHomePage);
+    let normalizedJob = await normalizeFullDetailedJob(unormalizedJobFromJobEditPage, unormalizedJobFromJobShowPage);
     //delete old job document
     await Job.findOneAndDelete({ job_id: jobId });
     //insert the new job document
@@ -143,29 +143,41 @@ JobsServices.downloadCookies = async() => {
 }
 
 
-JobsServices.scrapAllJobs = async() => {
+JobsServices.scrapAllJobs = async(totalPagesNumber = 3) => {
+    //delete old jobs
+    await Job.deleteMany({});
+
     const jobsArray = [];
-    this.page.on('response', (response) => {
-        if (response.url().includes('graph')) {
-            response.json().then((res) => {
+
+    function getJobsFromReponse(response) {
+        if (response.url().includes('graphql')) {
+            response.json().then(async(res) => {
                 if (res.data.jobs) {
                     for (const job of res.data.jobs) {
                         jobsArray.push(job);
                     }
+                    console.log(jobsArray.length)
                 }
-
             })
         }
-    });
-    await this.page.goto(`https://employers.indeed.com/j#jobs`, { waitUntil: 'networkidle0' });
+    }
+    this.page.on('response', getJobsFromReponse);
+
+    for (let currentPage = 1; currentPage <= totalPagesNumber; currentPage++) {
+        console.log('page : ' + currentPage)
+        await this.page.goto(`https://employers.indeed.com/j#jobs?p=${currentPage}`);
+        // await this.page.waitForNavigation({ waitUntil: 'networkidle0' });
+        await this.page.waitForXPath(`//*[contains(text(),'Open')]`)
+    }
+    this.page.removeListener('response', getJobsFromReponse);
     let normalizedJobs = await normalizeJobs(jobsArray);
-    //delete old jobs
-    await Job.deleteMany({});
-    //inser new ones
     await Job.insertMany(normalizedJobs);
-    return normalizedJobs;
+
+
 
 }
+
+
 JobsServices.getAllJobsFromDb = async() => {
     let jobs = await Job.find();
     return jobs
@@ -231,6 +243,10 @@ JobsServices.fillIn_RolesLocation = async(location) => {
     let [cityInput] = await this.page.$x(`//*[@id="precise-address-city-input"]`);
     await cityInput.click({ clickCount: 3 });
     await cityInput.press('Backspace');
+    await this.page.waitForTimeout(1000)
+    await cityInput.click({ clickCount: 3 });
+    await cityInput.press('Backspace');
+
     await this.page.keyboard.type(city, { delay: 20 });
 
     // fill in the state
@@ -337,17 +353,22 @@ JobsServices.fillIn_paymentFrom = async(jobDetails_SalaryFrom) => {
     }
 }
 
-JobsServices.fillIn_paymentTo = async(jobDetails_SalaryTo) => {
-    let [jobSalary2] = await this.page.$x(`//*[@id="ipl-ComboBox-JobSalary2"]`);
-    if (jobSalary2 && jobDetails_SalaryTo) {
-        await jobSalary2.click({ clickCount: 3 });
-        await jobSalary2.press('Backspace');
-        await jobSalary2.type(jobDetails_SalaryTo)
+JobsServices.fillIn_paymentTo = async(jobDetails_SalaryTo, jobDetails_salaryRangeType) => {
+    let jobSalaryInput;
+
+    if (jobDetails_salaryRangeType == 'UP_TO') {
+        [jobSalaryInput] = await this.page.$x(`//*[@id="ipl-ComboBox-JobSalary1"]`);
+    } else {
+        [jobSalaryInput] = await this.page.$x(`//*[@id="ipl-ComboBox-JobSalary2"]`);
+    }
+    if (jobSalaryInput && jobDetails_SalaryTo) {
+        await jobSalaryInput.click({ clickCount: 3 });
+        await jobSalaryInput.press('Backspace');
+        await jobSalaryInput.type(jobDetails_SalaryTo)
         return true;
     } else if (!jobDetails_SalaryTo) {
-        await jobSalary2.click({ clickCount: 3 });
-        await jobSalary2.press('Backspace');
-
+        await jobSalaryInput.click({ clickCount: 3 });
+        await jobSalaryInput.press('Backspace');
     } else {
         return false;
     }
@@ -493,7 +514,7 @@ JobsServices.fillIn_adDurationDate = async() => {
 }
 
 JobsServices.fillIn_CPC = async(budget_maxCPC) => {
-    await this.page.waitForXPath(`//*[@id="maxcpc`);
+    await this.page.waitForXPath(`//*[@id="maxcpc"]`);
     let [maxCPC] = await this.page.$x(`//*[@id="maxcpc"]`);
     if (budget_maxCPC) {
         await maxCPC.click({ clickCount: 3 });
@@ -505,7 +526,7 @@ JobsServices.fillIn_CPC = async(budget_maxCPC) => {
 JobsServices.fillIn_adBudget = async(budget_amount) => {
     let [budgetInput] = await this.page.$x(`//*[@id="advanced-budget"]`);
     if (budgetInput && budget_amount) {
-        let budgetInDollar = Math.ceil(budget_amount / 100).toString();
+        let budgetInDollar = Math.ceil(budget_amount).toString();
         await budgetInput.click({ clickCount: 3 });
         await budgetInput.press('Backspace');
         await budgetInput.type(budgetInDollar)
@@ -515,16 +536,18 @@ JobsServices.fillIn_adBudget = async(budget_amount) => {
     }
 }
 
-JobsServices.closeJob = async() => {
-    await this.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobToRepost.job_id}`, { waitUntil: 'networkidle0' });
+JobsServices.closeJob = async(jobId) => {
+    await this.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'networkidle0' });
+    await this.page.waitForTimeout(2000);
+    await this.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'networkidle0' });
 
 
-    await this.page.waitForXPath(`//*[@id="sidebarStatusButton"]/span/span/div/div/div[1]/button`);
-    let [jobStatusMenu] = await this.page.$x(`//*[@id="sidebarStatusButton"]/span/span/div/div/div[1]/button`);
+    await this.page.waitForXPath(`//span[contains(text(),'Status')]`);
+    let [jobStatusMenu] = await this.page.$x(`//span[contains(text(),'Status')]`);
     await jobStatusMenu.click();
 
-    await this.page.waitForXPath(`//*[@id="sidebarStatusButton"]/span/span/div/div/div[2]/ul/li[2]/a`);
-    let [closeJobOption] = await this.page.$x(`//*[@id="sidebarStatusButton"]/span/span/div/div/div[2]/ul/li[2]/a`);
+    await this.page.waitForXPath(`//*[contains(text(),'Close job')]`);
+    let [closeJobOption] = await this.page.$x(`//*[contains(text(),'Close job')]`);
     await closeJobOption.click();
 
     await this.page.waitForXPath(`//*[contains(text(),"I didn't hire anyone")]`);

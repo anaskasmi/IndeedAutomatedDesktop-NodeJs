@@ -40,6 +40,6 @@ router.get('/fillIn_adDurationType', JobsController.fillIn_adDurationType)
 router.get('/fillIn_adDurationDate', JobsController.fillIn_adDurationDate)
 router.post('/fillIn_CPC', JobsController.fillIn_CPC)
 router.post('/fillIn_adBudget', JobsController.fillIn_adBudget)
-router.post('/closeJob', JobsController.fillIn_adBudget)
+router.post('/closeJob', JobsController.closeJob)
 
 module.exports = router;

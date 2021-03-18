@@ -54,6 +54,7 @@ const JobSchema = mongoose.Schema({
     ////MULTIPLE_LOCATIONS
     jobDetails_roleLocationType: { type: String },
     jobDetails_type: { type: String },
+    jobDetails_emails: [],
     // jobDetails end
 
 
