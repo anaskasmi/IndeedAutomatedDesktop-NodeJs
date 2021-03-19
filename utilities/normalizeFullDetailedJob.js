@@ -41,7 +41,7 @@ module.exports.normalizeFullDetailedJob = async(unormalizedJobFromJobPage, unorm
         budget_endDate: unormalizedJobFromJobShowPage.displayEndDate || null,
         displayLocation: unormalizedJobFromJobShowPage.locations || null,
         budget_amount: unormalizedJobFromJobShowPage.budget || null,
-        emails: unormalizedJobFromJobShowPage.emails || null,
+        jobDetails_emails: unormalizedJobFromJobShowPage.emails || null,
     });
 
 

@@ -352,5 +352,45 @@ JobsController.closeJob = async(req, res) => {
     }
 }
 
+JobsController.fillIn_email = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        await JobsServices.fillIn_email(req.body.jobDetails_emails);
+        return res.status(200).json({ "msg": "Email Filled In successfully" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+JobsController.close_questions = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        await JobsServices.close_questions();
+        return res.status(200).json({ "msg": "Questions closed successfully" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+JobsController.fillIn_isJobRemote = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        await JobsServices.fillIn_isJobRemote();
+        return res.status(200).json({ "msg": "Clicked No on is this a remote job successfully" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+JobsController.fillIn_otherBenefits = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        await JobsServices.fillIn_otherBenefits();
+        return res.status(200).json({ "msg": "Clicked Other in benefits Input successfully" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
+
 
 module.exports = JobsController;

@@ -41,5 +41,9 @@ router.get('/fillIn_adDurationDate', JobsController.fillIn_adDurationDate)
 router.post('/fillIn_CPC', JobsController.fillIn_CPC)
 router.post('/fillIn_adBudget', JobsController.fillIn_adBudget)
 router.post('/closeJob', JobsController.closeJob)
+router.post('/fillIn_email', JobsController.fillIn_email)
+router.get('/close_questions', JobsController.close_questions)
+router.get('/fillIn_isJobRemote', JobsController.fillIn_isJobRemote)
+router.get('/fillIn_otherBenefits', JobsController.fillIn_otherBenefits)
 
 module.exports = router;

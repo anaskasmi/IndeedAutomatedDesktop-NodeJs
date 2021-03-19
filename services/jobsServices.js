@@ -581,7 +581,32 @@ JobsServices.closeJob = async(jobId) => {
 
 }
 
+JobsServices.fillIn_email = async(jobDetails_emails) => {
+    await this.page.waitForXPath(`//*[@name="communication-settings-email-input_primary"]`);
+    let [emailInput] = await this.page.$x(`//*[@name="communication-settings-email-input_primary"]`);
+    await emailInput.click({ clickCount: 3 });
+    await emailInput.press('Backspace');
+    await emailInput.type(jobDetails_emails)
 
+}
 
+JobsServices.close_questions = async() => {
+    await this.page.waitForXPath(`//*[@aria-label="Remove question"]`);
+    let xButtons = await this.page.$x(`//*[@aria-label="Remove question"]`);
+    for (const xButton of xButtons) {
+        await xButton.click();
+    }
+}
+
+JobsServices.fillIn_isJobRemote = async() => {
+    await this.page.waitForXPath(`//*[@for="radio-work_remotely-NO"]`);
+    let [noButton] = await this.page.$x(`//*[@for="radio-work_remotely-NO"]`);
+    await noButton.click();
+}
+JobsServices.fillIn_otherBenefits = async() => {
+    await this.page.waitForXPath(`//*[contains(text(),'Other')]`);
+    let otherButton = await this.page.$x(`//*[contains(text(),'Other')]`);
+    await otherButton[1].click();
+}
 
 module.exports = JobsServices;
