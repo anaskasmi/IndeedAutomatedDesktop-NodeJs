@@ -33,11 +33,11 @@ JobsServices.getNewBrowser = async() => {
             '--start-maximized',
             '--font-render-hinting=none',
             '--disable-gpu',
-            '--proxy-server=zproxy.lum-superproxy.io:22225',
+            '--proxy-server=' + process.env.PROXY_SERVER,
 
         ],
         // defaultViewport: null,
-        executablePath: 'C:/Users/Anas/AppData/Roaming/npm/node_modules/puppeteer/.local-chromium/win64-818858/chrome-win/chrome.exe'
+        executablePath: process.platform == "win32" ? process.env.CHROME_EXECUTABLE_PATH_WINDOWS : process.env.CHROME_EXECUTABLE_PATH_MAC
 
     });
     //when page created, set up the view port and the proxy 
@@ -45,8 +45,8 @@ JobsServices.getNewBrowser = async() => {
         if (target.type() === 'page') {
             const page = await target.page();
             await page.authenticate({
-                username: 'lum-customer-hl_2241b018-zone-residential',
-                password: '62gz3mhgm35h',
+                username: process.env.PROXY_USERNAME,
+                password: process.env.PROXY_PASSWORD,
             });
             await loadCookies(page);
         }
