@@ -402,77 +402,12 @@ JobsServices.fillIn_description = async(jobDescriptionHtml) => {
     //start filling the descritpion
     await this.page.waitForXPath(`//*[text()='Job Description']`);
 
+    await this.page.$eval('#JobDescription-editor-content', (el, jobDescriptionHtml) => { el.innerHTML = jobDescriptionHtml }, jobDescriptionHtml);
+
+    //type space to apply changements
     let [descriptionInput] = await this.page.$x(`//*[@id="JobDescription-editor-content"]`);
-    let [boldButton] = await this.page.$x(`//*[@id="JobDescription"]/div/div[1]/button[1]`);
-    let [unorderedListButton] = await this.page.$x(`//*[@id="JobDescription"]/div/div[1]/button[3]`);
-    let newUl;
-    let boldClickedXpath = `//*[@id="JobDescription"]/div/div[1]/button[1]`;
-    let isBoldClicked;
-    //type test and delete 
-    await descriptionInput.type("test");
-    await descriptionInput.click({ clickCount: 3 });
-    await descriptionInput.press('Backspace');
-    //start typing words
-    for (const word of descriptionArray) {
-        switch (word) {
-            case '<p>':
-                break;
-            case '</p>':
-                break;
-            case '<b>':
-                await boldButton.click();
-                [isBoldClicked] = await this.page.$x(boldClickedXpath);
-                if (!isBoldClicked) {
-                    console.log('NOOT bold retrying...')
-                    await descriptionInput.type("a");
-                    await descriptionInput.press('Backspace');
-                    await boldButton.click();
-                }
-                break;
-            case '</b>':
-                await boldButton.click();
-                [isBoldClicked] = await this.page.$x(boldClickedXpath);
-                if (isBoldClicked) {
-                    console.log('still bold retrying...')
-                    await descriptionInput.type("a");
-                    await descriptionInput.press('Backspace');
-                    await boldButton.click();
-                }
-                break;
-            case '<ul>':
-                newUl = true;
-                break;
-            case '</ul>':
-                await unorderedListButton.click();
-                break;
-            case '<li>':
-                break;
-            case '</li>':
-                if (newUl) {
-                    await unorderedListButton.click();
+    await descriptionInput.type(' ')
 
-                    await this.page.keyboard.down('ControlLeft');
-                    await this.page.keyboard.down('a');
-
-                    await this.page.keyboard.up('a');
-                    await this.page.keyboard.up('ControlLeft');
-
-                    await this.page.keyboard.press('ArrowRight');
-                    newUl = false;
-                }
-                break;
-            case "&amp;":
-                await descriptionInput.type("&");
-                break;
-            default:
-                if (word.trim() == '') {
-                    await this.page.keyboard.press('Enter');
-                } else {
-                    await descriptionInput.type(word);
-                }
-                break;
-        }
-    }
 }
 
 
@@ -602,6 +537,9 @@ JobsServices.fillIn_isJobRemote = async() => {
     await this.page.waitForXPath(`//*[@for="radio-work_remotely-NO"]`);
     let [noButton] = await this.page.$x(`//*[@for="radio-work_remotely-NO"]`);
     await noButton.click();
+    await this.page.waitForTimeout(200);
+    await noButton.click();
+
 }
 JobsServices.fillIn_otherBenefits = async() => {
     await this.page.waitForXPath(`//*[contains(text(),'Other')]`);
