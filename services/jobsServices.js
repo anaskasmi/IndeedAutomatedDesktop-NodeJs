@@ -438,18 +438,21 @@ JobsServices.click_advanced = async() => {
 }
 
 JobsServices.fillIn_adDurationType = async() => {
-    await this.page.waitForXPath(`//*[@id="jobDurationSelector"]`);
-    await this.page.select(`#jobDurationSelector`, "CUSTOM_END_DATE");
+    await this.page.waitForXPath(`//*[@name="jobDurationSelector"]`);
+    await this.page.select(`[name="jobDurationSelector"]`, "CUSTOM_END_DATE");
 }
 
 JobsServices.fillIn_adDurationDate = async() => {
+    let newEndDate = new Date(new Date().getTime() + (4 * 24 * 60 * 60 * 1000));
     //calculate EndDate (today's date + 4 days)
-    let newEndDate = Moment(Moment()).add(4, 'days');
+    let dd = newEndDate.getDate();
+    let mm = newEndDate.getMonth() + 1;
+    let y = newEndDate.getFullYear();
+    newEndDate = mm + '/' + dd + '/' + y;
+
+    // let newEndDate = Moment(Moment()).add(4, 'days');
     //change its Format
-    newEndDate = newEndDate.format('MM/DD/YYYY')
-        //select ad duration = custom end date
-    await this.page.select(`#jobDurationSelector`, "CUSTOM_END_DATE");
-    await this.page.waitForXPath(`//*[@id="endDateContainer-0"]/input`);
+    // newEndDate = newEndDate.format('MM/DD/YYYY')
     //fill in the input
     let [endDateInput] = await this.page.$x(`//*[@id="endDateContainer-0"]/input`);
     await endDateInput.click({ clickCount: 3 });
