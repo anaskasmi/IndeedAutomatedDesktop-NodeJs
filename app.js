@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 require('dotenv').config()
+const path = require('path')
 
 //models
 const jobsRouter = require('./routes/jobRoutes');
@@ -27,6 +28,11 @@ mongoose.connect(process.env.MONGO_STRING, { useNewUrlParser: true, useUnifiedTo
 
 //ROUTES
 app.use('/api/jobs', jobsRouter);
+app.use('/js', express.static(path.join(__dirname, "/public/dist/js/")));
+app.use('/css', express.static(path.join(__dirname, "/public/dist/css/")));
+app.get('*', function(req, res) {
+    res.sendFile('index.html', { root: path.join(__dirname, '/public/dist/') });
+});
 
 //LISTENING
 app.listen(3009);
