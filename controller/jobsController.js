@@ -391,6 +391,15 @@ JobsController.fillIn_otherBenefits = async(req, res) => {
         return res.status(500).json({ error: error.message });
     }
 }
+JobsController.fillIn_webSite = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        await JobsServices.fillIn_webSite();
+        return res.status(200).json({ "msg": "Filled Website Input successfully" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
 
 
 module.exports = JobsController;

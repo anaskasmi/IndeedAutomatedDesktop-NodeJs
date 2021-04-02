@@ -7,6 +7,7 @@ const { findRangeType } = require('../utilities/findRangeType');
 const { descriptionToArray } = require('../utilities/descriptionToArray');
 const { loadCookies } = require('../utilities/loadCookies');
 const Moment = require('moment');
+const axios = require('axios');
 
 const path = require('path');
 //models
@@ -34,7 +35,6 @@ JobsServices.getNewBrowser = async() => {
             '--font-render-hinting=none',
             '--disable-gpu',
             '--proxy-server=' + process.env.PROXY_SERVER,
-
         ],
         // defaultViewport: null,
         executablePath: process.platform == "win32" ? process.env.CHROME_EXECUTABLE_PATH_WINDOWS : process.env.CHROME_EXECUTABLE_PATH_MAC
@@ -54,7 +54,7 @@ JobsServices.getNewBrowser = async() => {
 
     //get new page 
     this.page = await this.browser.newPage();
-    this.page.setDefaultTimeout(60 * 1000);
+    this.page.setDefaultTimeout(2 * 60 * 1000);
     this.page.on('response', async(response) => {
         if (response.url().includes('no-dupe-posting')) {
             this.page.waitForTimeout(3000);
@@ -103,7 +103,8 @@ JobsServices.getJobFullDetails = async(jobId) => {
             })
         }
     });
-    await this.page.goto(`https://employers.indeed.com/p#post-job/edit-job?id=${jobId}`, { waitUntil: 'networkidle0' });
+    await this.page.goto(`https://employers.indeed.com/p#post-job/edit-job?id=${jobId}`, { waitUntil: 'load' });
+    await this.page.waitForXPath(`//*[text()='Getting Started']`);
 
     //get missing details from the job page
     this.page.on('response', function getDetailsFromHomePage(response) {
@@ -116,15 +117,20 @@ JobsServices.getJobFullDetails = async(jobId) => {
             })
         }
     });
-    await this.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'networkidle0' });
+    await this.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'load' });
+    await this.page.waitForXPath(`//*[text()='Job Description']`);
+
     //second retry
     if (!unormalizedJobFromJobShowPage) {
         console.log('unormalizedJobFromJobShowPage not found retry...')
-        await this.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'networkidle0' });
+        await this.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'load' });
+        await this.page.waitForXPath(`//*[text()='Job Description']`);
     }
     if (!unormalizedJobFromJobEditPage) {
         console.log('unormalizedJobFromJobEditPage not found retrying ...')
-        await this.page.goto(`https://employers.indeed.com/p#post-job/edit-job?id=${jobId}`, { waitUntil: 'networkidle0' });
+        await this.page.goto(`https://employers.indeed.com/p#post-job/edit-job?id=${jobId}`, { waitUntil: 'load' });
+        await this.page.waitForXPath(`//*[text()='Getting Started']`);
+
     }
     //normalize job
     let normalizedJob = await normalizeFullDetailedJob(unormalizedJobFromJobEditPage, unormalizedJobFromJobShowPage);
@@ -201,27 +207,37 @@ JobsServices.unlockCompanyNameInput = async() => {
 
 JobsServices.fillIn_CompanyName = async(companyName) => {
     await this.page.waitForXPath(`//*[@id="input-company"]`);
+    await this.page.evaluate((companyName) => {
+        document.querySelector(`#input-company`).value = companyName;
+    }, companyName);
+
     let [JobCompanyNameInput] = await this.page.$x(`//*[@id="input-company"]`);
-    await JobCompanyNameInput.click({ clickCount: 3 });
-    await JobCompanyNameInput.press('Backspace');
-    await this.page.keyboard.type(companyName, { delay: 20 });
+    await JobCompanyNameInput.type(' ');
+    await this.page.waitForTimeout(1000);
+    await JobCompanyNameInput.press('Enter');
+
 }
 
 JobsServices.fillIn_JobTitle = async(jobTitle) => {
+
+    await this.page.waitForXPath(`//*[@id="JobTitle"]`);
     let [jobTitleInput] = await this.page.$x(`//*[@id="JobTitle"]`);
-    await jobTitleInput.click({ clickCount: 3 });
+    await jobTitleInput.type(' ');
     await jobTitleInput.press('Backspace');
-    await this.page.keyboard.type(jobTitle, { delay: 5 });
-    await this.page.keyboard.press('Enter');
+
+    await this.page.evaluate((jobTitle) => {
+        document.querySelector(`#JobTitle`).value = jobTitle;
+    }, jobTitle);
+
+    await jobTitleInput.press('Enter');
+
 }
 
 JobsServices.fillIn_JobCategory = async() => {
-    //todo:make sure this happens after filling the address
     //wait for 3 seconds to make sure that category exists 
     await this.page.waitForTimeout(3 * 1000);
-    let firstChoice = await this.page.$x(`//*[@name="jobOccupationOption"]`)
-    if (firstChoice.length) {
-        firstChoice = firstChoice[1];
+    let [firstChoice] = await this.page.$x(`//*[@name="jobOccupationOption"]/label`)
+    if (firstChoice) {
         await firstChoice.click();
     }
 }
@@ -240,17 +256,16 @@ JobsServices.fillIn_RolesLocation = async(location) => {
     await hideExactLocation.click();
     //fill in the city 
     await this.page.waitForXPath(`//*[@id="precise-address-city-input"]`);
-    let [cityInput] = await this.page.$x(`//*[@id="precise-address-city-input"]`);
-    await cityInput.click({ clickCount: 3 });
-    await cityInput.press('Backspace');
-    await this.page.waitForTimeout(1000)
-    await cityInput.click({ clickCount: 3 });
-    await cityInput.press('Backspace');
+    await this.page.evaluate((city) => {
+        document.querySelector(`#precise-address-city-input`).value = city;
+    }, city);
 
-    await this.page.keyboard.type(city, { delay: 20 });
+    let [cityInput] = await this.page.$x(`//*[@id="precise-address-city-input"]`);
+    await cityInput.type(' ');
+    await cityInput.press('Backspace');
 
     // fill in the state
-    await this.page.select('#precise-address-state-input', state)
+    await this.page.select('[name="region"]', state)
 
     //wait for Advertising location to apply 
     await this.page.waitForTimeout(3 * 1000);
@@ -332,7 +347,7 @@ JobsServices.fillIn_paymentType = async(jobDetails_salaryRangeType, jobDetails_S
     if (jobDetails_salaryRangeType) {
         let [jobSalaryRangeType] = await this.page.$x(`//*[@id="JobSalaryRangeType"]`);
         if (jobSalaryRangeType) {
-            await this.page.select(`#JobSalaryRangeType`, jobDetails_salaryRangeType)
+            await this.page.select(`[name="jobsalaryrangetype"]`, jobDetails_salaryRangeType)
             return true;
         }
     } else if (jobDetails_SalaryFrom && jobDetails_SalaryTo) {
@@ -364,7 +379,6 @@ JobsServices.fillIn_paymentFrom = async(jobDetails_SalaryFrom) => {
 
 JobsServices.fillIn_paymentTo = async(jobDetails_SalaryTo, jobDetails_salaryRangeType) => {
     let jobSalaryInput;
-
     if (jobDetails_salaryRangeType == 'UP_TO') {
         [jobSalaryInput] = await this.page.$x(`//*[@id="ipl-ComboBox-JobSalary1"]`);
     } else {
@@ -388,7 +402,7 @@ JobsServices.fillIn_paymentTo = async(jobDetails_SalaryTo, jobDetails_salaryRang
 JobsServices.fillIn_paymentPer = async(jobDetails_SalaryPer) => {
     let [jobSalaryPeriod] = await this.page.$x(`//*[@id="JobSalaryPeriod"]`);
     if (jobSalaryPeriod && jobDetails_SalaryPer) {
-        await this.page.select(`#JobSalaryPeriod`, jobDetails_SalaryPer)
+        await this.page.select(`[name="jobsalaryperiod"]`, jobDetails_SalaryPer)
         return true;
     } else {
         return false;
@@ -443,21 +457,23 @@ JobsServices.fillIn_adDurationType = async() => {
 }
 
 JobsServices.fillIn_adDurationDate = async() => {
-    let newEndDate = new Date(new Date().getTime() + (4 * 24 * 60 * 60 * 1000));
-    //calculate EndDate (today's date + 4 days)
-    let dd = newEndDate.getDate();
-    let mm = newEndDate.getMonth() + 1;
-    let y = newEndDate.getFullYear();
-    newEndDate = mm + '/' + dd + '/' + y;
+    let response = await axios.get(`http://worldclockapi.com/api/json/est/now`)
+    console.log('tdays date : ' + response.data.currentDateTime);
 
-    // let newEndDate = Moment(Moment()).add(4, 'days');
-    //change its Format
-    // newEndDate = newEndDate.format('MM/DD/YYYY')
+    //generate new date after 4 days
+    let newEndDate = Moment(response.data.currentDateTime).add(4, 'days');
+    console.log('newEndDate + 4 : ' + newEndDate);
+
+    // change its Format
+    newEndDate = newEndDate.format('MM/DD/YYYY');
+    console.log('newEndDate + format : ' + newEndDate);
+
     //fill in the input
     let [endDateInput] = await this.page.$x(`//*[@id="endDateContainer-0"]/input`);
     await endDateInput.click({ clickCount: 3 });
     await endDateInput.press('Backspace');
     await endDateInput.type(newEndDate)
+
 }
 
 JobsServices.fillIn_CPC = async(budget_maxCPC) => {
@@ -467,6 +483,16 @@ JobsServices.fillIn_CPC = async(budget_maxCPC) => {
         await maxCPC.click({ clickCount: 3 });
         await maxCPC.press('Backspace');
         await maxCPC.type(budget_maxCPC);
+    }
+}
+
+JobsServices.fillIn_webSite = async() => {
+    await this.page.waitForXPath(`//*[@name="CO_WEBSITE"]`);
+    let [websiteInput] = await this.page.$x(`//*[@name="CO_WEBSITE"]`);
+    if (websiteInput) {
+        await websiteInput.click({ clickCount: 3 });
+        await websiteInput.press('Backspace');
+        await websiteInput.type('https://jobs.crelate.com/portal/misenplace');
     }
 }
 
@@ -522,10 +548,12 @@ JobsServices.closeJob = async(jobId) => {
 JobsServices.fillIn_email = async(jobDetails_emails) => {
     await this.page.waitForXPath(`//*[@name="communication-settings-email-input_primary"]`);
     let [emailInput] = await this.page.$x(`//*[@name="communication-settings-email-input_primary"]`);
-    await emailInput.click({ clickCount: 3 });
+    await emailInput.type(' ');
     await emailInput.press('Backspace');
-    await emailInput.type(jobDetails_emails)
-
+    await this.page.evaluate((jobDetails_emails) => {
+        document.querySelector(`[name="communication-settings-email-input_primary"]`).value = jobDetails_emails;
+    }, jobDetails_emails);
+    await emailInput.press('Enter');
 }
 
 JobsServices.close_questions = async() => {
