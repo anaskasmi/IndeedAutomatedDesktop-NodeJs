@@ -362,6 +362,88 @@ JobsServices.fillIn_paymentType = async(jobDetails_salaryRangeType, jobDetails_S
     }
 }
 
+
+
+JobsServices.fillIn_salaryFromAndTo = async(jobDetails_SalaryFrom, jobDetails_SalaryTo, jobDetails_salaryRangeType) => {
+    let jobSalary1, jobSalary2;
+    switch (jobDetails_salaryRangeType) {
+        case 'UP_TO':
+            //fill in salary 1 with jobDetails_SalaryTo
+            [jobSalary1] = await this.page.$x(`//*[@id="ipl-ComboBox-JobSalary1"]`);
+            if (jobDetails_SalaryTo) {
+                await jobSalary1.click({ clickCount: 3 });
+                await jobSalary1.press('Backspace');
+                await jobSalary1.type(jobDetails_SalaryTo)
+                return true;
+            } else {
+                await jobSalary1.click({ clickCount: 3 });
+                await jobSalary1.press('Backspace');
+                return true;
+            }
+            break;
+        case 'STARTING_AT':
+            //fill in salary 1 with jobDetails_SalaryFrom
+            [jobSalary1] = await this.page.$x(`//*[@id="ipl-ComboBox-JobSalary1"]`);
+            if (jobDetails_SalaryFrom) {
+                await jobSalary1.click({ clickCount: 3 });
+                await jobSalary1.press('Backspace');
+                await jobSalary1.type(jobDetails_SalaryFrom)
+                return true;
+            } else {
+                await jobSalary1.click({ clickCount: 3 });
+                await jobSalary1.press('Backspace');
+                return true;
+            }
+            break;
+
+        case 'EXACT_RATE':
+            //fill in salary 1 with jobDetails_SalaryFrom
+            [jobSalary1] = await this.page.$x(`//*[@id="ipl-ComboBox-JobSalary1"]`);
+            if (jobDetails_SalaryFrom) {
+                await jobSalary1.click({ clickCount: 3 });
+                await jobSalary1.press('Backspace');
+                await jobSalary1.type(jobDetails_SalaryFrom)
+                return true;
+            } else {
+                await jobSalary1.click({ clickCount: 3 });
+                await jobSalary1.press('Backspace');
+                return true;
+            }
+            break;
+        case 'RANGE':
+            //fill in salary 1 with jobDetails_SalaryFrom and fill in salary 2 with jobDetails_SalaryTo
+            [jobSalary1] = await this.page.$x(`//*[@id="ipl-ComboBox-JobSalary1"]`);
+            [jobSalary2] = await this.page.$x(`//*[@id="ipl-ComboBox-JobSalary2"]`);
+            if (jobDetails_SalaryFrom) {
+                await jobSalary1.click({ clickCount: 3 });
+                await jobSalary1.press('Backspace');
+                await jobSalary1.type(jobDetails_SalaryFrom)
+            } else {
+                await jobSalary1.click({ clickCount: 3 });
+                await jobSalary1.press('Backspace');
+            }
+            if (jobDetails_SalaryTo) {
+                await jobSalary2.click({ clickCount: 3 });
+                await jobSalary2.press('Backspace');
+                await jobSalary2.type(jobDetails_SalaryTo)
+            } else {
+                await jobSalary2.click({ clickCount: 3 });
+                await jobSalary2.press('Backspace');
+            }
+            return true;
+
+            break;
+
+        default:
+            break;
+
+
+    }
+
+    return true;
+
+}
+
 JobsServices.fillIn_paymentFrom = async(jobDetails_SalaryFrom) => {
     let [jobSalary1] = await this.page.$x(`//*[@id="ipl-ComboBox-JobSalary1"]`);
     if (jobSalary1 && jobDetails_SalaryFrom) {

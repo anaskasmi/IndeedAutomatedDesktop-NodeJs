@@ -232,6 +232,15 @@ JobsController.fillIn_paymentTo = async(req, res) => {
         return res.status(500).json({ error: error.message });
     }
 }
+JobsController.fillIn_salaryFromAndTo = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        await JobsServices.fillIn_salaryFromAndTo(req.body.jobDetails_SalaryFrom, req.body.jobDetails_SalaryTo, req.body.jobDetails_salaryRangeType);
+        return res.status(200).json({ "msg": "payment salary, filled in successfully" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
 
 JobsController.fillIn_paymentPer = async(req, res) => {
     req.setTimeout(0);
