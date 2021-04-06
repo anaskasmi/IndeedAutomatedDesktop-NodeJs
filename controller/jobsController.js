@@ -117,6 +117,15 @@ JobsController.fillIn_JobCategory = async(req, res) => {
         return res.status(500).json({ error: error.message });
     }
 }
+JobsController.fillIn_industry = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        await JobsServices.fillIn_industry();
+        return res.status(200).json({ "msg": "Industry filled In successfully" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
 
 JobsController.fillIn_RolesLocation = async(req, res) => {
     req.setTimeout(0);

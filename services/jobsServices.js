@@ -206,30 +206,48 @@ JobsServices.unlockCompanyNameInput = async() => {
 }
 
 JobsServices.fillIn_CompanyName = async(companyName) => {
-    await this.page.waitForXPath(`//*[@id="input-company"]`);
-    await this.page.evaluate((companyName) => {
-        document.querySelector(`#input-company`).value = companyName;
-    }, companyName);
 
+    await this.page.waitForXPath(`//*[@id="input-company"]`);
     let [JobCompanyNameInput] = await this.page.$x(`//*[@id="input-company"]`);
-    await JobCompanyNameInput.type(' ');
-    await this.page.waitForTimeout(1000);
-    await JobCompanyNameInput.press('Enter');
+
+    if (process.env.TYPING_METHODE == "keyboard") {
+        await JobCompanyNameInput.click({ clickCount: 3 });
+        await JobCompanyNameInput.press('Backspace');
+        await JobCompanyNameInput.type(companyName);
+    } else {
+        await this.page.evaluate((companyName) => {
+            document.querySelector(`#input-company`).value = companyName;
+        }, companyName);
+        await this.page.evaluate((companyName) => {
+            document.querySelector(`#input-company`).value = companyName;
+        }, companyName);
+        await JobCompanyNameInput.type(' ');
+        await this.page.waitForTimeout(1000);
+        await JobCompanyNameInput.press('Enter');
+    }
+
 
 }
 
 JobsServices.fillIn_JobTitle = async(jobTitle) => {
-
     await this.page.waitForXPath(`//*[@id="JobTitle"]`);
     let [jobTitleInput] = await this.page.$x(`//*[@id="JobTitle"]`);
-    await jobTitleInput.type(' ');
-    await jobTitleInput.press('Backspace');
+    //writing using the keyboard methode
+    if (process.env.TYPING_METHODE == "keyboard") {
+        await jobTitleInput.click({ clickCount: 3 });
+        await jobTitleInput.press('Backspace');
+        await jobTitleInput.type(jobTitle);
+    }
+    //writing using binding methode
+    else {
+        await jobTitleInput.type(' ');
+        await jobTitleInput.press('Backspace');
+        await this.page.evaluate((jobTitle) => {
+            document.querySelector(`#JobTitle`).value = jobTitle;
+        }, jobTitle);
+        await jobTitleInput.press('Enter');
+    }
 
-    await this.page.evaluate((jobTitle) => {
-        document.querySelector(`#JobTitle`).value = jobTitle;
-    }, jobTitle);
-
-    await jobTitleInput.press('Enter');
 
 }
 
@@ -239,6 +257,18 @@ JobsServices.fillIn_JobCategory = async() => {
     let [firstChoice] = await this.page.$x(`//*[@name="jobOccupationOption"]/label`)
     if (firstChoice) {
         await firstChoice.click();
+    }
+}
+
+JobsServices.fillIn_industry = async() => {
+    //wait for 3 seconds to make sure that the industry input exists 
+    await this.page.waitForTimeout(3 * 1000);
+    let [select] = await this.page.$x(`//*[@advertisercompanymetadataindustry]`)
+    if (select) {
+        await select.click();
+        await this.page.waitForTimeout(1 * 1000);
+        let [RestaurantsOption] = await this.page.$x(`//*[contains(@label,"Restaurants & Food")]`)
+        await RestaurantsOption.click();
     }
 }
 
@@ -256,13 +286,19 @@ JobsServices.fillIn_RolesLocation = async(location) => {
     await hideExactLocation.click();
     //fill in the city 
     await this.page.waitForXPath(`//*[@id="precise-address-city-input"]`);
-    await this.page.evaluate((city) => {
-        document.querySelector(`#precise-address-city-input`).value = city;
-    }, city);
-
     let [cityInput] = await this.page.$x(`//*[@id="precise-address-city-input"]`);
-    await cityInput.type(' ');
-    await cityInput.press('Backspace');
+
+    if (process.env.TYPING_METHODE == "keyboard") {
+        await cityInput.click({ clickCount: 3 });
+        await cityInput.press("Backspace");
+        await cityInput.type(city);
+    } else {
+        await this.page.evaluate((city) => {
+            document.querySelector(`#precise-address-city-input`).value = city;
+        }, city);
+        await cityInput.type(' ');
+        await cityInput.press('Backspace');
+    }
 
     // fill in the state
     await this.page.select('[name="region"]', state)
@@ -459,6 +495,7 @@ JobsServices.fillIn_paymentFrom = async(jobDetails_SalaryFrom) => {
     }
 }
 
+
 JobsServices.fillIn_paymentTo = async(jobDetails_SalaryTo, jobDetails_salaryRangeType) => {
     let jobSalaryInput;
     if (jobDetails_salaryRangeType == 'UP_TO') {
@@ -493,7 +530,7 @@ JobsServices.fillIn_paymentPer = async(jobDetails_SalaryPer) => {
 
 JobsServices.fillIn_description = async(jobDescriptionHtml) => {
     // split description to array 
-    let descriptionArray = descriptionToArray(jobDescriptionHtml);
+    // let descriptionArray = descriptionToArray(jobDescriptionHtml);
 
     //start filling the descritpion
     await this.page.waitForXPath(`//*[text()='Job Description']`);
@@ -508,13 +545,6 @@ JobsServices.fillIn_description = async(jobDescriptionHtml) => {
 
 
 JobsServices.fillIn_isResumeRequired = async() => {
-    // if (resumeRequirement != "REQUIRED") {
-    //     await this.page.waitForXPath(`//*[@id="radio-applicationemailresumerequirement-OPTIONAL"]`);
-    //     let [resumeOptionalButton] = await this.page.$x(`//*[@id="radio-applicationemailresumerequirement-OPTIONAL"]`);
-    //     await resumeOptionalButton.click();
-    // } else {
-
-    // }
     await this.page.waitForXPath(`//*[@id="radio-applicationemailresumerequirement-REQUIRED"]`);
     let [resumeRequiredButton] = await this.page.$x(`//*[@id="radio-applicationemailresumerequirement-REQUIRED"]`);
     await resumeRequiredButton.click();
@@ -630,12 +660,22 @@ JobsServices.closeJob = async(jobId) => {
 JobsServices.fillIn_email = async(jobDetails_emails) => {
     await this.page.waitForXPath(`//*[@name="communication-settings-email-input_primary"]`);
     let [emailInput] = await this.page.$x(`//*[@name="communication-settings-email-input_primary"]`);
-    await emailInput.type(' ');
-    await emailInput.press('Backspace');
-    await this.page.evaluate((jobDetails_emails) => {
-        document.querySelector(`[name="communication-settings-email-input_primary"]`).value = jobDetails_emails;
-    }, jobDetails_emails);
-    await emailInput.press('Enter');
+    if (process.env.TYPING_METHODE == "keyboard") {
+        await emailInput.click({ clickCount: 3 });
+        await emailInput.press('Backspace');
+        await emailInput.type(jobDetails_emails);
+    } else {
+        await emailInput.type(' ');
+        await emailInput.press('Backspace');
+        await this.page.evaluate((jobDetails_emails) => {
+            document.querySelector(`[name="communication-settings-email-input_primary"]`).value = jobDetails_emails;
+        }, jobDetails_emails);
+        await this.page.evaluate((jobDetails_emails) => {
+            document.querySelector(`[name="communication-settings-email-input_primary"]`).value = jobDetails_emails;
+        }, jobDetails_emails);
+        await emailInput.press('Enter');
+    }
+
 }
 
 JobsServices.close_questions = async() => {

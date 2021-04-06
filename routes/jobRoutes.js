@@ -47,5 +47,6 @@ router.get('/fillIn_isJobRemote', JobsController.fillIn_isJobRemote)
 router.get('/fillIn_otherBenefits', JobsController.fillIn_otherBenefits)
 router.get('/fillIn_webSite', JobsController.fillIn_webSite)
 router.post('/fillIn_salaryFromAndTo', JobsController.fillIn_salaryFromAndTo)
+router.get('/fillIn_industry', JobsController.fillIn_industry)
 
 module.exports = router;
