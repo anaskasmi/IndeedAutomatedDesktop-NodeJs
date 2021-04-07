@@ -582,9 +582,13 @@ JobsServices.fillIn_adDurationDate = async() => {
 
     //fill in the input
     let [endDateInput] = await this.page.$x(`//*[@id="endDateContainer-0"]/input`);
-    await endDateInput.click({ clickCount: 3 });
-    await endDateInput.press('Backspace');
-    await endDateInput.type(newEndDate)
+    // await endDateInput.click({ clickCount: 3 });
+    // await endDateInput.press('Backspace');
+    // await endDateInput.type(newEndDate)
+
+    await this.page.evaluate((newEndDate) => {
+        document.querySelector(`[id="endDateContainer-0">input[type=text]]`).value = newEndDate;
+    }, newEndDate);
 
 }
 
