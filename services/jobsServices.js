@@ -233,20 +233,9 @@ JobsServices.fillIn_JobTitle = async(jobTitle) => {
     await this.page.waitForXPath(`//*[@id="JobTitle"]`);
     let [jobTitleInput] = await this.page.$x(`//*[@id="JobTitle"]`);
     //writing using the keyboard methode
-    if (process.env.TYPING_METHODE == "keyboard") {
-        await jobTitleInput.click({ clickCount: 3 });
-        await jobTitleInput.press('Backspace');
-        await jobTitleInput.type(jobTitle);
-    }
-    //writing using binding methode
-    else {
-        await jobTitleInput.type(' ');
-        await jobTitleInput.press('Backspace');
-        await this.page.evaluate((jobTitle) => {
-            document.querySelector(`#JobTitle`).value = jobTitle;
-        }, jobTitle);
-        await jobTitleInput.press('Enter');
-    }
+    await jobTitleInput.click({ clickCount: 3 });
+    await jobTitleInput.press('Backspace');
+    await jobTitleInput.type(jobTitle);
 
 
 }
