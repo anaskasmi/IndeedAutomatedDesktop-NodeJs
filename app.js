@@ -22,7 +22,12 @@ app.use((req, res, next) => {
     next();
 });
 //MONGO DB
-mongoose.connect(process.env.MONGO_STRING, { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true }, () => {
+mongoose.connect(process.env.MONGO_STRING, {
+    useFindAndModify: true,
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useCreateIndex: true
+}, () => {
     console.log('connected to mongo db')
 })
 

@@ -2,6 +2,7 @@
 const express = require('express');
 //controllers
 const JobsController = require('../controller/JobsController');
+const UpdateJobController = require('../controller/UpdateJobController');
 //config
 const router = express.Router();
 
@@ -14,6 +15,9 @@ router.get('/getNewBrowser', JobsController.getNewBrowser)
 router.get('/scrapAllJobs', JobsController.scrapAllJobs)
 router.get('/getAllJobsFromDb', JobsController.getAllJobsFromDb)
 router.post('/getJobFullDetails', JobsController.getJobFullDetails)
+
+//update job
+router.post('/updateJob', UpdateJobController.updateJob)
 
 //reposting routes
 router.get('/openPostJobPage', JobsController.openPostJobPage)

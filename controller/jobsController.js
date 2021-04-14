@@ -3,6 +3,7 @@ require('dotenv').config();
 
 //services
 const JobsServices = require('../services/jobsServices');
+const BrowserService = require('../services/BrowserService');
 
 
 let JobsController = {};
@@ -10,7 +11,7 @@ let JobsController = {};
 JobsController.getNewBrowser = async function(req, res) {
     try {
 
-        await JobsServices.getNewBrowser();
+        await BrowserService.getNewBrowser();
         return res.status(200).json({ 'msg': "opened successfully" });
     } catch (error) {
         return res.status(500).json({ error: error });
