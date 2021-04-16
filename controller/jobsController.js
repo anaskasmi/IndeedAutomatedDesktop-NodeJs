@@ -14,6 +14,7 @@ JobsController.getNewBrowser = async function(req, res) {
         await BrowserService.getNewBrowser();
         return res.status(200).json({ 'msg': "opened successfully" });
     } catch (error) {
+        console.log(error)
         return res.status(500).json({ error: error });
 
     }

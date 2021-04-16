@@ -9,7 +9,8 @@ const router = express.Router();
 
 
 //login routes
-router.get('/getNewBrowser', JobsController.getNewBrowser)
+router.get('/getNewBrowserForRepost', JobsController.getNewBrowser)
+router.get('/getNewBrowserForUpdate', UpdateJobController.getNewBrowser)
 
 //scrap data routes
 router.get('/scrapAllJobs', JobsController.scrapAllJobs)

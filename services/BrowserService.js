@@ -5,7 +5,6 @@ const { loadCookies } = require('../utilities/loadCookies');
 
 
 
-
 let BrowserService = {
 
 }
@@ -21,6 +20,7 @@ BrowserService.closeBrowser = async function() {
 
 //get new browser and set up its params
 BrowserService.getNewBrowser = async function() {
+
     //allow only one browser and one page to be opened
     if (this.browser && (await this.browser.pages()).length > 0) {
         return;
@@ -56,6 +56,9 @@ BrowserService.getNewBrowser = async function() {
 
     //get new page 
     this.page = await this.browser.newPage();
+
+
+
     this.page.setDefaultTimeout(2 * 60 * 1000);
     this.page.on('response', async(response) => {
         if (response.url().includes('no-dupe-posting')) {
