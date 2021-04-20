@@ -36,6 +36,7 @@ const JobSchema = mongoose.Schema({
     jobTitle: { type: String },
     ////city,county
     displayLocation: [],
+    primaryJobLocation: { type: String },
     advertisingLocationType: { type: String },
 
     //gettingStarted end

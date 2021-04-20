@@ -612,6 +612,8 @@ JobsServices.fillIn_isJobRemote = async() => {
 JobsServices.fillIn_otherBenefits = async() => {
     await BrowserService.page.waitForXPath(`//*[contains(text(),'Other')]`);
     let otherButton = await BrowserService.page.$x(`//*[contains(text(),'Other')]`);
+    await otherButton[0].click();
+    await BrowserService.page.waitForTimeout(200);
     await otherButton[1].click();
 }
 

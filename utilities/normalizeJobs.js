@@ -17,6 +17,14 @@ module.exports.normalizeJobs = async(jobsArray) => {
             displayLocation: (unormalizedJob.jobLocations && unormalizedJob.jobLocations) ? unormalizedJob.jobLocations : [],
             applicationCount: (unormalizedJob.applicationCount) ? unormalizedJob.applicationCount : null,
         });
+        if (unormalizedJob.attributes) {
+            let primaryJobLocation = unormalizedJob.attributes.find(att => {
+                return att.key == "primaryJobLocation";
+            })
+            if (primaryJobLocation && primaryJobLocation.value) {
+                normalizedJob.primaryJobLocation = primaryJobLocation.value;
+            }
+        }
         normalizedJobs.push(normalizedJob);
     }
     return normalizedJobs;

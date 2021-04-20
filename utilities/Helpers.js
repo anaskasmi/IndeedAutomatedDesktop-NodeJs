@@ -74,4 +74,17 @@ Helpers.handleAdditionalDetailsPage = async() => {
     await Helpers.clickUpdateOrContinue();
 };
 
+
+Helpers.makeSureUrlIsGettingStarted = async() => {
+    //make sure you are in the right url
+    if (!(await BrowserService.page.url()).includes('getting-started')) {
+        console.log('this is Not the getting started page, Going to it ...')
+        await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/getting-started?id=${id}`, { waitUntil: 'load' });
+        await BrowserService.page.waitForTimeout(2000);
+    } else {
+        console.log('this is the getting started page, no need to refresh')
+    }
+
+};
+
 module.exports = Helpers;

@@ -25,11 +25,7 @@ UpdateJobController.getNewBrowser = async function(req, res) {
 UpdateJobController.updateJob = async(req, res) => {
     req.setTimeout(0);
     try {
-
-        console.log(req.body.id);
-
-        await UpdateJobService.openUpdatePage(req.body.id, req.body.jobTitle, req.body.location);
-
+        await UpdateJobService.setListeners();
         //update getting started 
         if (req.body.id || req.body.jobTitle || req.body.location) {
             await UpdateJobService.updateGettingStartedSection(req.body.id, req.body.jobTitle, req.body.location);

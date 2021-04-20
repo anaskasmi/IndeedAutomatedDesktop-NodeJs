@@ -61,19 +61,47 @@ BrowserService.getNewBrowser = async function() {
 
     this.page.setDefaultTimeout(2 * 60 * 1000);
     this.page.on('response', async(response) => {
-        if (response.url().includes('no-dupe-posting')) {
-            this.page.waitForTimeout(3000);
-            let [thiIsADifferentJob] = await this.page.$x(`//*[@for="next-step-radio--continue"]`);
-            if (thiIsADifferentJob) {
-                await thiIsADifferentJob.click()
-            }
-            let [continueButton] = await this.page.$x(`//*[@data-tn-element="sorepost-next-step-continue-continue"]`);
-            if (continueButton) {
-                await continueButton.click()
+        try {
+            if (response.url().includes('no-dupe-posting')) {
                 this.page.waitForTimeout(3000);
+                let [thiIsADifferentJob] = await this.page.$x(`//*[@for="next-step-radio--continue"]`);
+                if (thiIsADifferentJob) {
+                    await thiIsADifferentJob.click()
+                }
+                let [continueButton] = await this.page.$x(`//*[@data-tn-element="sorepost-next-step-continue-continue"]`);
+                if (continueButton) {
+                    await continueButton.click()
+                    this.page.waitForTimeout(3000);
+                }
+
             }
 
+
+            if (response.url().includes('did-you-hire-sheet')) {
+                {
+                    this.page.waitForTimeout(3000);
+                    let [noLabel] = await this.page.$x(`//*[@value="no"]/parent::label`);
+                    if (noLabel) {
+                        //click no
+                        await noLabel.click();
+                        //click continue
+                        let [continueButton] = await this.page.$x(`//*[text()='Continue']`);
+                        await continueButton.click();
+                        //click Other
+                        await this.page.waitForXPath(`//*[text()='Other']`)
+                        let [otherButton] = await this.page.$x(`//*[text()='Other']`);
+                        await otherButton.click();
+                        //click continue
+                        [continueButton] = await this.page.$x(`//*[text()='Continue']`);
+                        await continueButton.click();
+
+                    }
+                }
+            }
+        } catch (error) {
+            console.log('error catched on  event listener : ' + error)
         }
+
     });
     await this.page.goto('https://employers.indeed.com/');
 }

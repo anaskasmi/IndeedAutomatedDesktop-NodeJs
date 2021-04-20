@@ -6,8 +6,30 @@ let UpdateJobService = {};
 
 
 
-UpdateJobService.openUpdatePage = async(id) => {
-    await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/preview-job?id=${id}`, { waitUntil: 'load' });
+UpdateJobService.setListeners = async(id) => {
+
+    //add listeners
+    await BrowserService.page.on('response',
+        async function clickOtherOnCompensationDetailsPage(response) {
+            //compensation-details
+            if (response.url().includes('compensation-details')) {
+                await BrowserService.page.waitForTimeout(2000);
+
+                let unselectedCheckBoxes = await BrowserService.page.$x(`//*[text()='Selection is required']/parent::div/preceding-sibling::div/label/div[text()="Other"]`);
+                unselectedCheckBoxes.map(
+                    async el => {
+                        await el.click();
+                    }
+                );
+                (await BrowserService.page.$x(`//*[text()='Update']`)).click();
+                await BrowserService.page.removeListener('response', clickOtherOnCompensationDetailsPage);
+                await BrowserService.page.waitForTimeout(3000);
+            }
+        }
+    );
+
+
+
 }
 
 UpdateJobService.updateGettingStartedSection = async(id, jobTitle, location) => {
@@ -15,10 +37,13 @@ UpdateJobService.updateGettingStartedSection = async(id, jobTitle, location) => 
     if (!jobTitle && !location.city && !location.state) {
         return;
     }
+    await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/preview-job?id=${id}`, { waitUntil: 'load' });
 
     //visite the getting started page
-    await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/getting-started?id=${id}`, { waitUntil: 'load' });
-    await BrowserService.page.waitForTimeout(2000);
+    await BrowserService.page.waitForXPath(`//*[@data-tn-element="locationEditLink"]`);
+    let [gettingStartedLink] = await BrowserService.page.$x(`//*[@data-tn-element="locationEditLink"]`);
+    await gettingStartedLink.click();
+    await BrowserService.page.waitForXPath(`//*[@data-test-id="sheet-title"]`);
 
     //update title
     if (jobTitle) {
@@ -32,22 +57,17 @@ UpdateJobService.updateGettingStartedSection = async(id, jobTitle, location) => 
         //type the job title
         await BrowserService.page.keyboard.type(jobTitle)
         await BrowserService.page.waitForTimeout(2000);
-
-
-        //add listeners
-        // await BrowserService.page.on('response', Helpers.gettingStartedListeners);
-
-
-
     }
+
 
     //update location
     if (location && location.city && location.state) {
+        await Helpers.makeSureUrlIsGettingStarted();
 
         //click one location option
         await BrowserService.page.waitForXPath(`//*[@id="roleLocationTypeRadiosOneLocation"]/following-sibling::div`);
         let [oneLocation] = await BrowserService.page.$x(`//*[@id="roleLocationTypeRadiosOneLocation"]/following-sibling::div`);
-        await oneLocation.click({ clickCount: 2 });
+        await oneLocation.click();
 
         //click don't include street option 
         await BrowserService.page.waitForXPath(`//*[@id="ecl-RadioItem-label-HideExactLocation"]`);
@@ -86,18 +106,35 @@ UpdateJobService.updateGettingStartedSection = async(id, jobTitle, location) => 
     await BrowserService.page.waitForXPath(`//*[@data-tn-element="sheet-next-button"]`);
     let [updateButton] = await BrowserService.page.$x(`//*[@data-tn-element="sheet-next-button"]`);
     await updateButton.click();
+    await BrowserService.page.waitForTimeout(6 * 1000);
 
-    await BrowserService.page.waitForXPath(`//*[contains(text(),'View Preview')]`);
-    //click confirm 
-    await Helpers.clickConfirm();
+    try {
+
+        //deal with additional details page
+        let [additionalJobDetailsPageExist] = await BrowserService.page.$x(`//*[@for="CO_FBOOK_PAGE"]`)
+        if (additionalJobDetailsPageExist) {
+            await Helpers.clickConfirm();
+            await BrowserService.page.waitForTimeout(3 * 1000);
+        }
+        //click confirm 
+        await Helpers.clickConfirm();
+        await BrowserService.page.waitForTimeout(3 * 1000);
+    } catch (error) {
+        console.log('error : confirm not found, after updating the getting started page')
+    }
+
 }
 
 UpdateJobService.updateDescriptionSection = async(id, description) => {
     await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/preview-job?id=${id}`, { waitUntil: 'load' });
-    await BrowserService.page.waitForXPath(`//*[@id="preview-container"]`);
 
-    await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/job-description`, { waitUntil: 'load' });
+    //visite the description  page
+    await BrowserService.page.waitForXPath(`//*[@data-tn-element="descriptionEditLink"]`);
+    let [descriptionLink] = await BrowserService.page.$x(`//*[@data-tn-element="descriptionEditLink"]`);
+    await descriptionLink.click();
     await BrowserService.page.waitForXPath(`//*[@id="JobDescription-editor-content"]`);
+
+    //fill in the description
     await BrowserService.page.$eval('#JobDescription-editor-content', (el, description) => { el.innerHTML = description }, description);
 
     //type space to apply changements
@@ -106,35 +143,18 @@ UpdateJobService.updateDescriptionSection = async(id, description) => {
 
     //click update button
     await Helpers.clickUpdateOrContinue();
-
-    //validation
     await BrowserService.page.waitForTimeout(3 * 1000);
-    let [error] = await BrowserService.page.$x(`//*[@id="plugin_container_CoreFunnel_ValidationPanelContainer"]`);
-    if (error) {
-        //wait for 3 seconds to make sure that category exists 
-        let [firstChoice] = await BrowserService.page.$x(`//*[@name="jobOccupationOption"]/label`)
-        if (firstChoice) {
-            await firstChoice.click();
-        }
-        //click update button
-        await Helpers.clickUpdateOrContinue();
-
-
-    }
 
     //click confirm 
-    await Helpers.clickConfirm();
+    try {
+        await Helpers.clickConfirm();
+        await BrowserService.page.waitForTimeout(2 * 1000);
+    } catch (error) {
+        console.log('error : confirm not found, after updating the description')
+    }
 
 }
 
-
-UpdateJobService.updateApplicationSettingsSection = async(id) => {
-    // await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/preview-job?id=${id}`);
-    // await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/application-settings`);
-}
-UpdateJobService.updateJobDetailsSection = async(id) => {
-    // await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/job-details?id=${id}`);
-}
 
 UpdateJobService.updateSponsorJobSection = async(id, budget_amount, budget_maxCPC, budgetEndDate) => {
     //if no data was provided return 
@@ -142,10 +162,16 @@ UpdateJobService.updateSponsorJobSection = async(id, budget_amount, budget_maxCP
         return;
     }
 
-    await BrowserService.page.goto(`https://employers.indeed.com/p#sponsor?id=${id}&linksource=editjob`);
+
+    await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/preview-job?id=${id}`, { waitUntil: 'load' });
+
+    //visite the description  page
+    await BrowserService.page.waitForXPath(`//*[@data-tn-element="budgetEditLink"]`);
+    let [descriptionLink] = await BrowserService.page.$x(`//*[@data-tn-element="budgetEditLink"]`);
+    await descriptionLink.click();
+    await BrowserService.page.waitForXPath(`//*[@id="ADVANCED"]`);
 
     //click advanced
-    await BrowserService.page.waitForXPath(`//*[@id="ADVANCED"]`);
     let [budgetAdvancedButton] = await BrowserService.page.$x(`//*[@id="ADVANCED"]`);
     await budgetAdvancedButton.click();
 
@@ -194,10 +220,16 @@ UpdateJobService.updateSponsorJobSection = async(id, budget_amount, budget_maxCP
     //click save and continue button
     await BrowserService.page.waitForXPath(`//*[text()='Save and continue']`);
     let [saveAndContinueButton] = await BrowserService.page.$x(`//*[text()='Save and continue']`);
-    await saveAndContinueButton.click({ clickCount: 2 });
+    await saveAndContinueButton.click();
+    await BrowserService.page.waitForTimeout(5 * 1000);
 
     //click confirm 
-    await Helpers.clickConfirm();
+    try {
+        await Helpers.clickConfirm();
+        await BrowserService.page.waitForTimeout(4 * 1000);
+    } catch (error) {
+        console.log('error : confirm not found, after updating the sponsor page')
+    }
 
 
 
