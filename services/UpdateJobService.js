@@ -52,9 +52,10 @@ UpdateJobService.updateGettingStartedSection = async(id, jobTitle, location) => 
         await BrowserService.page.waitForXPath(`//*[@class="highlightable icl-TextInput-control"]`);
         let [jobTitleInput] = await BrowserService.page.$x(`//*[@class="highlightable icl-TextInput-control"]`);
         //click the job title input
-        await jobTitleInput.click();
+        await jobTitleInput.click({ clickCount: 3 });
+        await jobTitleInput.press('Backspace');
         //clear input
-        await Helpers.clearInput();
+        // await Helpers.clearInput();
         //type the job title
         await BrowserService.page.keyboard.type(jobTitle)
         await BrowserService.page.waitForTimeout(2000);
