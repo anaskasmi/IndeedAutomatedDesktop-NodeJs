@@ -56,6 +56,8 @@ UpdateJobService.updateGettingStartedSection = async(id, jobTitle, location) => 
         for (let index = 0; index < 76; index++) {
             await jobTitleInput.press('Backspace');
         }
+
+
         //clear input
         // await Helpers.clearInput();
         //type the job title
@@ -232,6 +234,27 @@ UpdateJobService.updateSponsorJobSection = async(id, budget_amount, budget_maxCP
         await BrowserService.page.evaluate((budgetEndDate) => {
             document.querySelector(`[id^=endDateContainer] > input[type=text]`).value = budgetEndDate;
         }, budgetEndDate);
+
+
+        let [endDateInput] = await BrowserService.page.$x(`//*[@id="endDateContainer-0"]/input`);
+        await endDateInput.click({ clickCount: 3 });
+        for (let index = 0; index < 30; index++) {
+            await endDateInput.press('Backspace');
+        }
+        await BrowserService.page.keyboard.type(budgetEndDate)
+            //second time
+        for (let index = 0; index < 30; index++) {
+            await endDateInput.press('Backspace');
+        }
+        await BrowserService.page.keyboard.type(budgetEndDate)
+            //third time
+        for (let index = 0; index < 30; index++) {
+            await endDateInput.press('Backspace');
+        }
+        await BrowserService.page.keyboard.type(budgetEndDate)
+
+
+
     }
 
     //click save and continue button
