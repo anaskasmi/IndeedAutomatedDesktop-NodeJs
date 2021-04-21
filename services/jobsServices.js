@@ -203,10 +203,15 @@ JobsServices.fillIn_RolesLocation = async(location) => {
     await BrowserService.page.waitForXPath(`//*[@id="precise-address-city-input"]`);
     let [cityInput] = await BrowserService.page.$x(`//*[@id="precise-address-city-input"]`);
 
+    //type
     if (process.env.TYPING_METHODE == "keyboard") {
+        //delete
         await cityInput.click({ clickCount: 3 });
         await cityInput.press("Backspace");
-        await cityInput.type(city);
+        await BrowserService.page.waitForTimeout(2 * 1000);
+        await cityInput.click({ clickCount: 3 });
+        await cityInput.press("Backspace");
+        await cityInput.type(city + ', ' + state, { delay: 20 });
     } else {
         await BrowserService.page.evaluate((city) => {
             document.querySelector(`#precise-address-city-input`).value = city;
@@ -215,6 +220,9 @@ JobsServices.fillIn_RolesLocation = async(location) => {
         await cityInput.press('Backspace');
     }
 
+    await BrowserService.page.waitForTimeout(3000);
+    await BrowserService.page.keyboard.press('ArrowDown');
+    await BrowserService.page.keyboard.press('Enter');
     // fill in the state
     await BrowserService.page.select('[name="region"]', state)
 
@@ -484,11 +492,12 @@ JobsServices.fillIn_adDurationType = async() => {
 }
 
 JobsServices.fillIn_adDurationDate = async() => {
-    let response = await axios.get(`http://worldclockapi.com/api/json/est/now`)
-    console.log('tdays date : ' + response.data.currentDateTime);
+    // let response = await axios.get(`http://worldclockapi.com/api/json/est/now`)
+    // console.log('tdays date : ' + response.data.currentDateTime);
 
     //generate new date after 4 days
-    let newEndDate = Moment(response.data.currentDateTime).add(4, 'days');
+    // let newEndDate = Moment(response.data.currentDateTime).add(4, 'days');
+    let newEndDate = Moment(Moment()).add(4, 'days');
     console.log('newEndDate + 4 : ' + newEndDate);
 
     // change its Format
@@ -594,7 +603,8 @@ JobsServices.fillIn_email = async(jobDetails_emails) => {
 }
 
 JobsServices.close_questions = async() => {
-    await BrowserService.page.waitForXPath(`//*[@aria-label="Remove question"]`);
+    // await BrowserService.page.waitForXPath(`//*[@aria-label="Remove question"]`);
+    await BrowserService.page.waitForTimeout(2000);
     let xButtons = await BrowserService.page.$x(`//*[@aria-label="Remove question"]`);
     for (const xButton of xButtons) {
         await xButton.click();
@@ -610,11 +620,11 @@ JobsServices.fillIn_isJobRemote = async() => {
 
 }
 JobsServices.fillIn_otherBenefits = async() => {
-    await BrowserService.page.waitForXPath(`//*[contains(text(),'Other')]`);
-    let otherButton = await BrowserService.page.$x(`//*[contains(text(),'Other')]`);
-    await otherButton[0].click();
+    await BrowserService.page.waitForXPath(`//*[contains(text(),'None')]/parent::label`);
+    let noneButton = await BrowserService.page.$x(`//*[contains(text(),'None')]/parent::label`);
+    await noneButton[0].click();
     await BrowserService.page.waitForTimeout(200);
-    await otherButton[1].click();
+
 }
 
 module.exports = JobsServices;

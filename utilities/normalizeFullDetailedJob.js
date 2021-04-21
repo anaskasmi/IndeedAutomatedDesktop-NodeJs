@@ -23,6 +23,7 @@ module.exports.normalizeFullDetailedJob = async(unormalizedJobFromJobPage, unorm
         jobDetails_expectedHireDate: unormalizedJobFromJobPage.job.attributes.expectedHireDate ? unormalizedJobFromJobPage.job.attributes.expectedHireDate : null,
         jobDetails_roleLocationType: unormalizedJobFromJobPage.job.attributes.roleLocationType ? unormalizedJobFromJobPage.job.attributes.roleLocationType : null,
         jobDetails_type: unormalizedJobFromJobPage.job.type ? unormalizedJobFromJobPage.job.type : null,
+        primaryJobLocation: unormalizedJobFromJobPage.job.displayLocation ? unormalizedJobFromJobPage.job.displayLocation : null,
         //budget
         budget_outOfBudget: unormalizedJobFromJobPage.job.outOfBudget ? unormalizedJobFromJobPage.job.outOfBudget : null,
         // budget_amount: unormalizedJobFromJobPage.job.budget ? unormalizedJobFromJobPage.job.budget : null,

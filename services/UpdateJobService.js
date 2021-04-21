@@ -14,16 +14,17 @@ UpdateJobService.setListeners = async(id) => {
             //compensation-details
             if (response.url().includes('compensation-details')) {
                 await BrowserService.page.waitForTimeout(2000);
-
-                let unselectedCheckBoxes = await BrowserService.page.$x(`//*[text()='Selection is required']/parent::div/preceding-sibling::div/label/div[text()="Other"]`);
-                unselectedCheckBoxes.map(
-                    async el => {
-                        await el.click();
-                    }
-                );
-                (await BrowserService.page.$x(`//*[text()='Update']`)).click();
+                try {
+                    await BrowserService.page.waitForXPath(`//*[contains(text(),'None')]/parent::label`);
+                    let noneButton = await BrowserService.page.$x(`//*[contains(text(),'None')]/parent::label`);
+                    await noneButton[0].click();
+                    await BrowserService.page.waitForTimeout(200);
+                    await Helpers.clickConfirm()
+                } catch (error) {
+                    console.log('clickOtherOnCompensationDetailsPage : ' + error);
+                }
                 await BrowserService.page.removeListener('response', clickOtherOnCompensationDetailsPage);
-                await BrowserService.page.waitForTimeout(3000);
+
             }
         }
     );
