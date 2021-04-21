@@ -8,6 +8,7 @@ const path = require('path');
 //models
 const Job = require('./../models/Job')
 const BrowserService = require('./BrowserService');
+const Helpers = require('../utilities/Helpers');
 
 
 let JobsServices = {};
@@ -77,7 +78,7 @@ JobsServices.downloadCookies = async() => {
 }
 
 
-JobsServices.scrapAllJobs = async(totalPagesNumber = 3) => {
+JobsServices.scrapAllJobs = async(totalPagesNumber = 4) => {
     //delete old jobs
     await Job.deleteMany({});
 
@@ -584,21 +585,25 @@ JobsServices.closeJob = async(jobId) => {
 JobsServices.fillIn_email = async(jobDetails_emails) => {
     await BrowserService.page.waitForXPath(`//*[@name="communication-settings-email-input_primary"]`);
     let [emailInput] = await BrowserService.page.$x(`//*[@name="communication-settings-email-input_primary"]`);
-    if (process.env.TYPING_METHODE == "keyboard") {
-        await emailInput.click({ clickCount: 3 });
-        await emailInput.press('Backspace');
-        await emailInput.type(jobDetails_emails);
-    } else {
-        await emailInput.type(' ');
-        await emailInput.press('Backspace');
-        await BrowserService.page.evaluate((jobDetails_emails) => {
-            document.querySelector(`[name="communication-settings-email-input_primary"]`).value = jobDetails_emails;
-        }, jobDetails_emails);
-        await BrowserService.page.evaluate((jobDetails_emails) => {
-            document.querySelector(`[name="communication-settings-email-input_primary"]`).value = jobDetails_emails;
-        }, jobDetails_emails);
-        await emailInput.press('Enter');
-    }
+    await emailInput.click({ clickCount: 3 });
+    await emailInput.press('Backspace');
+    await Helpers.clearInput();
+    await emailInput.type(jobDetails_emails);
+    // if (process.env.TYPING_METHODE == "keyboard") {
+    //     await emailInput.click({ clickCount: 3 });
+    //     await emailInput.press('Backspace');
+    //     await emailInput.type(jobDetails_emails);
+    // } else {
+    //     await emailInput.type(' ');
+    //     await emailInput.press('Backspace');
+    //     await BrowserService.page.evaluate((jobDetails_emails) => {
+    //         document.querySelector(`[name="communication-settings-email-input_primary"]`).value = jobDetails_emails;
+    //     }, jobDetails_emails);
+    //     await BrowserService.page.evaluate((jobDetails_emails) => {
+    //         document.querySelector(`[name="communication-settings-email-input_primary"]`).value = jobDetails_emails;
+    //     }, jobDetails_emails);
+    //     await emailInput.press('Enter');
+    // }
 
 }
 

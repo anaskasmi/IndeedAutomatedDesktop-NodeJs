@@ -165,11 +165,24 @@ UpdateJobService.updateSponsorJobSection = async(id, budget_amount, budget_maxCP
 
 
     await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/preview-job?id=${id}`, { waitUntil: 'load' });
+    //wait for page to load
+    await BrowserService.page.waitForXPath(`//*[@data-tn-element="locationEditLink"]`);
 
-    //visite the description  page
-    await BrowserService.page.waitForXPath(`//*[@data-tn-element="budgetEditLink"]`);
-    let [descriptionLink] = await BrowserService.page.$x(`//*[@data-tn-element="budgetEditLink"]`);
-    await descriptionLink.click();
+
+    //go to the budget page
+
+
+    let [budgetEditLink] = await BrowserService.page.$x(`//*[@data-tn-element="budgetEditLink"]`);
+    let [createBudgetLink] = await BrowserService.page.$x(`//*[@id="edit-budget-in-preview"]`);
+    if (budgetEditLink) {
+        await budgetEditLink.click();
+    } else if (createBudgetLink) {
+        await createBudgetLink.click();
+    } else {
+        console.log('edit budget link not found');
+        throw 'Edit budget link not found!';
+    }
+
     await BrowserService.page.waitForXPath(`//*[@id="ADVANCED"]`);
 
     //click advanced
@@ -222,7 +235,7 @@ UpdateJobService.updateSponsorJobSection = async(id, budget_amount, budget_maxCP
     await BrowserService.page.waitForXPath(`//*[text()='Save and continue']`);
     let [saveAndContinueButton] = await BrowserService.page.$x(`//*[text()='Save and continue']`);
     await saveAndContinueButton.click();
-    await BrowserService.page.waitForTimeout(5 * 1000);
+    await BrowserService.page.waitForTimeout(7 * 1000);
 
     //click confirm 
     try {
