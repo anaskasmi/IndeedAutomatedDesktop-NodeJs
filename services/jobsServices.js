@@ -209,11 +209,22 @@ JobsServices.fillIn_RolesLocation = async(location) => {
         //delete
         await cityInput.click({ clickCount: 3 });
         await cityInput.press("Backspace");
-        await BrowserService.page.waitForTimeout(2 * 1000);
+        await cityInput.type(city + ', ' + state, { delay: 20 });
+
+        await BrowserService.page.waitForTimeout(3 * 1000);
         await cityInput.click({ clickCount: 3 });
         await cityInput.press("Backspace");
         await cityInput.type(city + ', ' + state, { delay: 20 });
     } else {
+        await cityInput.click({ clickCount: 3 });
+        await cityInput.press("Backspace");
+        await cityInput.type(city + ', ' + state, { delay: 20 });
+
+        await BrowserService.page.waitForTimeout(3 * 1000);
+        await cityInput.click({ clickCount: 3 });
+        await cityInput.press("Backspace");
+        await cityInput.type(city + ', ' + state, { delay: 20 });
+
         await BrowserService.page.evaluate((city) => {
             document.querySelector(`#precise-address-city-input`).value = city;
         }, city);
@@ -493,11 +504,8 @@ JobsServices.fillIn_adDurationType = async() => {
 }
 
 JobsServices.fillIn_adDurationDate = async() => {
-    // let response = await axios.get(`http://worldclockapi.com/api/json/est/now`)
-    // console.log('tdays date : ' + response.data.currentDateTime);
 
     //generate new date after 4 days
-    // let newEndDate = Moment(response.data.currentDateTime).add(4, 'days');
     let newEndDate = Moment(Moment()).add(4, 'days');
     console.log('newEndDate + 4 : ' + newEndDate);
 
@@ -506,10 +514,28 @@ JobsServices.fillIn_adDurationDate = async() => {
     console.log('newEndDate + format : ' + newEndDate);
 
     //fill in the input
-    // let [endDateInput] = await BrowserService.page.$x(`//*[@id="endDateContainer-0"]/input`);
+    let [endDateInput] = await BrowserService.page.$x(`//*[@id="endDateContainer-0"]/input`);
+    await endDateInput.click({ clickCount: 3 });
+    for (let index = 0; index < 30; index++) {
+        await endDateInput.press('Backspace');
+    }
+    await BrowserService.page.keyboard.type(newEndDate)
+        //second time
+    for (let index = 0; index < 30; index++) {
+        await endDateInput.press('Backspace');
+    }
+    await BrowserService.page.keyboard.type(newEndDate)
+        //third time
+    for (let index = 0; index < 30; index++) {
+        await endDateInput.press('Backspace');
+    }
+    await BrowserService.page.keyboard.type(newEndDate)
+
+    //fourth time
     await BrowserService.page.evaluate((newEndDate) => {
         document.querySelector(`#endDateContainer-0 > input[type=text]`).value = newEndDate;
     }, newEndDate);
+
 
 }
 
@@ -560,20 +586,27 @@ JobsServices.closeJob = async(jobId) => {
     let [closeJobOption] = await BrowserService.page.$x(`//*[contains(text(),'Close job')]`);
     await closeJobOption.click();
 
-    await BrowserService.page.waitForXPath(`//*[contains(text(),"I didn't hire anyone")]`);
-    let [IDidntHireChoice] = await BrowserService.page.$x(`//*[contains(text(),"I didn't hire anyone")]`)
-    await IDidntHireChoice.click();
+    // await BrowserService.page.waitForXPath(`//*[contains(text(),"I didn't hire anyone")]`);
+    // let [IDidntHireChoice] = await BrowserService.page.$x(`//*[contains(text(),"I didn't hire anyone")]`)
+    // await IDidntHireChoice.click();
 
 
-    await BrowserService.page.waitForXPath(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button`);
-    let [continueCloseButton] = await BrowserService.page.$x(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button`)
-    await continueCloseButton.click();
+    // await BrowserService.page.waitForXPath(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button`);
+    // let [continueCloseButton] = await BrowserService.page.$x(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button`)
+    // await continueCloseButton.click();
 
 
-    await BrowserService.page.waitForXPath(`//*[contains(text(),"Other")]`);
-    let other = await BrowserService.page.$x(`//*[contains(text(),"Other")]`)
-    other = other[1]
-    await other.click();
+    // await BrowserService.page.waitForXPath(`//*[contains(text(),"Other")]`);
+    // let other = await BrowserService.page.$x(`//*[contains(text(),"Other")]`)
+    // other = other[1]
+    // await other.click();
+
+
+
+    await BrowserService.page.waitForXPath(`//*[@data-tn-element="cancel-link"]`);
+    let [cancelLink] = await BrowserService.page.$x(`//*[@data-tn-element="cancel-link"]`)
+    await cancelLink.click();
+
 
     await BrowserService.page.waitForXPath(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button/span`);
     let [closeJobButton] = await BrowserService.page.$x(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button/span`)
