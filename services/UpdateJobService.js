@@ -236,7 +236,7 @@ UpdateJobService.updateSponsorJobSection = async(id, budget_amount, budget_maxCP
         }, budgetEndDate);
 
 
-        let [endDateInput] = await BrowserService.page.$x(`//*[@id="endDateContainer-0"]/input`);
+        let [endDateInput] = await BrowserService.page.$x(`//*[starts-with(@id,"endDateContainer")]/input`);
         await endDateInput.click({ clickCount: 3 });
         for (let index = 0; index < 30; index++) {
             await endDateInput.press('Backspace');

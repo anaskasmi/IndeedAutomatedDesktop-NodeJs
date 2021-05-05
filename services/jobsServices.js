@@ -91,13 +91,14 @@ JobsServices.scrapAllJobs = async(totalPagesNumber = 4) => {
                     for (const job of res.data.jobs) {
                         jobsArray.push(job);
                     }
-                    console.log(jobsArray.length)
+                    console.log('Total jobs found : ' + jobsArray.length + ' jobs')
                 }
             })
         }
     }
     BrowserService.page.on('response', getJobsFromReponse);
 
+    console.log('regrabing jobs from Indeed..')
     for (let currentPage = 1; currentPage <= totalPagesNumber; currentPage++) {
         console.log('page : ' + currentPage)
         await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?p=${currentPage}`);
@@ -205,32 +206,12 @@ JobsServices.fillIn_RolesLocation = async(location) => {
     let [cityInput] = await BrowserService.page.$x(`//*[@id="precise-address-city-input"]`);
 
     //type
-    if (process.env.TYPING_METHODE == "keyboard") {
-        //delete
-        await cityInput.click({ clickCount: 3 });
+    await cityInput.click();
+    for (let index = 0; index < 30; index++) {
         await cityInput.press("Backspace");
-        await cityInput.type(city + ', ' + state, { delay: 20 });
-
-        await BrowserService.page.waitForTimeout(3 * 1000);
-        await cityInput.click({ clickCount: 3 });
-        await cityInput.press("Backspace");
-        await cityInput.type(city + ', ' + state, { delay: 20 });
-    } else {
-        await cityInput.click({ clickCount: 3 });
-        await cityInput.press("Backspace");
-        await cityInput.type(city + ', ' + state, { delay: 20 });
-
-        await BrowserService.page.waitForTimeout(3 * 1000);
-        await cityInput.click({ clickCount: 3 });
-        await cityInput.press("Backspace");
-        await cityInput.type(city + ', ' + state, { delay: 20 });
-
-        await BrowserService.page.evaluate((city) => {
-            document.querySelector(`#precise-address-city-input`).value = city;
-        }, city);
-        await cityInput.type(' ');
-        await cityInput.press('Backspace');
     }
+    await cityInput.type(city + ', ' + state, { delay: 20 });
+
 
     await BrowserService.page.waitForTimeout(3000);
     await BrowserService.page.keyboard.press('ArrowDown');
@@ -573,9 +554,13 @@ JobsServices.fillIn_adBudget = async(budget_amount) => {
 }
 
 JobsServices.closeJob = async(jobId) => {
-    await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'networkidle0' });
+    await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'load' });
     await BrowserService.page.waitForTimeout(2000);
-    await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'networkidle0' });
+    if (!(await BrowserService.page.url()).includes('jobs/view?id=')) {
+        console.log('Closing job redirected.. trying again..')
+        await BrowserService.page.reload();
+        await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'load' });
+    }
 
 
     await BrowserService.page.waitForXPath(`//span[contains(text(),'Status')]`);
@@ -658,11 +643,10 @@ JobsServices.fillIn_isJobRemote = async() => {
 
 }
 JobsServices.fillIn_otherBenefits = async() => {
-    await BrowserService.page.waitForXPath(`//*[contains(text(),'None')]/parent::label`);
-    let noneButton = await BrowserService.page.$x(`//*[contains(text(),'None')]/parent::label`);
-    await noneButton[0].click();
-    await BrowserService.page.waitForTimeout(200);
-
+    // await BrowserService.page.waitForXPath(`//*[contains(text(),'None')]/parent::label`);
+    // let noneButton = await BrowserService.page.$x(`//*[contains(text(),'None')]/parent::label`);
+    // await noneButton[0].click();
+    // await BrowserService.page.waitForTimeout(200);
 }
 
 module.exports = JobsServices;

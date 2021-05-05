@@ -3,41 +3,36 @@ const express = require('express')
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-require('dotenv').config()
+const { connectToMongoDb } = require('./utilities/connectToMongoDb');
 const path = require('path')
+require('dotenv').config()
 
-//models
-const jobsRouter = require('./routes/jobRoutes');
+connectToMongoDb().then(() => {
 
-//config
-const app = express();
+    //models
+    const jobsRouter = require('./routes/jobRoutes');
 
-//middlewares
+    //config
+    const app = express();
 
-app.use(cors())
-app.use(bodyParser.json());
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Max-Age', 60 * 60 * 24 * 365);
-    next();
-});
-//MONGO DB
-mongoose.connect(process.env.MONGO_STRING, {
-    useFindAndModify: true,
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    useCreateIndex: true
-}, () => {
-    console.log('connected to mongo db')
+    //middlewares
+
+    app.use(cors())
+    app.use(bodyParser.json());
+    app.use((req, res, next) => {
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Max-Age', 60 * 60 * 24 * 365);
+        next();
+    });
+
+    //ROUTES
+    app.use('/api/jobs', jobsRouter);
+    app.use('/js', express.static(path.join(__dirname, "/public/dist/js/")));
+    app.use('/css', express.static(path.join(__dirname, "/public/dist/css/")));
+    app.get('*', function(req, res) {
+        res.sendFile('index.html', { root: path.join(__dirname, '/public/dist/') });
+    });
+
+    //LISTENING
+    app.listen(3009);
 })
-
-//ROUTES
-app.use('/api/jobs', jobsRouter);
-app.use('/js', express.static(path.join(__dirname, "/public/dist/js/")));
-app.use('/css', express.static(path.join(__dirname, "/public/dist/css/")));
-app.get('*', function(req, res) {
-    res.sendFile('index.html', { root: path.join(__dirname, '/public/dist/') });
-});
-
-//LISTENING
-app.listen(3009);

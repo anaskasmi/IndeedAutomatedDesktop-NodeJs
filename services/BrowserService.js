@@ -3,7 +3,14 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth')
 puppeteer.use(StealthPlugin());
 const { loadCookies } = require('../utilities/loadCookies');
 
-
+let args = [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-features=site-per-process',
+    '--start-maximized',
+    '--font-render-hinting=none',
+    '--disable-gpu',
+];
 
 let BrowserService = {
 
@@ -20,7 +27,9 @@ BrowserService.closeBrowser = async function() {
 
 //get new browser and set up its params
 BrowserService.getNewBrowser = async function() {
-
+    if (process.env.PROXY_ACTIVATED == 'true') {
+        args.push('--proxy-server=' + process.env.PROXY_SERVER);
+    }
     //allow only one browser and one page to be opened
     if (this.browser && (await this.browser.pages()).length > 0) {
         return;
@@ -29,35 +38,33 @@ BrowserService.getNewBrowser = async function() {
     // get new browser
     this.browser = await puppeteer.launch({
         headless: false,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-features=site-per-process',
-            '--start-maximized',
-            '--font-render-hinting=none',
-            '--disable-gpu',
-            '--proxy-server=' + process.env.PROXY_SERVER,
-        ],
+        args,
         // defaultViewport: null,
         executablePath: process.platform == "win32" ? process.env.CHROME_EXECUTABLE_PATH_WINDOWS : process.env.CHROME_EXECUTABLE_PATH_MAC
 
     });
+
     //when page created, set up the view port and the proxy 
     this.browser.on('targetcreated', async target => {
         if (target.type() === 'page') {
             const page = await target.page();
-            await page.authenticate({
-                username: process.env.PROXY_USERNAME,
-                password: process.env.PROXY_PASSWORD,
-            });
-            await loadCookies(page);
+            if (process.env.PROXY_ACTIVATED == 'true') {
+                console.log('Enabling USA proxy..')
+                await page.authenticate({
+                    username: process.env.PROXY_USERNAME,
+                    password: process.env.PROXY_PASSWORD,
+                });
+            }
+            try {
+                await loadCookies(page);
+            } catch (error) {
+                console.log('couldnt load cookies');
+            }
         }
-    })
+    });
 
     //get new page 
     this.page = await this.browser.newPage();
-
-
 
     this.page.setDefaultTimeout(2 * 60 * 1000);
     this.page.on('response', async(response) => {
