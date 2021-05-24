@@ -12,9 +12,7 @@ let args = [
     '--disable-gpu',
 ];
 
-let BrowserService = {
-
-}
+let BrowserService = {}
 
 
 BrowserService.closeBrowser = async function() {
@@ -69,19 +67,21 @@ BrowserService.getNewBrowser = async function() {
     this.page.setDefaultTimeout(2 * 60 * 1000);
     this.page.on('response', async(response) => {
         try {
-            if (response.url().includes('no-dupe-posting')) {
-                this.page.waitForTimeout(3000);
-                let [thiIsADifferentJob] = await this.page.$x(`//*[@for="next-step-radio--continue"]`);
-                if (thiIsADifferentJob) {
-                    await thiIsADifferentJob.click()
-                }
-                let [continueButton] = await this.page.$x(`//*[@data-tn-element="sorepost-next-step-continue-continue"]`);
-                if (continueButton) {
-                    await continueButton.click()
-                    this.page.waitForTimeout(3000);
-                }
+            // if (response.url().includes('no-dupe-posting')) {
+            //     this.page.waitForTimeout(3000);
+            //     let [thiIsADifferentJob] = await this.page.$x(`//*[@for="next-step-radio--continue"]`);
+            //     if (thiIsADifferentJob) {
+            //         await thiIsADifferentJob.click()
+            //         await thiIsADifferentJob.click()
+            //         this.page.waitForTimeout(3000);
+            //     }
+            //     let [continueButton] = await this.page.$x(`//*[@data-tn-element="sorepost-next-step-continue-continue"]`);
+            //     if (continueButton) {
+            //         await continueButton.click()
+            //         this.page.waitForTimeout(3000);
+            //     }
 
-            }
+            // }
 
 
             if (response.url().includes('did-you-hire-sheet')) {
