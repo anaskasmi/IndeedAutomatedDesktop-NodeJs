@@ -321,7 +321,7 @@ JobsServices.fillIn_salaryFromAndTo = async(jobDetails_SalaryFrom, jobDetails_Sa
     switch (jobDetails_salaryRangeType) {
         case 'UP_TO':
             //fill in salary 1 with jobDetails_SalaryTo
-            [jobSalary1] = await BrowserService.page.$x(`//*[@id="ipl-ComboBox-JobSalary1"]`);
+            [jobSalary1] = await BrowserService.page.$x(`//*[@id="JobSalary1"]`);
             if (jobDetails_SalaryTo) {
                 await jobSalary1.click({ clickCount: 3 });
                 await jobSalary1.press('Backspace');
@@ -335,7 +335,7 @@ JobsServices.fillIn_salaryFromAndTo = async(jobDetails_SalaryFrom, jobDetails_Sa
             break;
         case 'STARTING_AT':
             //fill in salary 1 with jobDetails_SalaryFrom
-            [jobSalary1] = await BrowserService.page.$x(`//*[@id="ipl-ComboBox-JobSalary1"]`);
+            [jobSalary1] = await BrowserService.page.$x(`//*[@id="JobSalary1"]`);
             if (jobDetails_SalaryFrom) {
                 await jobSalary1.click({ clickCount: 3 });
                 await jobSalary1.press('Backspace');
@@ -350,7 +350,7 @@ JobsServices.fillIn_salaryFromAndTo = async(jobDetails_SalaryFrom, jobDetails_Sa
 
         case 'EXACT_RATE':
             //fill in salary 1 with jobDetails_SalaryFrom
-            [jobSalary1] = await BrowserService.page.$x(`//*[@id="ipl-ComboBox-JobSalary1"]`);
+            [jobSalary1] = await BrowserService.page.$x(`//*[@id="JobSalary1"]`);
             if (jobDetails_SalaryFrom) {
                 await jobSalary1.click({ clickCount: 3 });
                 await jobSalary1.press('Backspace');
@@ -364,8 +364,8 @@ JobsServices.fillIn_salaryFromAndTo = async(jobDetails_SalaryFrom, jobDetails_Sa
             break;
         case 'RANGE':
             //fill in salary 1 with jobDetails_SalaryFrom and fill in salary 2 with jobDetails_SalaryTo
-            [jobSalary1] = await BrowserService.page.$x(`//*[@id="ipl-ComboBox-JobSalary1"]`);
-            [jobSalary2] = await BrowserService.page.$x(`//*[@id="ipl-ComboBox-JobSalary2"]`);
+            [jobSalary1] = await BrowserService.page.$x(`//*[@id="JobSalary1"]`);
+            [jobSalary2] = await BrowserService.page.$x(`//*[@id="JobSalary2"]`);
             if (jobDetails_SalaryFrom) {
                 await jobSalary1.click({ clickCount: 3 });
                 await jobSalary1.press('Backspace');
@@ -397,7 +397,7 @@ JobsServices.fillIn_salaryFromAndTo = async(jobDetails_SalaryFrom, jobDetails_Sa
 }
 
 JobsServices.fillIn_paymentFrom = async(jobDetails_SalaryFrom) => {
-    let [jobSalary1] = await BrowserService.page.$x(`//*[@id="ipl-ComboBox-JobSalary1"]`);
+    let [jobSalary1] = await BrowserService.page.$x(`//*[@id="JobSalary1"]`);
     if (jobSalary1 && jobDetails_SalaryFrom) {
         await jobSalary1.click({ clickCount: 3 });
         await jobSalary1.press('Backspace');
@@ -415,9 +415,9 @@ JobsServices.fillIn_paymentFrom = async(jobDetails_SalaryFrom) => {
 JobsServices.fillIn_paymentTo = async(jobDetails_SalaryTo, jobDetails_salaryRangeType) => {
     let jobSalaryInput;
     if (jobDetails_salaryRangeType == 'UP_TO') {
-        [jobSalaryInput] = await BrowserService.page.$x(`//*[@id="ipl-ComboBox-JobSalary1"]`);
+        [jobSalaryInput] = await BrowserService.page.$x(`//*[@id="JobSalary1"]`);
     } else {
-        [jobSalaryInput] = await BrowserService.page.$x(`//*[@id="ipl-ComboBox-JobSalary2"]`);
+        [jobSalaryInput] = await BrowserService.page.$x(`//*[@id="JobSalary2"]`);
     }
     if (jobSalaryInput && jobDetails_SalaryTo) {
         await jobSalaryInput.click({ clickCount: 3 });
@@ -473,6 +473,11 @@ JobsServices.click_confirm = async() => {
     await confirmButton.click();
 }
 
+JobsServices.click_advanced = async() => {
+    await BrowserService.page.waitForXPath(`//*[@id="ADVANCED"]`);
+    let [budgetAdvancedButton] = await BrowserService.page.$x(`//*[@id="ADVANCED"]`);
+    await budgetAdvancedButton.click();
+}
 
 JobsServices.fillIn_adDurationType = async() => {
     await BrowserService.page.waitForXPath(`//*[@name="jobDurationSelector"]`);
@@ -515,6 +520,16 @@ JobsServices.fillIn_adDurationDate = async() => {
 
 }
 
+JobsServices.fillIn_CPC = async(budget_maxCPC) => {
+    await BrowserService.page.waitForXPath(`//*[@id="maxcpc"]`);
+    let [maxCPC] = await BrowserService.page.$x(`//*[@id="maxcpc"]`);
+    if (budget_maxCPC) {
+        await maxCPC.click({ clickCount: 3 });
+        await maxCPC.press('Backspace');
+        // await maxCPC.type(budget_maxCPC);
+        await maxCPC.type('.31');
+    }
+}
 
 JobsServices.fillIn_webSite = async() => {
     await BrowserService.page.waitForXPath(`//*[@name="CO_WEBSITE"]`);
@@ -526,12 +541,13 @@ JobsServices.fillIn_webSite = async() => {
     }
 }
 
-JobsServices.fillIn_adBudget = async() => {
-    let [budgetInput] = await BrowserService.page.$x(`//*[@id="budget"]`);
-    if (budgetInput) {
+JobsServices.fillIn_adBudget = async(budget_amount) => {
+    let [budgetInput] = await BrowserService.page.$x(`//*[@id="advanced-budget"]`);
+    if (budgetInput && budget_amount) {
+        let budgetInDollar = Math.ceil(budget_amount).toString();
         await budgetInput.click({ clickCount: 3 });
         await budgetInput.press('Backspace');
-        await budgetInput.type('5');
+        await budgetInput.type(budgetInDollar)
         return true;
     } else {
         return false;
@@ -556,11 +572,31 @@ JobsServices.closeJob = async(jobId) => {
     let [closeJobOption] = await BrowserService.page.$x(`//*[contains(text(),'Close job')]`);
     await closeJobOption.click();
 
+    // await BrowserService.page.waitForXPath(`//*[contains(text(),"I didn't hire anyone")]`);
+    // let [IDidntHireChoice] = await BrowserService.page.$x(`//*[contains(text(),"I didn't hire anyone")]`)
+    // await IDidntHireChoice.click();
+
+
+    // await BrowserService.page.waitForXPath(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button`);
+    // let [continueCloseButton] = await BrowserService.page.$x(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button`)
+    // await continueCloseButton.click();
+
+
+    // await BrowserService.page.waitForXPath(`//*[contains(text(),"Other")]`);
+    // let other = await BrowserService.page.$x(`//*[contains(text(),"Other")]`)
+    // other = other[1]
+    // await other.click();
+
+
 
     await BrowserService.page.waitForXPath(`//*[@data-tn-element="cancel-link"]`);
     let [cancelLink] = await BrowserService.page.$x(`//*[@data-tn-element="cancel-link"]`)
     await cancelLink.click();
 
+
+    await BrowserService.page.waitForXPath(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button/span`);
+    let [closeJobButton] = await BrowserService.page.$x(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button/span`)
+    await closeJobButton.click();
     await BrowserService.page.waitForTimeout(2000);
 
 }
@@ -572,6 +608,22 @@ JobsServices.fillIn_email = async(jobDetails_emails) => {
     await emailInput.press('Backspace');
     await Helpers.clearInput();
     await emailInput.type(jobDetails_emails);
+    // if (process.env.TYPING_METHODE == "keyboard") {
+    //     await emailInput.click({ clickCount: 3 });
+    //     await emailInput.press('Backspace');
+    //     await emailInput.type(jobDetails_emails);
+    // } else {
+    //     await emailInput.type(' ');
+    //     await emailInput.press('Backspace');
+    //     await BrowserService.page.evaluate((jobDetails_emails) => {
+    //         document.querySelector(`[name="communication-settings-email-input_primary"]`).value = jobDetails_emails;
+    //     }, jobDetails_emails);
+    //     await BrowserService.page.evaluate((jobDetails_emails) => {
+    //         document.querySelector(`[name="communication-settings-email-input_primary"]`).value = jobDetails_emails;
+    //     }, jobDetails_emails);
+    //     await emailInput.press('Enter');
+    // }
+
 }
 
 JobsServices.close_questions = async() => {

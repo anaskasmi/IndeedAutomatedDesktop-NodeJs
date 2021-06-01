@@ -12,7 +12,9 @@ let args = [
     '--disable-gpu',
 ];
 
-let BrowserService = {}
+let BrowserService = {
+
+}
 
 
 BrowserService.closeBrowser = async function() {
@@ -72,8 +74,6 @@ BrowserService.getNewBrowser = async function() {
             //     let [thiIsADifferentJob] = await this.page.$x(`//*[@for="next-step-radio--continue"]`);
             //     if (thiIsADifferentJob) {
             //         await thiIsADifferentJob.click()
-            //         await thiIsADifferentJob.click()
-            //         this.page.waitForTimeout(3000);
             //     }
             //     let [continueButton] = await this.page.$x(`//*[@data-tn-element="sorepost-next-step-continue-continue"]`);
             //     if (continueButton) {

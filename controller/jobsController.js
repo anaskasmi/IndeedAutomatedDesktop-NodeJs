@@ -292,6 +292,15 @@ JobsController.click_confirm = async(req, res) => {
     }
 }
 
+JobsController.click_advanced = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        await JobsServices.click_advanced();
+        return res.status(200).json({ "msg": "clicked advanced successfully" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
 
 JobsController.fillIn_adDurationType = async(req, res) => {
     req.setTimeout(0);
@@ -326,8 +335,8 @@ JobsController.fillIn_CPC = async(req, res) => {
 JobsController.fillIn_adBudget = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.fillIn_adBudget();
-        return res.status(200).json({ "msg": "Ad Budget filled in successfully" });
+        await JobsServices.fillIn_adBudget(req.body.budget_amount);
+        return res.status(200).json({ "msg": "ad Budget filled in successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
