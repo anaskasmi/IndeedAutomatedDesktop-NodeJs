@@ -526,8 +526,8 @@ JobsServices.fillIn_CPC = async(budget_maxCPC) => {
     if (budget_maxCPC) {
         await maxCPC.click({ clickCount: 3 });
         await maxCPC.press('Backspace');
-        // await maxCPC.type(budget_maxCPC);
-        await maxCPC.type('.31');
+        await maxCPC.type(budget_maxCPC);
+        // await maxCPC.type('.31');
     }
 }
 

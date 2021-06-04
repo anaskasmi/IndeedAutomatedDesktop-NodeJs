@@ -83,18 +83,18 @@ UpdateJobService.updateGettingStartedSection = async(id, jobTitle, location) => 
         //Fill in city
         await BrowserService.page.waitForXPath(`//*[@id="precise-address-city-input"]`);
         let [cityInput] = await BrowserService.page.$x(`//*[@id="precise-address-city-input"]`);
-
+        let fullLocation = location.city + ', ' + location.state;
         if (process.env.TYPING_METHODE == "keyboard") {
             await cityInput.click();
             await Helpers.clearInput();
-            await cityInput.type(location.city);
+            await cityInput.type(fullLocation, { delay: 20 });
             await BrowserService.page.waitForTimeout(3000);
             await BrowserService.page.keyboard.press('ArrowDown');
             await BrowserService.page.keyboard.press('Enter');
         } else {
-            await BrowserService.page.evaluate((locationCity) => {
-                document.querySelector(`#precise-address-city-input`).value = locationCity;
-            }, location.city);
+            await BrowserService.page.evaluate((locationCityAndState) => {
+                document.querySelector(`#precise-address-city-input`).value = locationCityAndState;
+            }, fullLocation);
             await cityInput.type(' ');
             await cityInput.press('Backspace');
             await BrowserService.page.waitForTimeout(3000);
