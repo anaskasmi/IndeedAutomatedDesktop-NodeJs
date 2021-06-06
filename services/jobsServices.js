@@ -107,11 +107,11 @@ JobsServices.scrapAllJobs = async(totalPagesNumber = 4) => {
     for (let currentPage = 1; currentPage <= totalPagesNumber; currentPage++) {
         console.log('page : ' + currentPage)
         await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?p=${currentPage}`);
-        if (!(await BrowserService.page.url()).includes('j#vr-onboarding')) {
-            console.log('jobs page redirected.. trying again..')
-            await BrowserService.page.reload();
-            await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?p=${currentPage}`);
-        }
+        // if (!(await BrowserService.page.url()).includes('j#vr-onboarding')) {
+        //     console.log('jobs page redirected.. trying again..')
+        //     await BrowserService.page.reload();
+        //     await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?p=${currentPage}`);
+        // }
         await BrowserService.page.waitForXPath(`//*[contains(text(),'Open')]`)
     }
     BrowserService.page.removeListener('response', getJobsFromReponse);
