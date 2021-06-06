@@ -86,8 +86,15 @@ BrowserService.getNewBrowser = async function() {
 
             if (response.url().includes('did-you-hire-sheet')) {
                 {
-                    this.page.waitForTimeout(3000);
-                    let [noLabel] = await this.page.$x(`//*[@value="no"]/parent::label`);
+                    // this.page.waitForTimeout(3000);
+                    try {
+                        await this.page.waitForXPath(`//*[@value="no"]/parent::label`)
+                        await this.page.waitForXPath(`//*[contains(text(),'No')]`)
+                    } catch (error) {
+                        console.log('couldnt found the no button on the (did you hire sheet)')
+                    }
+                    // let [noLabel] = await this.page.$x(`//*[@value="no"]/parent::label`);
+                    let [noLabel] = this.page.$x(`//*[contains(text(),'No')]`);
                     if (noLabel) {
                         //click no
                         await noLabel.click();

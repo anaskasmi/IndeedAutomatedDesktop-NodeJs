@@ -16,7 +16,12 @@ let JobsServices = {};
 
 
 JobsServices.openPostJobPage = async() => {
-    await BrowserService.page.goto(`https://employers.indeed.com/p#post-job`)
+    // await BrowserService.page.goto(`https://employers.indeed.com/p#post-job`)
+    await BrowserService.page.goto(`https://employers.indeed.com/j#jobs`)
+    await BrowserService.page.waitForXPath(`//*[@id="postJobButton"]`);
+    let [postJobButton] = await BrowserService.page.$x(`//*[@id="postJobButton"]`);
+    await postJobButton.click()
+    await BrowserService.page.waitForXPath(`//*[@id="sheet-header-image"]`)
 }
 
 JobsServices.getJobFullDetails = async(jobId) => {
@@ -102,7 +107,11 @@ JobsServices.scrapAllJobs = async(totalPagesNumber = 4) => {
     for (let currentPage = 1; currentPage <= totalPagesNumber; currentPage++) {
         console.log('page : ' + currentPage)
         await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?p=${currentPage}`);
-        // await BrowserService.page.waitForNavigation({ waitUntil: 'networkidle0' });
+        if (!(await BrowserService.page.url()).includes('j#vr-onboarding')) {
+            console.log('jobs page redirected.. trying again..')
+            await BrowserService.page.reload();
+            await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?p=${currentPage}`);
+        }
         await BrowserService.page.waitForXPath(`//*[contains(text(),'Open')]`)
     }
     BrowserService.page.removeListener('response', getJobsFromReponse);
@@ -136,7 +145,15 @@ JobsServices.unlockCompanyNameInput = async() => {
 }
 
 JobsServices.fillIn_CompanyName = async(companyName) => {
+    let [companyEditLock] = await BrowserService.page.$x(`//*[@data-tn-element="changeCompanyLink"]`);
+    if (companyEditLock) {
+        await companyEditLock.click();
+        //chose company name change reason
+        await BrowserService.page.waitForXPath(`//*[@for="companyNameChangeRadioButtonPostingOnBehalf"]`);
+        let [companyNameChangeReason] = await BrowserService.page.$x(`//*[@for="companyNameChangeRadioButtonPostingOnBehalf"]`);
+        await companyNameChangeReason.click();
 
+    }
     await BrowserService.page.waitForXPath(`//*[@id="input-company"]`);
     let [JobCompanyNameInput] = await BrowserService.page.$x(`//*[@id="input-company"]`);
 
@@ -206,7 +223,9 @@ JobsServices.fillIn_RolesLocation = async(location) => {
     let [cityInput] = await BrowserService.page.$x(`//*[@id="precise-address-city-input"]`);
 
     //type
+    await BrowserService.page.waitForTimeout(2 * 1000);
     await cityInput.click();
+    await BrowserService.page.waitForTimeout(2 * 1000);
     for (let index = 0; index < 30; index++) {
         await cityInput.press("Backspace");
     }
@@ -276,7 +295,7 @@ JobsServices.fillIn_isJobFullTimeOrPartTime = async(jobDetails_WhatTypeOfJobIsIt
 
 JobsServices.fillIn_schedule = async() => {
     await BrowserService.page.waitForXPath(`//*[contains(text(),'Other')]`);
-    let [otherScheduleOption] = await BrowserService.page.$x(`//*[contains(text(),'Other')]`);
+    let [otherScheduleOption] = await BrowserService.page.$x(`//*[contains(text(),'Other')]/parent::label`);
     await otherScheduleOption.click();
 }
 
