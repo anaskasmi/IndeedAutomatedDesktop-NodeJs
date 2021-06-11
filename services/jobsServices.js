@@ -16,12 +16,26 @@ let JobsServices = {};
 
 
 JobsServices.openPostJobPage = async() => {
-    // await BrowserService.page.goto(`https://employers.indeed.com/p#post-job`)
-    await BrowserService.page.goto(`https://employers.indeed.com/j#jobs`)
-    await BrowserService.page.waitForXPath(`//*[@id="postJobButton"]`);
-    let [postJobButton] = await BrowserService.page.$x(`//*[@id="postJobButton"]`);
-    await postJobButton.click()
-    await BrowserService.page.waitForXPath(`//*[@id="sheet-header-image"]`)
+    await BrowserService.page.goto(`https://employers.indeed.com/p#post-job`);
+    await BrowserService.page.reload();
+
+    await BrowserService.page.waitForTimeout(3000);
+    let [noButton] = await BrowserService.page.$x(`//*[@name="did-you-hire-radio" and @value="no"]/parent::label`);
+    if (noButton) {
+        //*clicking no
+        await noButton.click();
+        //*clicking continue
+        let [continueButton] = await BrowserService.page.$x(`//*[@data-tn-element="sheet-next-button"]`);
+        await continueButton.click();
+        //*clicking other
+        await BrowserService.page.waitForXPath(`//*[@name="other"]/parent::label`);
+        let [otherButton] = await BrowserService.page.$x(`//*[@name="other"]/parent::label`);
+        await otherButton.click();
+        //*clicking continue
+        [continueButton] = await BrowserService.page.$x(`//*[@data-tn-element="sheet-next-button"]`);
+        await continueButton.click();
+    }
+
 }
 
 JobsServices.getJobFullDetails = async(jobId) => {
@@ -52,19 +66,18 @@ JobsServices.getJobFullDetails = async(jobId) => {
         }
     });
     await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'load' });
-    await BrowserService.page.waitForXPath(`//*[text()='Job Description']`);
+    await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'job description')]`);
 
     //second retry
     if (!unormalizedJobFromJobShowPage) {
         console.log('unormalizedJobFromJobShowPage not found retry...')
         await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'load' });
-        await BrowserService.page.waitForXPath(`//*[text()='Job Description']`);
+        await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'job description')]`);
     }
     if (!unormalizedJobFromJobEditPage) {
         console.log('unormalizedJobFromJobEditPage not found retrying ...')
         await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/edit-job?id=${jobId}`, { waitUntil: 'load' });
-        await BrowserService.page.waitForXPath(`//*[text()='Getting Started']`);
-
+        await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'getting started')]`);
     }
     //normalize job
     let normalizedJob = await normalizeFullDetailedJob(unormalizedJobFromJobEditPage, unormalizedJobFromJobShowPage);
@@ -583,39 +596,40 @@ JobsServices.closeJob = async(jobId) => {
     }
 
 
+
+    //open the job status drop down
     await BrowserService.page.waitForXPath(`//span[contains(text(),'Status')]`);
     let [jobStatusMenu] = await BrowserService.page.$x(`//span[contains(text(),'Status')]`);
     await jobStatusMenu.click();
 
+
+    // click close job choice
     await BrowserService.page.waitForXPath(`//*[contains(text(),'Close job')]`);
     let [closeJobOption] = await BrowserService.page.$x(`//*[contains(text(),'Close job')]`);
     await closeJobOption.click();
 
-    // await BrowserService.page.waitForXPath(`//*[contains(text(),"I didn't hire anyone")]`);
-    // let [IDidntHireChoice] = await BrowserService.page.$x(`//*[contains(text(),"I didn't hire anyone")]`)
-    // await IDidntHireChoice.click();
+
+    // click I didnt hire anyone
+    await BrowserService.page.waitForXPath(`//*[@data-tn-element="noHire-radio"]/parent::label`);
+    let [IDidntHireChoice] = await BrowserService.page.$x(`//*[@data-tn-element="noHire-radio"]/parent::label`);
+    await IDidntHireChoice.click();
 
 
-    // await BrowserService.page.waitForXPath(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button`);
-    // let [continueCloseButton] = await BrowserService.page.$x(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button`)
-    // await continueCloseButton.click();
+    //click continue
+    await BrowserService.page.waitForXPath(`//*[@data-tn-element="continue-button"]`);
+    let [continueCloseButton] = await BrowserService.page.$x(`//*[@data-tn-element="continue-button"]`)
+    await continueCloseButton.click();
 
+    //click other
+    await BrowserService.page.waitForXPath(`//*[@data-tn-element="other-checkbox"]/parent::label`);
+    let [otherButton] = await BrowserService.page.$x(`//*[@data-tn-element="other-checkbox"]/parent::label`);
+    await otherButton.click();
 
-    // await BrowserService.page.waitForXPath(`//*[contains(text(),"Other")]`);
-    // let other = await BrowserService.page.$x(`//*[contains(text(),"Other")]`)
-    // other = other[1]
-    // await other.click();
+    // click submit
+    await BrowserService.page.waitForXPath(`//*[@data-tn-element="submit-button"]`);
+    let [submitButton] = await BrowserService.page.$x(`//*[@data-tn-element="submit-button"]`)
+    await submitButton.click();
 
-
-
-    await BrowserService.page.waitForXPath(`//*[@data-tn-element="cancel-link"]`);
-    let [cancelLink] = await BrowserService.page.$x(`//*[@data-tn-element="cancel-link"]`)
-    await cancelLink.click();
-
-
-    await BrowserService.page.waitForXPath(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button/span`);
-    let [closeJobButton] = await BrowserService.page.$x(`//*[@id="plugin_container_PauseOrCloseJobModalContent"]/div/div/div/div/div[1]/div[2]/div[2]/button/span`)
-    await closeJobButton.click();
     await BrowserService.page.waitForTimeout(2000);
 
 }

@@ -84,32 +84,44 @@ BrowserService.getNewBrowser = async function() {
             // }
 
 
+            // if (response.url().includes('https://d3l2aiuysuvlk2.cloudfront.net/brotli/hiresignal/343126bfbc2d8bf6a72e/scripts/hiresignal-534.js')) {
+            //     await this.page.waitForTimeout(3000);
+            //     let [skipButton] = await this.page.$x(`//*[@data-tn-element="navControlButton-skip"]`);
+            //     if (skipButton) {
+            //         await skipButton.click();
+            //     }
+            // }
+
+
+
             if (response.url().includes('did-you-hire-sheet')) {
                 {
-                    // this.page.waitForTimeout(3000);
-                    try {
-                        await this.page.waitForXPath(`//*[@value="no"]/parent::label`)
-                        await this.page.waitForXPath(`//*[contains(text(),'No')]`)
-                    } catch (error) {
-                        console.log('couldnt found the no button on the (did you hire sheet)')
-                    }
-                    // let [noLabel] = await this.page.$x(`//*[@value="no"]/parent::label`);
-                    let [noLabel] = this.page.$x(`//*[contains(text(),'No')]`);
-                    if (noLabel) {
-                        //click no
-                        await noLabel.click();
-                        //click continue
-                        let [continueButton] = await this.page.$x(`//*[text()='Continue']`);
-                        await continueButton.click();
-                        //click Other
-                        await this.page.waitForXPath(`//*[text()='Other']`)
-                        let [otherButton] = await this.page.$x(`//*[text()='Other']`);
-                        await otherButton.click();
-                        //click continue
-                        [continueButton] = await this.page.$x(`//*[text()='Continue']`);
-                        await continueButton.click();
+                    // // this.page.waitForTimeout(3000);
+                    // try {
+                    //     await this.page.waitForXPath(`//*[@value="no"]/parent::label`)
+                    //     await this.page.waitForXPath(`//*[contains(text(),'No')]`)
+                    // } catch (error) {
+                    //     console.log('couldnt found the no button on the (did you hire sheet)')
+                    // }
+                    // // let [noLabel] = await this.page.$x(`//*[@value="no"]/parent::label`);
+                    // let [noLabel] = this.page.$x(`//*[contains(text(),'No')]`);
+                    // if (noLabel) {
+                    //     //click no
+                    //     await noLabel.click();
+                    //     //click continue
+                    //     let [continueButton] = await this.page.$x(`//*[text()='Continue']`);
+                    //     await continueButton.click();
+                    //     //click Other
+                    //     await this.page.waitForXPath(`//*[text()='Other']`)
+                    //     let [otherButton] = await this.page.$x(`//*[text()='Other']`);
+                    //     await otherButton.click();
+                    //     //click continue
+                    //     [continueButton] = await this.page.$x(`//*[text()='Continue']`);
+                    //     await continueButton.click();
 
-                    }
+                    // }
+
+
                 }
             }
         } catch (error) {
