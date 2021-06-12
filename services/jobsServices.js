@@ -9,6 +9,7 @@ const path = require('path');
 const Job = require('./../models/Job')
 const BrowserService = require('./BrowserService');
 const Helpers = require('../utilities/Helpers');
+const { handleDidYouHirepPopUp } = require('../utilities/handleDidYouHirepPopUp');
 
 
 let JobsServices = {};
@@ -17,25 +18,6 @@ let JobsServices = {};
 
 JobsServices.openPostJobPage = async() => {
     await BrowserService.page.goto(`https://employers.indeed.com/p#post-job`);
-    await BrowserService.page.reload();
-
-    await BrowserService.page.waitForTimeout(3000);
-    let [noButton] = await BrowserService.page.$x(`//*[@name="did-you-hire-radio" and @value="no"]/parent::label`);
-    if (noButton) {
-        //*clicking no
-        await noButton.click();
-        //*clicking continue
-        let [continueButton] = await BrowserService.page.$x(`//*[@data-tn-element="sheet-next-button"]`);
-        await continueButton.click();
-        //*clicking other
-        await BrowserService.page.waitForXPath(`//*[@name="other"]/parent::label`);
-        let [otherButton] = await BrowserService.page.$x(`//*[@name="other"]/parent::label`);
-        await otherButton.click();
-        //*clicking continue
-        [continueButton] = await BrowserService.page.$x(`//*[@data-tn-element="sheet-next-button"]`);
-        await continueButton.click();
-    }
-
 }
 
 JobsServices.getJobFullDetails = async(jobId) => {
@@ -52,7 +34,7 @@ JobsServices.getJobFullDetails = async(jobId) => {
         }
     });
     await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/edit-job?id=${jobId}`, { waitUntil: 'load' });
-    await BrowserService.page.waitForXPath(`//*[text()='Getting Started']`);
+    await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'getting started')]`);
 
     //get missing details from the job page
     BrowserService.page.on('response', function getDetailsFromHomePage(response) {
@@ -125,7 +107,8 @@ JobsServices.scrapAllJobs = async(totalPagesNumber = 4) => {
         //     await BrowserService.page.reload();
         //     await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?p=${currentPage}`);
         // }
-        await BrowserService.page.waitForXPath(`//*[contains(text(),'Open')]`)
+        await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
+
     }
     BrowserService.page.removeListener('response', getJobsFromReponse);
     let normalizedJobs = await normalizeJobs(jobsArray);
@@ -259,8 +242,9 @@ JobsServices.fillIn_RolesLocation = async(location) => {
 }
 
 JobsServices.clickSaveAndContinue = async() => {
-    [saveAndContinue1] = await BrowserService.page.$x(`//*[text()='Save and continue']`);
-    [saveAndContinue2] = await BrowserService.page.$x(`//*[text()='Continue']`);
+    [saveAndContinue1] = await BrowserService.page.$x(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'save and continue')]`);
+    [saveAndContinue2] = await BrowserService.page.$x(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'continue')]`);
+
     if (saveAndContinue1) {
         await saveAndContinue1.click({ clickCount: 3 });
     } else if (saveAndContinue2) {
@@ -307,8 +291,8 @@ JobsServices.fillIn_isJobFullTimeOrPartTime = async(jobDetails_WhatTypeOfJobIsIt
 
 
 JobsServices.fillIn_schedule = async() => {
-    await BrowserService.page.waitForXPath(`//*[contains(text(),'Other')]`);
-    let [otherScheduleOption] = await BrowserService.page.$x(`//*[contains(text(),'Other')]/parent::label`);
+    await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'other')]/parent::label`);
+    let [otherScheduleOption] = await BrowserService.page.$x(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'other')]/parent::label`);
     await otherScheduleOption.click();
 }
 
@@ -481,8 +465,7 @@ JobsServices.fillIn_description = async(jobDescriptionHtml) => {
     // let descriptionArray = descriptionToArray(jobDescriptionHtml);
 
     //start filling the descritpion
-    await BrowserService.page.waitForXPath(`//*[text()='Job Description']`);
-
+    await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'job description')]`);
     await BrowserService.page.$eval('#JobDescription-editor-content', (el, jobDescriptionHtml) => { el.innerHTML = jobDescriptionHtml }, jobDescriptionHtml);
 
     //type space to apply changements
