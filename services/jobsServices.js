@@ -78,7 +78,7 @@ JobsServices.downloadCookies = async() => {
 }
 
 
-JobsServices.scrapAllJobs = async(totalPagesNumber = 4) => {
+JobsServices.scrapAllJobs = async(totalPagesNumber = 5) => {
     //delete old jobs
     await Job.deleteMany({});
 
