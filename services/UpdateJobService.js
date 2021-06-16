@@ -229,7 +229,7 @@ UpdateJobService.updateSponsorJobSection = async(id, budget_amount, budget_maxCP
 
         //Fill in the end date
         console.log('unformatted end date : ' + budgetEndDate);
-        budgetEndDate = Moment(budgetEndDate).format('MM/DD/YYYY');
+        budgetEndDate = Moment(budgetEndDate).add(1, 'days').format('MM/DD/YYYY');
         console.log('formatted end date : ' + budgetEndDate);
         await BrowserService.page.evaluate((budgetEndDate) => {
             document.querySelector(`[id^=endDateContainer] > input[type=text]`).value = budgetEndDate;
