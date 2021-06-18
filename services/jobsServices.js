@@ -17,7 +17,12 @@ let JobsServices = {};
 
 
 JobsServices.openPostJobPage = async() => {
-    await BrowserService.page.goto(`https://employers.indeed.com/p#post-job`);
+    await BrowserService.page.goto(`https://employers.indeed.com/p#post-job`, { waitUntil: "networkidle2" });
+    let [skipButton] = await BrowserService.page.$x(`//*[@data-tn-element="navControlButton-skip"]`);
+    if (skipButton) {
+        console.log('found skip button')
+        await skipButton.click();
+    }
 }
 
 JobsServices.getJobFullDetails = async(jobId) => {
@@ -78,7 +83,7 @@ JobsServices.downloadCookies = async() => {
 }
 
 
-JobsServices.scrapAllJobs = async(totalPagesNumber = 5) => {
+JobsServices.scrapAllJobs = async(totalPagesNumber = 6) => {
     //delete old jobs
     await Job.deleteMany({});
 
@@ -580,16 +585,10 @@ JobsServices.closeJob = async(jobId) => {
 
 
 
-    //open the job status drop down
-    await BrowserService.page.waitForXPath(`//span[contains(text(),'Status')]`);
-    let [jobStatusMenu] = await BrowserService.page.$x(`//span[contains(text(),'Status')]`);
+    //click close
+    await BrowserService.page.waitForXPath(`//*[@id="transition_job_link"]`);
+    let [jobStatusMenu] = await BrowserService.page.$x(`//*[@id="transition_job_link"]`);
     await jobStatusMenu.click();
-
-
-    // click close job choice
-    await BrowserService.page.waitForXPath(`//*[contains(text(),'Close job')]`);
-    let [closeJobOption] = await BrowserService.page.$x(`//*[contains(text(),'Close job')]`);
-    await closeJobOption.click();
 
 
     // click I didnt hire anyone
