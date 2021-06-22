@@ -507,8 +507,8 @@ JobsServices.fillIn_adDurationType = async() => {
 JobsServices.fillIn_adDurationDate = async() => {
 
     //generate new date after 4 days
-    let newEndDate = Moment(Moment()).add(4, 'days');
-    console.log('newEndDate + 4 : ' + newEndDate);
+    let newEndDate = Moment(Moment()).add(5, 'days');
+    console.log('newEndDate + 5 days : ' + newEndDate);
 
     // change its Format
     newEndDate = newEndDate.format('MM/DD/YYYY');
