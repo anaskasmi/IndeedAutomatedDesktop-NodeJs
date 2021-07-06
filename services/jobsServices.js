@@ -585,10 +585,15 @@ JobsServices.closeJob = async(jobId) => {
 
 
 
-    //click close
-    await BrowserService.page.waitForXPath(`//*[@id="transition_job_link"]`);
-    let [jobStatusMenu] = await BrowserService.page.$x(`//*[@id="transition_job_link"]`);
+    //open status bar
+    await BrowserService.page.waitForXPath(`//*[@id="sidebarStatusButton"]`);
+    let [jobStatusMenu] = await BrowserService.page.$x(`//*[@id="sidebarStatusButton"]`);
     await jobStatusMenu.click();
+
+    // click close
+    await BrowserService.page.waitForXPath(`//*[@data-valuetext="Close job"]`);
+    let [closeOption] = await BrowserService.page.$x(`//*[@data-valuetext="Close job"]`);
+    await closeOption.click();
 
 
     // click I didnt hire anyone
