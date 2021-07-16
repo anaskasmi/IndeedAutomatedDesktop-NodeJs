@@ -2,6 +2,7 @@
 const express = require('express');
 //controllers
 const JobsController = require('../controller/JobsController');
+const ResumesController = require('../controller/ResumesController');
 const UpdateJobController = require('../controller/UpdateJobController');
 //config
 const router = express.Router();
@@ -17,7 +18,7 @@ router.get('/scrapAllJobs', JobsController.scrapAllJobs)
 router.get('/getAllJobsFromDb', JobsController.getAllJobsFromDb)
 router.post('/getJobFullDetails', JobsController.getJobFullDetails)
 
-//update job
+//update job routes 
 router.post('/updateJob', UpdateJobController.updateJob)
 
 //reposting routes
@@ -53,5 +54,9 @@ router.get('/fillIn_otherBenefits', JobsController.fillIn_otherBenefits)
 router.get('/fillIn_webSite', JobsController.fillIn_webSite)
 router.post('/fillIn_salaryFromAndTo', JobsController.fillIn_salaryFromAndTo)
 router.get('/fillIn_industry', JobsController.fillIn_industry)
+
+
+//update job routes 
+router.post('/downloadResumesForOneJob', ResumesController.downloadResumesForOneJob)
 
 module.exports = router;
