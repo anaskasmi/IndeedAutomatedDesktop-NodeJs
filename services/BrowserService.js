@@ -70,7 +70,7 @@ BrowserService.getNewBrowser = async function() {
 BrowserService.getNewPage = async function() {
     //get new page 
     BrowserService.page = await BrowserService.browser.newPage();
-    BrowserService.page.setDefaultTimeout(0.5 * 60 * 1000);
+    BrowserService.page.setDefaultTimeout(1 * 60 * 1000);
     BrowserService.page.on('response', async(response) => {
         try {
             // if (response.url().includes('no-dupe-posting')) {

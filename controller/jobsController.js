@@ -45,6 +45,18 @@ JobsController.scrapAllJobs = async(req, res) => {
     }
 
 }
+JobsController.getJobDataFromDb = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        let jobId = req.params.id;
+        let job = await JobsServices.getJobDataFromDb(jobId);
+        return res.status(200).json({ "msg": "success", "job": job });
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ error: error.message });
+    }
+
+}
 JobsController.getAllJobsFromDb = async(req, res) => {
     req.setTimeout(0);
     try {

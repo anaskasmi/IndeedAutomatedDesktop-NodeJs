@@ -21,6 +21,9 @@ router.post('/getJobFullDetails', JobsController.getJobFullDetails)
 //update job routes 
 router.post('/updateJob', UpdateJobController.updateJob)
 
+//get data routes 
+router.get('/getJobDataFromDb/:id', JobsController.getJobDataFromDb)
+
 //reposting routes
 router.get('/openPostJobPage', JobsController.openPostJobPage)
 router.get('/unlockCompanyNameInput', JobsController.unlockCompanyNameInput)
@@ -57,6 +60,8 @@ router.get('/fillIn_industry', JobsController.fillIn_industry)
 
 
 //update job routes 
+router.post('/getJobEmail', ResumesController.getJobEmail)
+router.post('/getCandidatesDetails', ResumesController.getCandidatesDetails)
 router.post('/downloadResumesForOneJob', ResumesController.downloadResumesForOneJob)
 
 module.exports = router;

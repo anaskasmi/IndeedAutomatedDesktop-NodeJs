@@ -66,6 +66,10 @@ const JobSchema = mongoose.Schema({
     //Application Setting end
 
 
+    //candidates
+    candidates: [],
+
+
 });
 
 module.exports = mongoose.model('Job', JobSchema);

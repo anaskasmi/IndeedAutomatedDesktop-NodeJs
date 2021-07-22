@@ -130,6 +130,14 @@ JobsServices.getAllJobsFromDb = async() => {
 
 }
 
+JobsServices.getJobDataFromDb = async(jobId) => {
+    let job = await Job.findOne({
+        job_id: jobId,
+    });
+    return job
+
+}
+
 JobsServices.unlockCompanyNameInput = async() => {
     //click pencil Icon
     id = "companyNameChangeRadioButtonPostingOnBehalf"

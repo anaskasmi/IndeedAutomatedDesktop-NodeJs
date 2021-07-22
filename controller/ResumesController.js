@@ -18,6 +18,34 @@ ResumesController.getNewBrowser = async function(req, res) {
 
     }
 }
+ResumesController.getJobEmail = async function(req, res) {
+    req.setTimeout(0);
+    try {
+        let jobEmail = await ResumesService.getJobEmail(req.body.jobId);
+        if (jobEmail) {
+            return res.status(200).json({ 'msg': "Job Email Retrieved successfully", jobEmail });
+        } else {
+            return res.status(404).json({ 'msg': "Job Email Was not found" });
+        }
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ 'msg': error.message });
+    }
+}
+ResumesController.getCandidatesDetails = async function(req, res) {
+    req.setTimeout(0);
+    try {
+        let candidates = await ResumesService.getCandidatesDetails(req.body.jobId);
+        if (candidates) {
+            return res.status(200).json({ 'msg': "Job candidates Retrieved successfully", candidates });
+        } else {
+            return res.status(404).json({ 'msg': "Job candidates Was not found" });
+        }
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ 'msg': error.message });
+    }
+}
 ResumesController.downloadResumesForOneJob = async function(req, res) {
     req.setTimeout(0);
     try {
@@ -25,7 +53,7 @@ ResumesController.downloadResumesForOneJob = async function(req, res) {
         return res.status(200).json({ 'msg': "Downloaded successfully" });
     } catch (error) {
         console.log(error)
-        return res.status(500).json({ error: error });
+        return res.status(500).json({ 'msg': error.message });
     }
 }
 
