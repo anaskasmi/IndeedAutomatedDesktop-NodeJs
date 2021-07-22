@@ -59,9 +59,10 @@ router.post('/fillIn_salaryFromAndTo', JobsController.fillIn_salaryFromAndTo)
 router.get('/fillIn_industry', JobsController.fillIn_industry)
 
 
-//update job routes 
+//resume job routes 
 router.post('/getJobEmail', ResumesController.getJobEmail)
 router.post('/getCandidatesDetails', ResumesController.getCandidatesDetails)
 router.post('/downloadResumesForOneJob', ResumesController.downloadResumesForOneJob)
+router.post('/transferResumeOfOneCandidate', ResumesController.transferResumeOfOneCandidate)
 
 module.exports = router;

@@ -46,6 +46,16 @@ ResumesController.getCandidatesDetails = async function(req, res) {
         return res.status(500).json({ 'msg': error.message });
     }
 }
+ResumesController.transferResumeOfOneCandidate = async function(req, res) {
+    req.setTimeout(0);
+    try {
+        await ResumesService.transferResumeOfOneCandidate(req.body.jobId, req.body.candidateId);
+        return res.status(200).json({ 'msg': "Resume tranfered successflully" });
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ 'msg': error.message });
+    }
+}
 ResumesController.downloadResumesForOneJob = async function(req, res) {
     req.setTimeout(0);
     try {
