@@ -62,7 +62,7 @@ router.get('/fillIn_industry', JobsController.fillIn_industry)
 //resume job routes 
 router.post('/getJobEmail', ResumesController.getJobEmail)
 router.post('/getCandidatesDetails', ResumesController.getCandidatesDetails)
-router.post('/downloadResumesForOneJob', ResumesController.downloadResumesForOneJob)
 router.post('/transferResumeOfOneCandidate', ResumesController.transferResumeOfOneCandidate)
+router.post('/transferAllResumesForOneJob', ResumesController.transferAllResumesForOneJob)
 
 module.exports = router;

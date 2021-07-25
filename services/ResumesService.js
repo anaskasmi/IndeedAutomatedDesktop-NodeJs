@@ -128,12 +128,17 @@ ResumesService.transferResumeOfOneCandidate = async(jobId, candidateId) => {
         throw Error('This Job Doesn\'t exist, please refresh the jobs page and try again');
     }
 
+    //make sure job has an email 
+    if (job.jobDetails_emails == null || job.jobDetails_emails.length == 0) {
+        throw Error('This Job Doesn\'t have an Email yet, please click the get email button first');
+    }
+
     //validate : job has candidate 
     let jobHasThisCandidatesId = job.candidates.filter(candidate => {
         return candidate.id == candidateId;
     })
     if (!jobHasThisCandidatesId) {
-        throw Error('This Job Doesn\'t exist, please refresh the jobs page and try again');
+        throw Error('This Job Doesn\'t have this candidate, please refresh the jobs page and try again');
     }
 
     // delete old folder 
@@ -143,12 +148,7 @@ ResumesService.transferResumeOfOneCandidate = async(jobId, candidateId) => {
     await ResumesService.downloadResumesForOneCondidate(jobId, candidateId);
 
     // transfer via email 
-    if (job.jobDetails_emails != null && job.jobDetails_emails.length > 0) {
-        // await ResumesService.sendEmail(jobId, candidateId, job.jobDetails_emails[0]);
-        await ResumesService.sendEmail(jobId, candidateId, "anaskasmi98@gmail.com");
-    } else {
-        throw Error('This Job Doesn\'t have an Email yet, please click the get email button first');
-    }
+    await ResumesService.sendEmail(jobId, candidateId, job.jobDetails_emails[0]);
 
     //mark the date of the last transfer 
     await Job.updateOne({
@@ -164,77 +164,61 @@ ResumesService.transferResumeOfOneCandidate = async(jobId, candidateId) => {
     });
     // delete the resume folder 
     await ResumesService.deleteCandidateFolder(jobId, candidateId);
-
-
 }
 
 
-ResumesService.downloadResumesForOneJob = async(jobId) => {
+ResumesService.transferAllResumesForOneJob = async(jobId) => {
 
-    let jobEmail = await ResumesService.getJobEmail(jobId);
-    if (!jobEmail) {
-        console.log('no job email was found for this job : ' + jobId);
-        return;
+    //validate : browser is open
+    if (!BrowserService.page) {
+        throw Error('Chromuim browser not open, please open it first');
     }
-    let candidatesRetrieved = [];
-    BrowserService.page.on('response', function getCandidatesFromJobPage(response) {
-        if (response.url().includes('preview/candidates')) {
-            response.json().then((res) => {
-                if (res.candidates) {
-                    let candidatesFromResponse = res.candidates
-                    for (let index = 0; index < candidatesFromResponse.length; index++) {
-                        try {
-                            const currentCandidate = candidatesFromResponse[index];
-                            let candidateId = currentCandidate.candidateId;
-                            let resumeName = 'Resume' + currentCandidate.name.replace(' ', '');
-                            candidatesRetrieved.push({
-                                id: candidateId,
-                                resumeName,
-                                jobId
-                            });
-                        } catch (error) {
-                            console.log(error.message);
-                        }
-                    }
-                }
-            })
-            BrowserService.page.removeListener('response', getCandidatesFromJobPage);
-        }
+
+    //find the job by id
+    let job = await Job.findOne({
+        job_id: jobId,
     });
 
-    // go to 
-    await BrowserService.page.goto(`https://employers.indeed.com/c#candidates?id=${jobId}&sort=datedefault&order=desc&statusName=0`, { waitUntil: "load" });
-    await BrowserService.page.waitForXPath(`//*[@id="employerAssistTooltipWrapper"]`);
-
-
-    await ResumesService.deleteJobFolders(jobId);
-    for (const candidateRetrieved of candidatesRetrieved) {
-
-        //download resumes
-        await ResumesService.downloadResumesForOneCondidate(candidateRetrieved);
-
-        //verify if file exists
-        let fileName = await ResumesService.verifyIsFileExist(candidateRetrieved)
-
-        //add the needed properties to the candidate object
-        if (fileName) {
-            candidateRetrieved.resumeName = fileName;
-            candidateRetrieved.resumePath = path.join(__dirname, '..', 'resumes', candidateRetrieved.jobId, candidateRetrieved.id, fileName);
-            candidateRetrieved.folderPath = path.join(__dirname, '..', 'resumes', candidateRetrieved.jobId, candidateRetrieved.id);
-            console.log('found ');
-        } else {
-            console.log('Not Found ');
-            return false;
-        }
-
-        //send the resume via email
-        await ResumesService.sendEmail(candidateRetrieved, jobEmail);
-
-        //delete the resume
-        await ResumesService.deleteCandidateFolder(candidateRetrieved);
+    //if job has no email get it
+    let jobEmail;
+    if (job.jobDetails_emails == null || job.jobDetails_emails.length == 0) {
+        jobEmail = await ResumesService.getJobEmail(jobId);
+    } else {
+        jobEmail = job.jobDetails_emails[0];
     }
+
+
+    //get latest candidates
+    let jobCandidates = await ResumesService.getCandidatesDetails(jobId);
+
+    //delete old job folder
     await ResumesService.deleteJobFolders(jobId);
 
+    //send candidates one by one
+    for (const candidate of jobCandidates) {
+
+        // download resume
+        await ResumesService.downloadResumesForOneCondidate(jobId, candidate.id);
+        // send resume
+        await ResumesService.sendEmail(jobId, candidate.id, jobEmail);
+
+        // mark candidate as transfered
+        await Job.updateOne({
+            job_id: jobId,
+        }, {
+            $set: {
+                "candidates.$[f].lasteTransferDate": Moment().format('DD MMMM YYYY hh:mm:ss'),
+            }
+        }, {
+            arrayFilters: [{
+                "f.id": candidate.id
+            }, ],
+        });
+    }
+
+
+    //delete old job folder
+    await ResumesService.deleteJobFolders(jobId);
 };
 
 

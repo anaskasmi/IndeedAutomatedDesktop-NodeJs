@@ -56,11 +56,11 @@ ResumesController.transferResumeOfOneCandidate = async function(req, res) {
         return res.status(500).json({ 'msg': error.message });
     }
 }
-ResumesController.downloadResumesForOneJob = async function(req, res) {
+ResumesController.transferAllResumesForOneJob = async function(req, res) {
     req.setTimeout(0);
     try {
-        await ResumesService.downloadResumesForOneJob(req.body.jobId);
-        return res.status(200).json({ 'msg': "Downloaded successfully" });
+        await ResumesService.transferAllResumesForOneJob(req.body.jobId);
+        return res.status(200).json({ 'msg': "All Resume Transfered successfully" });
     } catch (error) {
         console.log(error)
         return res.status(500).json({ 'msg': error.message });
