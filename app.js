@@ -29,6 +29,7 @@ connectToMongoDb().then(() => {
     app.use('/api/jobs', jobsRouter);
     app.use('/js', express.static(path.join(__dirname, "/public/dist/js/")));
     app.use('/css', express.static(path.join(__dirname, "/public/dist/css/")));
+    app.use('/img', express.static(path.join(__dirname, "/public/dist/img/")));
     app.get('*', function(req, res) {
         res.sendFile('index.html', { root: path.join(__dirname, '/public/dist/') });
     });
