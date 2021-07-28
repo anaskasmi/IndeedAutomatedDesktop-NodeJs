@@ -662,6 +662,13 @@ JobsServices.close_questions = async() => {
         await xButton.click();
     }
 }
+JobsServices.click_skip = async() => {
+    await BrowserService.page.waitForTimeout(1000);
+    let skipButton = await BrowserService.page.$x(`//span[contains(text(),'Skip')]`);
+
+    if (skipButton && skipButton[1])
+        await skipButton[1].click();
+}
 
 JobsServices.fillIn_isJobRemote = async() => {
     await BrowserService.page.waitForXPath(`//*[@for="radio-work_remotely-NO"]`);
