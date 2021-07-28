@@ -662,6 +662,7 @@ JobsServices.close_questions = async() => {
         await xButton.click();
     }
 }
+
 JobsServices.click_skip = async() => {
     await BrowserService.page.waitForTimeout(1000);
     let skipButton = await BrowserService.page.$x(`//span[contains(text(),'Skip')]`);
