@@ -18,7 +18,8 @@ ResumesService.getJobEmail = async(jobId) => {
     let job = await Job.findOne({
         job_id: jobId,
     });
-    if (job.jobDetails_emails != null && job.jobDetails_emails.length > 0) {
+
+    if (job && job.jobDetails_emails != null && job.jobDetails_emails.length > 0) {
         return job.jobDetails_emails[0];
     }
     if (!BrowserService.page) {
@@ -30,8 +31,7 @@ ResumesService.getJobEmail = async(jobId) => {
         if (response.url().includes('jobs/view?id=')) {
             response.json().then((res) => {
                 if (res.job) {
-                    let job = res.job;
-                    emails = job.emails;
+                    emails = res.job.emails;
                     BrowserService.page.removeListener('response', getJobIdFromJobPage);
                 }
             })
@@ -43,14 +43,14 @@ ResumesService.getJobEmail = async(jobId) => {
     await BrowserService.page.waitForXPath(`//*[@id="plugin_container_JobDescriptionPageTop"]`);
     // check emails
     if (emails || emails.length) {
-        //svae the new email
-        job.emails = emails;
-        await Job.findOneAndUpdate({
-            job_id: jobId,
-        }, {
-            jobDetails_emails: emails
-        })
-        await job.save();
+        //save the new email if job in db
+        if (job) {
+            await Job.findOneAndUpdate({
+                job_id: jobId,
+            }, {
+                jobDetails_emails: emails
+            })
+        }
         // return it
         return emails[0];
     } else {
@@ -145,10 +145,11 @@ ResumesService.transferResumeOfOneCandidate = async(jobId, candidateId) => {
     await ResumesService.deleteCandidateFolder(jobId, candidateId);
 
     // download candidates resume
-    await ResumesService.downloadResumesForOneCondidate(jobId, candidateId);
+    await ResumesService.downloadResumesForOneCandidate(jobId, candidateId);
 
     // transfer via email 
-    await ResumesService.sendEmail(jobId, candidateId, job.jobDetails_emails[0]);
+    await ResumesService.sendEmail(jobId, candidateId, "anaskasmi98@gmail.com");
+    // await ResumesService.sendEmail(jobId, candidateId, job.jobDetails_emails[0]);
 
     //mark the date of the last transfer 
     await Job.updateOne({
@@ -167,6 +168,73 @@ ResumesService.transferResumeOfOneCandidate = async(jobId, candidateId) => {
 }
 
 
+ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
+    if (!BrowserService.page) {
+        throw Error('Chromuim browser not open, please open it first');
+    }
+    for (const candidate of candidatesList) {
+
+        //find the email
+        let jobEmail = await ResumesService.getJobEmail(candidate.jobId);
+        if (!jobEmail) {
+            console.log(`This Job has no email : ${candidate.jobTitle}`);
+            continue;
+        }
+        // delete old folder 
+        await ResumesService.deleteCandidateFolder(candidate.jobId, candidate.candidateId);
+
+        // download candidates resume
+        await ResumesService.downloadResumesForOneCandidate(candidate.jobId, candidate.candidateId);
+
+        // transfer via email 
+        await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, "anaskasmi98@gmail.com");
+        // await ResumesService.sendEmail(jobId, candidateId, jobEmail);
+
+
+        // delete the resume folder 
+        await ResumesService.deleteCandidateFolder(candidate.jobId, candidate.candidateId);
+
+    }
+}
+ResumesService.getCandidatesBetweenTwoDates = async(startDate, endDate) => {
+    //validate : browser is open
+    if (!BrowserService.page) {
+        throw Error('Chromuim browser not open, please open it first');
+    }
+
+
+    let candidates = [];
+    BrowserService.page.on('response', function getCandidatesFromResponse(response) {
+        if (response.url().includes('/api/ctws/preview/candidates?offset=0')) {
+            response.json().then((res) => {
+                if (res.candidates) {
+                    candidates = res.candidates;
+                    BrowserService.page.removeListener('response', getCandidatesFromResponse);
+                }
+            })
+        }
+    });
+
+    await BrowserService.page.goto(`https://employers.indeed.com/c#candidates?id=0&sort=date&order=desc&statusName=0`, { waitUntil: "load" });
+    await BrowserService.page.waitForXPath(`//*[@id="plugin_container_MainContent"]`);
+
+    if (candidates.length == 0) {
+        await BrowserService.page.reload({ waitUntil: "load" });
+        await BrowserService.page.waitForTimeout(3000);
+    }
+
+    if (candidates.length > 0) {
+        filteredCandidates = candidates.filter((candidate) => {
+            let candidateDate = Moment(candidate.dateCreatedTimestamp).format("YYYY-MM-DD");
+            candidateDate
+            return Moment(candidateDate, "YYYY-MM-DD").isBetween(Moment(startDate, "YYYY-MM-DD"), Moment(endDate, "YYYY-MM-DD"), undefined, '[]');
+        });
+        return filteredCandidates;
+    } else {
+        throw Error("No Candidates were found, please try again");
+    }
+
+}
 ResumesService.transferAllResumesForOneJob = async(jobId) => {
 
     //validate : browser is open
@@ -198,7 +266,7 @@ ResumesService.transferAllResumesForOneJob = async(jobId) => {
     for (const candidate of jobCandidates) {
 
         // download resume
-        await ResumesService.downloadResumesForOneCondidate(jobId, candidate.id);
+        await ResumesService.downloadResumesForOneCandidate(jobId, candidate.id);
         // send resume
         await ResumesService.sendEmail(jobId, candidate.id, jobEmail);
 
@@ -246,7 +314,7 @@ ResumesService.deleteJobFolders = async(jobId) => {
     }
 };
 
-ResumesService.downloadResumesForOneCondidate = async(jobId, candidateId) => {
+ResumesService.downloadResumesForOneCandidate = async(jobId, candidateId) => {
     await BrowserService.page._client.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: path.join(__dirname, '..', 'resumes', jobId, candidateId) });
     try {
         await BrowserService.page.goto(`https://employers.indeed.com/c/resume?id=${candidateId}&ctx=&isPDFView=false`, { waitUntil: "networkidle2" });
