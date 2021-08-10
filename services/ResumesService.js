@@ -148,8 +148,8 @@ ResumesService.transferResumeOfOneCandidate = async(jobId, candidateId) => {
     await ResumesService.downloadResumesForOneCandidate(jobId, candidateId);
 
     // transfer via email 
-    await ResumesService.sendEmail(jobId, candidateId, "anaskasmi98@gmail.com");
-    // await ResumesService.sendEmail(jobId, candidateId, job.jobDetails_emails[0]);
+    // await ResumesService.sendEmail(jobId, candidateId, "anaskasmi98@gmail.com");
+    await ResumesService.sendEmail(jobId, candidateId, job.jobDetails_emails[0]);
 
     //mark the date of the last transfer 
     await Job.updateOne({
@@ -187,8 +187,8 @@ ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
         await ResumesService.downloadResumesForOneCandidate(candidate.jobId, candidate.candidateId);
 
         // transfer via email 
-        await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, "anaskasmi98@gmail.com");
-        // await ResumesService.sendEmail(jobId, candidateId, jobEmail);
+        // await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, "anaskasmi98@gmail.com");
+        await ResumesService.sendEmail(jobId, candidateId, jobEmail);
 
 
         // delete the resume folder 
@@ -219,6 +219,7 @@ ResumesService.getCandidatesBetweenTwoDates = async(startDate, endDate) => {
     await BrowserService.page.waitForXPath(`//*[@id="plugin_container_MainContent"]`);
 
     if (candidates.length == 0) {
+        await BrowserService.page.waitForTimeout(2000);
         await BrowserService.page.reload({ waitUntil: "load" });
         await BrowserService.page.waitForTimeout(3000);
     }

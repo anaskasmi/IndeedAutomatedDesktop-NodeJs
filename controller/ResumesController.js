@@ -15,7 +15,6 @@ ResumesController.getNewBrowser = async function(req, res) {
     } catch (error) {
         console.log(error)
         return res.status(500).json({ error: error });
-
     }
 }
 ResumesController.getJobEmail = async function(req, res) {

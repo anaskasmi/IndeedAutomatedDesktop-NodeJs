@@ -9,7 +9,6 @@ const path = require('path');
 const Job = require('./../models/Job')
 const BrowserService = require('./BrowserService');
 const Helpers = require('../utilities/Helpers');
-const { handleDidYouHirepPopUp } = require('../utilities/handleDidYouHirepPopUp');
 
 
 let JobsServices = {};

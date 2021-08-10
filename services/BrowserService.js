@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer-extra')
 const StealthPlugin = require('puppeteer-extra-plugin-stealth')
 puppeteer.use(StealthPlugin());
 const { loadCookies } = require('../utilities/loadCookies');
+const { saveCookies } = require('../utilities/saveCookies');
 
 let args = [
     '--no-sandbox',
@@ -64,6 +65,9 @@ BrowserService.getNewBrowser = async function() {
     });
     await BrowserService.getNewPage();
     await BrowserService.page.goto('https://employers.indeed.com/');
+    //? save cookies
+    // const cookies = await BrowserService.page.cookies();
+    // await saveCookies(cookies);
 }
 
 
