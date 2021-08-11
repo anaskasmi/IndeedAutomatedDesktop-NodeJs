@@ -188,7 +188,7 @@ ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
 
         // transfer via email 
         // await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, "anaskasmi98@gmail.com");
-        await ResumesService.sendEmail(jobId, candidateId, jobEmail);
+        await ResumesService.sendEmail(candidate.jobId, candidateId, jobEmail);
 
 
         // delete the resume folder 
