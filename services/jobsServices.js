@@ -511,11 +511,11 @@ JobsServices.fillIn_adDurationType = async() => {
     await BrowserService.page.select(`[name="jobDurationSelector"]`, "CUSTOM_END_DATE");
 }
 
-JobsServices.fillIn_adDurationDate = async() => {
+JobsServices.fillIn_adDurationDate = async(endDateIncreaseNumber) => {
 
     //generate new date after 4 days
-    let newEndDate = Moment(Moment()).add(5, 'days');
-    console.log('newEndDate + 5 days : ' + newEndDate);
+    let newEndDate = Moment(Moment()).add(+endDateIncreaseNumber, 'days');
+    console.log(`newEndDate + ${endDateIncreaseNumber} days : ${newEndDate}`);
 
     // change its Format
     newEndDate = newEndDate.format('MM/DD/YYYY');
