@@ -327,7 +327,7 @@ JobsController.fillIn_adDurationType = async(req, res) => {
 JobsController.fillIn_adDurationDate = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.fillIn_adDurationDate();
+        await JobsServices.fillIn_adDurationDate(req.body.endDateIncreaseNumber);
         return res.status(200).json({ "msg": "duration date, filled in successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
