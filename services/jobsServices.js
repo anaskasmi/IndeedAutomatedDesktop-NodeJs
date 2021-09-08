@@ -17,11 +17,19 @@ let JobsServices = {};
 
 JobsServices.openPostJobPage = async() => {
     await BrowserService.page.goto(`https://employers.indeed.com/p#post-job`, { waitUntil: "networkidle2" });
+    await BrowserService.page.waitForTimeout(2000);
     let [skipButton] = await BrowserService.page.$x(`//*[@data-tn-element="navControlButton-skip"]`);
     if (skipButton) {
         console.log('found skip button')
         await skipButton.click();
     }
+
+    let [isIntroPage] = await BrowserService.page.$x(`//*[text()='How would you like to build your post?']`)
+    let [continueButton] = await BrowserService.page.$x(`//*[text()='Continue']/parent::span/parent::span`)
+    if (continueButton && isIntroPage) {
+        await continueButton.click()
+    }
+
 }
 
 JobsServices.getJobFullDetails = async(jobId) => {

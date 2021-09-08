@@ -91,6 +91,42 @@ BrowserService.getNewPage = async function() {
 
             // }
 
+            if (response.url().includes('orientation-sheet')) {
+                try {
+                    await this.page.waitForTimeout(2000);
+                    let [startFromScratchButton] = await this.page.$x(`//*[@id="StartFromScratch-radio"]/parent::label`);
+                    if (startFromScratchButton) {
+                        await startFromScratchButton.click()
+                    }
+                } catch (error) {
+                    console.log('couldnt click :  startFromScratchButton ')
+                }
+
+                try {
+                    await this.page.waitForTimeout(2000);
+                    let [startOverButton] = await this.page.$x(`//*[text()='Start over']/parent::button`)
+                    if (startOverButton) {
+                        await startOverButton.click()
+                    }
+                } catch (error) {
+                    console.log('couldnt click :  startOverButton ')
+                }
+
+                try {
+                    await this.page.waitForTimeout(4000);
+                    let [isIntroPage] = await this.page.$x(`//*[text()='How would you like to build your post?']`)
+                    let [continueButton] = await this.page.$x(`//*[text()='Continue']/parent::span/parent::span`)
+                    if (continueButton && isIntroPage) {
+                        await continueButton.click()
+                    }
+                } catch (error) {
+                    console.log('couldnt click :  continueButton in Intro page ')
+                }
+
+
+
+            }
+
 
             // if (response.url().includes('https://d3l2aiuysuvlk2.cloudfront.net/brotli/hiresignal/343126bfbc2d8bf6a72e/scripts/hiresignal-534.js')) {
             //     // await this.page.waitForTimeout(3000);
