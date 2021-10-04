@@ -97,10 +97,10 @@ JobsServices.scrapAllJobs = async(totalPagesNumber = 6) => {
     const jobsArray = [];
 
     function getJobsFromReponse(response) {
-        if (response.url().includes('graphql')) {
+        if (response.url().includes('/api/jobs?page')) {
             response.json().then(async(res) => {
-                if (res.data.jobs) {
-                    for (const job of res.data.jobs) {
+                if (res.jobs) {
+                    for (const job of res.jobs) {
                         jobsArray.push(job);
                     }
                     console.log('Total jobs found : ' + jobsArray.length + ' jobs')
@@ -113,12 +113,9 @@ JobsServices.scrapAllJobs = async(totalPagesNumber = 6) => {
     console.log('regrabing jobs from Indeed..')
     for (let currentPage = 1; currentPage <= totalPagesNumber; currentPage++) {
         console.log('page : ' + currentPage)
-        await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?p=${currentPage}`);
-        // if (!(await BrowserService.page.url()).includes('j#vr-onboarding')) {
-        //     console.log('jobs page redirected.. trying again..')
-        //     await BrowserService.page.reload();
-        //     await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?p=${currentPage}`);
-        // }
+            // await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?p=${currentPage}`);
+        await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?page=${currentPage}&pageSize=50&tab=0&field=DATECREATED&dir=DESC&status=open%2Cpaused`);
+
         await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
 
     }
