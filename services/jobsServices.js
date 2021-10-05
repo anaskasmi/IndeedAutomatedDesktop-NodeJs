@@ -116,7 +116,7 @@ JobsServices.scrapAllJobs = async(totalPagesNumber = 4) => {
             // await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?p=${currentPage}`);
         await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?page=${currentPage}&pageSize=50&tab=0&field=DATECREATED&dir=DESC&status=open%2Cpaused`);
 
-        await BrowserService.page.waitForTimeout(3000);
+        await BrowserService.page.waitForTimeout(4000);
         await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
 
     }
