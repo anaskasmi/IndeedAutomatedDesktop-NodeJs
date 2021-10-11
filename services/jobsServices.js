@@ -17,15 +17,16 @@ let JobsServices = {};
 
 JobsServices.openPostJobPage = async() => {
     await BrowserService.page.goto(`https://employers.indeed.com/p#post-job`, { waitUntil: "networkidle2" });
-    await BrowserService.page.waitForTimeout(2000);
+    await BrowserService.page.waitForTimeout(3000);
+
     let [skipButton] = await BrowserService.page.$x(`//*[@data-tn-element="navControlButton-skip"]`);
     if (skipButton) {
         console.log('found skip button')
         await skipButton.click();
     }
 
-    let [isIntroPage] = await BrowserService.page.$x(`//*[text()='How would you like to build your post?']`)
-    let [continueButton] = await BrowserService.page.$x(`//*[text()='Continue']/parent::span/parent::span`)
+    let [isIntroPage] = await BrowserService.page.$x(`//*[text()='How would you like to start your job post?']`);
+    let [continueButton] = await BrowserService.page.$x(`//*[text()='Continue']`)
     if (continueButton && isIntroPage) {
         await continueButton.click()
     }
@@ -145,55 +146,30 @@ JobsServices.getJobDataFromDb = async(jobId) => {
 
 JobsServices.unlockCompanyNameInput = async() => {
     //click pencil Icon
-    id = "companyNameChangeRadioButtonPostingOnBehalf"
-    await BrowserService.page.waitForXPath(`//*[@id="change-company-link"]`);
-    let [companyNamePencil] = await BrowserService.page.$x(`//*[@id="change-company-link"]`);
+    await BrowserService.page.waitForXPath(`//*[contains(text(),'Company name:')]/following-sibling::button`);
+    let [companyNamePencil] = await BrowserService.page.$x(`//*[contains(text(),'Company name:')]/following-sibling::button`);
     if (companyNamePencil) {
         await companyNamePencil.click();
     }
 
     //chose company name change reason
-    await BrowserService.page.waitForXPath(`//*[@for="companyNameChangeRadioButtonPostingOnBehalf"]`);
-    let [companyNameChangeReason] = await BrowserService.page.$x(`//*[@for="companyNameChangeRadioButtonPostingOnBehalf"]`);
+    await BrowserService.page.waitForXPath(`//*[@value="posting_on_behalf"]/parent::label`);
+    let [companyNameChangeReason] = await BrowserService.page.$x(`//*[@value="posting_on_behalf"]/parent::label`);
     await companyNameChangeReason.click();
+
 }
 
 JobsServices.fillIn_CompanyName = async(companyName) => {
-    let [companyEditLock] = await BrowserService.page.$x(`//*[@data-tn-element="changeCompanyLink"]`);
-    if (companyEditLock) {
-        await companyEditLock.click();
-        //chose company name change reason
-        await BrowserService.page.waitForXPath(`//*[@for="companyNameChangeRadioButtonPostingOnBehalf"]`);
-        let [companyNameChangeReason] = await BrowserService.page.$x(`//*[@for="companyNameChangeRadioButtonPostingOnBehalf"]`);
-        await companyNameChangeReason.click();
-
-    }
-    await BrowserService.page.waitForXPath(`//*[@id="input-company"]`);
-    let [JobCompanyNameInput] = await BrowserService.page.$x(`//*[@id="input-company"]`);
-
-    if (process.env.TYPING_METHODE == "keyboard") {
-        await JobCompanyNameInput.click({ clickCount: 3 });
-        await JobCompanyNameInput.press('Backspace');
-        await JobCompanyNameInput.type(companyName);
-    } else {
-        await BrowserService.page.evaluate((companyName) => {
-            document.querySelector(`#input-company`).value = companyName;
-        }, companyName);
-        await BrowserService.page.evaluate((companyName) => {
-            document.querySelector(`#input-company`).value = companyName;
-        }, companyName);
-        await JobCompanyNameInput.type(' ');
-        await BrowserService.page.waitForTimeout(1000);
-        await JobCompanyNameInput.press('Enter');
-    }
-
-
+    await BrowserService.page.waitForXPath(`//*[@data-testid="job-company-name-change-input"]`);
+    let [JobCompanyNameInput] = await BrowserService.page.$x(`//*[@data-testid="job-company-name-change-input"]`);
+    await JobCompanyNameInput.click({ clickCount: 3 });
+    await JobCompanyNameInput.press('Backspace');
+    await JobCompanyNameInput.type(companyName);
 }
 
 JobsServices.fillIn_JobTitle = async(jobTitle) => {
-    await BrowserService.page.waitForXPath(`//*[@id="JobTitle"]`);
-    let [jobTitleInput] = await BrowserService.page.$x(`//*[@id="JobTitle"]`);
-    //writing using the keyboard methode
+    await BrowserService.page.waitForXPath(`//*[@id="remote.draftJobPosts.title"]`);
+    let [jobTitleInput] = await BrowserService.page.$x(`//*[@id="remote.draftJobPosts.title"]`);
     await jobTitleInput.click({ clickCount: 3 });
     await jobTitleInput.press('Backspace');
     await jobTitleInput.type(jobTitle);
@@ -221,21 +197,21 @@ JobsServices.fillIn_industry = async() => {
 }
 
 JobsServices.fillIn_RolesLocation = async(location) => {
-
     let city = location.city;
     let state = location.state;
     //click on one location option
-    await BrowserService.page.waitForXPath(`//*[@for="roleLocationTypeRadiosOneLocation"]`);
-    let [oneLocation] = await BrowserService.page.$x(`//*[@for="roleLocationTypeRadiosOneLocation"]`);
+    await BrowserService.page.waitForXPath(`//*[@data-testid="ONE_LOCATION"]/parent::label`);
+    let [oneLocation] = await BrowserService.page.$x(`//*[@data-testid="ONE_LOCATION"]/parent::label`);
+    await oneLocation.click();
+    await oneLocation.click();
     await oneLocation.click();
     //click dont include the address option
-    await BrowserService.page.waitForXPath(`//*[@id="ecl-RadioItem-label-HideExactLocation"]`);
-    let [hideExactLocation] = await BrowserService.page.$x(`//*[@id="ecl-RadioItem-label-HideExactLocation"]`);
+    await BrowserService.page.waitForXPath(`//*[@data-testid="remote.draftJobPosts.attributes.workLocationType-OneMileRadius"]/parent::label`);
+    let [hideExactLocation] = await BrowserService.page.$x(`//*[@data-testid="remote.draftJobPosts.attributes.workLocationType-OneMileRadius"]/parent::label`);
     await hideExactLocation.click();
     //fill in the city 
-    await BrowserService.page.waitForXPath(`//*[@id="precise-address-city-input"]`);
-    let [cityInput] = await BrowserService.page.$x(`//*[@id="precise-address-city-input"]`);
-
+    await BrowserService.page.waitForXPath(`//*[@data-testid="precise-address-city"]`);
+    let [cityInput] = await BrowserService.page.$x(`//*[@data-testid="precise-address-city"]`);
     //type
     await BrowserService.page.waitForTimeout(2 * 1000);
     await cityInput.click();
@@ -244,16 +220,9 @@ JobsServices.fillIn_RolesLocation = async(location) => {
         await cityInput.press("Backspace");
     }
     await cityInput.type(city + ', ' + state, { delay: 20 });
-
-
     await BrowserService.page.waitForTimeout(3000);
     await BrowserService.page.keyboard.press('ArrowDown');
     await BrowserService.page.keyboard.press('Enter');
-    // fill in the state
-    await BrowserService.page.select('[name="region"]', state)
-
-    //wait for Advertising location to apply 
-    await BrowserService.page.waitForTimeout(3 * 1000);
 
 
 
@@ -316,31 +285,29 @@ JobsServices.fillIn_schedule = async() => {
 
 JobsServices.fillIn_hiresNumber = async(jobDetails_intHiresNeeded) => {
     if (jobDetails_intHiresNeeded > 0 && jobDetails_intHiresNeeded <= 10) {
-        await BrowserService.page.select(`#intHiresNeeded`, jobDetails_intHiresNeeded)
-    } else if (jobDetails_intHiresNeeded > 10) {
-        await BrowserService.page.select(`#intHiresNeeded`, 'TEN_PLUS')
+        await BrowserService.page.select('[data-testid="job-hires-needed"]', jobDetails_intHiresNeeded)
     } else {
-        await BrowserService.page.select(`#intHiresNeeded`, 'RECURRING_HIRE')
+        await BrowserService.page.select('[data-testid="job-hires-needed"]', 'TEN_PLUS')
     }
 }
 
 JobsServices.fillIn_deadline = async(jobDetails_expectedHireDate) => {
-    await BrowserService.page.select(`#expectedHireDate`, jobDetails_expectedHireDate)
+    await BrowserService.page.select('[data-testid="job-expected-hire-date"]', jobDetails_expectedHireDate)
 }
 
 JobsServices.fillIn_paymentType = async(jobDetails_salaryRangeType, jobDetails_SalaryFrom, jobDetails_SalaryTo) => {
     //find the salary Range Type
     if (jobDetails_salaryRangeType) {
-        let [jobSalaryRangeType] = await BrowserService.page.$x(`//*[@id="JobSalaryRangeType"]`);
+        let jobSalaryRangeType = await BrowserService.page.$(`[name="remote.draftJobPosts.attributes.salaryRangeType"]`);
         if (jobSalaryRangeType) {
-            await BrowserService.page.select(`[name="jobsalaryrangetype"]`, jobDetails_salaryRangeType)
+            await BrowserService.page.select(`[name="remote.draftJobPosts.attributes.salaryRangeType"]`, jobDetails_salaryRangeType)
             return true;
         }
     } else if (jobDetails_SalaryFrom && jobDetails_SalaryTo) {
         jobDetails_salaryRangeType = findRangeType(jobDetails_SalaryFrom, jobDetails_SalaryTo)
-        let [jobSalaryRangeType] = await BrowserService.page.$x(`//*[@id="JobSalaryRangeType"]`);
+        let jobSalaryRangeType = await BrowserService.page.$(`[name="remote.draftJobPosts.attributes.salaryRangeType"]`);
         if (jobSalaryRangeType) {
-            await BrowserService.page.select(`#JobSalaryRangeType`, jobDetails_salaryRangeType)
+            await BrowserService.page.select(`[name="remote.draftJobPosts.attributes.salaryRangeType"]`, jobDetails_salaryRangeType)
             return true;
         }
     } else {
@@ -355,7 +322,7 @@ JobsServices.fillIn_salaryFromAndTo = async(jobDetails_SalaryFrom, jobDetails_Sa
     switch (jobDetails_salaryRangeType) {
         case 'UP_TO':
             //fill in salary 1 with jobDetails_SalaryTo
-            [jobSalary1] = await BrowserService.page.$x(`//*[@id="JobSalary1"]`);
+            [jobSalary1] = await BrowserService.page.$x(`//*[@id="local.temp-salary.minimum"]`);
             if (jobDetails_SalaryTo) {
                 await jobSalary1.click({ clickCount: 3 });
                 await jobSalary1.press('Backspace');
@@ -369,7 +336,7 @@ JobsServices.fillIn_salaryFromAndTo = async(jobDetails_SalaryFrom, jobDetails_Sa
             break;
         case 'STARTING_AT':
             //fill in salary 1 with jobDetails_SalaryFrom
-            [jobSalary1] = await BrowserService.page.$x(`//*[@id="JobSalary1"]`);
+            [jobSalary1] = await BrowserService.page.$x(`//*[@id="local.temp-salary.minimum"]`);
             if (jobDetails_SalaryFrom) {
                 await jobSalary1.click({ clickCount: 3 });
                 await jobSalary1.press('Backspace');
@@ -384,7 +351,7 @@ JobsServices.fillIn_salaryFromAndTo = async(jobDetails_SalaryFrom, jobDetails_Sa
 
         case 'EXACT_RATE':
             //fill in salary 1 with jobDetails_SalaryFrom
-            [jobSalary1] = await BrowserService.page.$x(`//*[@id="JobSalary1"]`);
+            [jobSalary1] = await BrowserService.page.$x(`//*[@id="local.temp-salary.minimum"]`);
             if (jobDetails_SalaryFrom) {
                 await jobSalary1.click({ clickCount: 3 });
                 await jobSalary1.press('Backspace');
@@ -398,8 +365,8 @@ JobsServices.fillIn_salaryFromAndTo = async(jobDetails_SalaryFrom, jobDetails_Sa
             break;
         case 'RANGE':
             //fill in salary 1 with jobDetails_SalaryFrom and fill in salary 2 with jobDetails_SalaryTo
-            [jobSalary1] = await BrowserService.page.$x(`//*[@id="JobSalary1"]`);
-            [jobSalary2] = await BrowserService.page.$x(`//*[@id="JobSalary2"]`);
+            [jobSalary1] = await BrowserService.page.$x(`//*[@id="local.temp-salary.minimum"]`);
+            [jobSalary2] = await BrowserService.page.$x(`//*[@id="local.temp-salary.maximum"]`);
             if (jobDetails_SalaryFrom) {
                 await jobSalary1.click({ clickCount: 3 });
                 await jobSalary1.press('Backspace');
@@ -431,7 +398,7 @@ JobsServices.fillIn_salaryFromAndTo = async(jobDetails_SalaryFrom, jobDetails_Sa
 }
 
 JobsServices.fillIn_paymentFrom = async(jobDetails_SalaryFrom) => {
-    let [jobSalary1] = await BrowserService.page.$x(`//*[@id="JobSalary1"]`);
+    let [jobSalary1] = await BrowserService.page.$x(`//*[@id="local.temp-salary.minimum"]`);
     if (jobSalary1 && jobDetails_SalaryFrom) {
         await jobSalary1.click({ clickCount: 3 });
         await jobSalary1.press('Backspace');
@@ -449,9 +416,9 @@ JobsServices.fillIn_paymentFrom = async(jobDetails_SalaryFrom) => {
 JobsServices.fillIn_paymentTo = async(jobDetails_SalaryTo, jobDetails_salaryRangeType) => {
     let jobSalaryInput;
     if (jobDetails_salaryRangeType == 'UP_TO') {
-        [jobSalaryInput] = await BrowserService.page.$x(`//*[@id="JobSalary1"]`);
+        [jobSalaryInput] = await BrowserService.page.$x(`//*[@id="local.temp-salary.minimum"]`);
     } else {
-        [jobSalaryInput] = await BrowserService.page.$x(`//*[@id="JobSalary2"]`);
+        [jobSalaryInput] = await BrowserService.page.$x(`//*[@id="local.temp-salary.maximum"]`);
     }
     if (jobSalaryInput && jobDetails_SalaryTo) {
         await jobSalaryInput.click({ clickCount: 3 });
@@ -469,9 +436,9 @@ JobsServices.fillIn_paymentTo = async(jobDetails_SalaryTo, jobDetails_salaryRang
 
 
 JobsServices.fillIn_paymentPer = async(jobDetails_SalaryPer) => {
-    let [jobSalaryPeriod] = await BrowserService.page.$x(`//*[@id="JobSalaryPeriod"]`);
+    let [jobSalaryPeriod] = await BrowserService.page.$x(`//*[@id="local.temp-salary.period"]`);
     if (jobSalaryPeriod && jobDetails_SalaryPer) {
-        await BrowserService.page.select(`[name="jobsalaryperiod"]`, jobDetails_SalaryPer)
+        await BrowserService.page.select(`[name="local.temp-salary.period"]`, jobDetails_SalaryPer)
         return true;
     } else {
         return false;
@@ -479,42 +446,39 @@ JobsServices.fillIn_paymentPer = async(jobDetails_SalaryPer) => {
 }
 
 JobsServices.fillIn_description = async(jobDescriptionHtml) => {
-    // split description to array 
-    // let descriptionArray = descriptionToArray(jobDescriptionHtml);
-
     //start filling the descritpion
     await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'job description')]`);
-    await BrowserService.page.$eval('#JobDescription-editor-content', (el, jobDescriptionHtml) => { el.innerHTML = jobDescriptionHtml }, jobDescriptionHtml);
+    await BrowserService.page.$eval('#JobDescription-editor-editor-content', (el, jobDescriptionHtml) => { el.innerHTML = jobDescriptionHtml }, jobDescriptionHtml);
 
     //type space to apply changements
-    let [descriptionInput] = await BrowserService.page.$x(`//*[@id="JobDescription-editor-content"]`);
-    await descriptionInput.type(' ')
+    let [descriptionInput] = await BrowserService.page.$x(`//*[@id="JobDescription-editor-editor-content"]`);
+    await descriptionInput.click({ clickCount: 2 });
 
 }
 
 
 JobsServices.fillIn_isResumeRequired = async() => {
-    await BrowserService.page.waitForXPath(`//*[@id="radio-applicationemailresumerequirement-REQUIRED"]`);
-    let [resumeRequiredButton] = await BrowserService.page.$x(`//*[@id="radio-applicationemailresumerequirement-REQUIRED"]`);
+    await BrowserService.page.waitForXPath(`//*[@name="remote.draftJobPosts.resumeRequired" and @value="YES"]/parent::label`);
+    let [resumeRequiredButton] = await BrowserService.page.$x(`//*[@name="remote.draftJobPosts.resumeRequired" and @value="YES"]/parent::label`);
     await resumeRequiredButton.click();
     return true;
 }
 
 JobsServices.click_confirm = async() => {
-    await BrowserService.page.waitForXPath(`//*[@data-tn-element="sheet-next-button"]`);
-    let [confirmButton] = await BrowserService.page.$x(`//*[@data-tn-element="sheet-next-button"]`);
+    await BrowserService.page.waitForXPath(`//*[text()='Confirm']/parent::button`);
+    let [confirmButton] = await BrowserService.page.$x(`//*[text()='Confirm']/parent::button`);
     await confirmButton.click();
 }
 
 JobsServices.click_advanced = async() => {
-    await BrowserService.page.waitForXPath(`//*[@id="ADVANCED"]`);
-    let [budgetAdvancedButton] = await BrowserService.page.$x(`//*[@id="ADVANCED"]`);
+    await BrowserService.page.waitForXPath(`//*[text()='Advanced']/parent::button`);
+    let [budgetAdvancedButton] = await BrowserService.page.$x(`//*[text()='Advanced']/parent::button`);
     await budgetAdvancedButton.click();
 }
 
 JobsServices.fillIn_adDurationType = async() => {
-    await BrowserService.page.waitForXPath(`//*[@name="jobDurationSelector"]`);
-    await BrowserService.page.select(`[name="jobDurationSelector"]`, "CUSTOM_END_DATE");
+    await BrowserService.page.waitForXPath(`//*[@id="adEndDateSelect"]`);
+    await BrowserService.page.select(`#adEndDateSelect`, "CUSTOM");
 }
 
 JobsServices.fillIn_adDurationDate = async(endDateIncreaseNumber) => {
@@ -527,11 +491,8 @@ JobsServices.fillIn_adDurationDate = async(endDateIncreaseNumber) => {
     console.log('newEndDate + format : ' + newEndDate);
 
     //fill in the input
-    let [endDateInput] = await BrowserService.page.$x(`//*[@id="endDateContainer-0"]/input`);
+    let [endDateInput] = await BrowserService.page.$x(`//*[@id="input"]`);
     await endDateInput.click({ clickCount: 3 });
-    for (let index = 0; index < 30; index++) {
-        await endDateInput.press('Backspace');
-    }
     await BrowserService.page.keyboard.type(newEndDate)
         //second time
     for (let index = 0; index < 30; index++) {
@@ -546,7 +507,7 @@ JobsServices.fillIn_adDurationDate = async(endDateIncreaseNumber) => {
 
     //fourth time
     await BrowserService.page.evaluate((newEndDate) => {
-        document.querySelector(`#endDateContainer-0 > input[type=text]`).value = newEndDate;
+        document.querySelector(`#input`).value = newEndDate;
     }, newEndDate);
 
 
@@ -634,27 +595,19 @@ JobsServices.closeJob = async(jobId) => {
 }
 
 JobsServices.fillIn_email = async(jobDetails_emails) => {
-    await BrowserService.page.waitForXPath(`//*[@name="communication-settings-email-input_primary"]`);
-    let [emailInput] = await BrowserService.page.$x(`//*[@name="communication-settings-email-input_primary"]`);
+    // click on the add email button
+    await BrowserService.page.waitForXPath(`//*[text()='Add an email']/parent::button`);
+    let [addEmailButton] = await BrowserService.page.$x(`//*[text()='Add an email']/parent::button`);
+    await addEmailButton.click({ clickCount: 3 });
+
+    //fill in the email input
+    await BrowserService.page.waitForXPath(`//*[@name="remote.draftJobPosts.applyMethod.emails"]`);
+    let [emailInput] = await BrowserService.page.$x(`//*[@name="remote.draftJobPosts.applyMethod.emails"]`);
     await emailInput.click({ clickCount: 3 });
     await emailInput.press('Backspace');
     await Helpers.clearInput();
     await emailInput.type(jobDetails_emails);
-    // if (process.env.TYPING_METHODE == "keyboard") {
-    //     await emailInput.click({ clickCount: 3 });
-    //     await emailInput.press('Backspace');
-    //     await emailInput.type(jobDetails_emails);
-    // } else {
-    //     await emailInput.type(' ');
-    //     await emailInput.press('Backspace');
-    //     await BrowserService.page.evaluate((jobDetails_emails) => {
-    //         document.querySelector(`[name="communication-settings-email-input_primary"]`).value = jobDetails_emails;
-    //     }, jobDetails_emails);
-    //     await BrowserService.page.evaluate((jobDetails_emails) => {
-    //         document.querySelector(`[name="communication-settings-email-input_primary"]`).value = jobDetails_emails;
-    //     }, jobDetails_emails);
-    //     await emailInput.press('Enter');
-    // }
+    await BrowserService.page.waitForTimeout(2000);
 
 }
 
