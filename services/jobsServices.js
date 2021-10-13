@@ -204,7 +204,7 @@ JobsServices.fillIn_RolesLocation = async(location) => {
     let [oneLocation] = await BrowserService.page.$x(`//*[@value="ONE_LOCATION"]/parent::label`);
     await oneLocation.click();
     await BrowserService.page.waitForTimeout(2 * 1000);
-    let [oneLocation] = await BrowserService.page.$x(`//*[@value="ONE_LOCATION"]/parent::label`);
+    [oneLocation] = await BrowserService.page.$x(`//*[@value="ONE_LOCATION"]/parent::label`);
     await oneLocation.click();
     //click dont include the address option
     await BrowserService.page.waitForXPath(`//*[@data-testid="remote.draftJobPosts.attributes.workLocationType-OneMileRadius"]/parent::label`);
