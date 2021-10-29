@@ -597,9 +597,9 @@ JobsServices.closeJob = async(jobId) => {
 
 JobsServices.fillIn_email = async(jobDetails_emails) => {
     // click on the add email button
-    await BrowserService.page.waitForXPath(`//*[text()='Add an email']/parent::button`);
-    let [addEmailButton] = await BrowserService.page.$x(`//*[text()='Add an email']/parent::button`);
-    await addEmailButton.click({ clickCount: 3 });
+    // await BrowserService.page.waitForXPath(`//*[text()='Add an email']/parent::button`);
+    // let [addEmailButton] = await BrowserService.page.$x(`//*[text()='Add an email']/parent::button`);
+    // await addEmailButton.click({ clickCount: 3 });
 
     //fill in the email input
     await BrowserService.page.waitForXPath(`//*[@name="remote.draftJobPosts.applyMethod.emails"]`);
