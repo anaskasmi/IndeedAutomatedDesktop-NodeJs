@@ -613,9 +613,8 @@ JobsServices.fillIn_email = async(jobDetails_emails) => {
 }
 
 JobsServices.close_questions = async() => {
-    // await BrowserService.page.waitForXPath(`//*[@aria-label="Remove question"]`);
     await BrowserService.page.waitForTimeout(2000);
-    let xButtons = await BrowserService.page.$x(`//*[@aria-label="Remove question"]`);
+    let xButtons = await BrowserService.page.$x(`//*[contains(@class,'CloseButton')]`);
     for (const xButton of xButtons) {
         await xButton.click();
     }
