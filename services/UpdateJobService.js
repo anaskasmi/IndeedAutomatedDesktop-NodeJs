@@ -1,11 +1,18 @@
 const BrowserService = require('./BrowserService');
 const Helpers = require('../utilities/Helpers');
 const Moment = require('moment');
+const queryString = require('query-string');
 
 let UpdateJobService = {};
 
 
 UpdateJobService.updateJob = async(data) => {
+
+    // if no budget data was provided return 
+    if (!data.jobTitle && !data.location.city && !data.location.state && !data.description) {
+        return;
+    }
+
 
     await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/preview-job?id=${data.id}`, { waitUntil: 'load' });
 
@@ -115,157 +122,115 @@ UpdateJobService.updateJob = async(data) => {
         let [updateTitleButton] = await BrowserService.page.$x(`//*[@data-testid="edit-field-update"]`);
         await updateTitleButton.click();
         await BrowserService.page.waitForTimeout(1000);
-
-
     }
+
+    //save changes 
+    let [submitButton] = await BrowserService.page.$x(`//*[@type="submit"]`);
+    await submitButton.click();
+    await BrowserService.page.waitForTimeout(3000);
 
 
 }
 
-UpdateJobService.updateDescriptionSection = async(id, description) => {
-    await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/preview-job?id=${id}`, { waitUntil: 'load' });
-
-    //visite the description  page
-    await BrowserService.page.waitForXPath(`//*[@data-tn-element="descriptionEditLink"]`);
-    let [descriptionLink] = await BrowserService.page.$x(`//*[@data-tn-element="descriptionEditLink"]`);
-    await descriptionLink.click();
-    await BrowserService.page.waitForXPath(`//*[@id="JobDescription-editor-content"]`);
-
-    //fill in the description
-    await BrowserService.page.$eval('#JobDescription-editor-content', (el, description) => { el.innerHTML = description }, description);
-
-    //type space to apply changements
-    let [descriptionInput] = await BrowserService.page.$x(`//*[@id="JobDescription-editor-content"]`);
-    await descriptionInput.type(' ')
-
-    //click update button
-    await Helpers.clickUpdateOrContinue();
-    await BrowserService.page.waitForTimeout(3 * 1000);
-
-    //click confirm 
-    try {
-        await Helpers.clickConfirm();
-        await BrowserService.page.waitForTimeout(2 * 1000);
-    } catch (error) {
-        console.log('error : confirm not found, after updating the description')
-    }
-
-}
-
-
-UpdateJobService.updateSponsorJobSection = async(id, budget_amount, budget_maxCPC, budgetEndDate) => {
-    //if no data was provided return 
-    if (!budget_amount && !budget_maxCPC && !budgetEndDate) {
+UpdateJobService.updateBudgetSection = async(data) => {
+    // if no budget data was provided return 
+    if (!data.budgetEndDate && !data.maxCPC && !data.budget) {
         return;
     }
 
-
-    await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/preview-job?id=${id}`, { waitUntil: 'load' });
-    //wait for page to load
-    await BrowserService.page.waitForXPath(`//*[@data-tn-element="locationEditLink"]`);
-
-
-    //go to the budget page
-
-
-    let [budgetEditLink] = await BrowserService.page.$x(`//*[@data-tn-element="budgetEditLink"]`);
-    let [createBudgetLink] = await BrowserService.page.$x(`//*[@id="edit-budget-in-preview"]`);
-    if (budgetEditLink) {
-        await budgetEditLink.click();
-    } else if (createBudgetLink) {
-        await createBudgetLink.click();
-    } else {
-        console.log('edit budget link not found');
-        throw 'Edit budget link not found!';
+    // get publish ID
+    try {
+        await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/preview-job?id=${data.id}`, { waitUntil: 'load' });
+    } catch (error) {
+        await BrowserService.page.waitForTimeout(2000);
+        await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/preview-job?id=${data.id}`, { waitUntil: 'load' });
     }
 
-    await BrowserService.page.waitForXPath(`//*[@id="ADVANCED"]`);
+    //wait for header of page to show
+    await BrowserService.page.waitForXPath(`//*[@data-testid="sheet-header"]`);
 
-    //click advanced
-    let [budgetAdvancedButton] = await BrowserService.page.$x(`//*[@id="ADVANCED"]`);
+    //parse publish id 
+    const url = await BrowserService.page.url()
+    const queryObj = queryString.parseUrl(url);
+    const publishedId = queryObj.query.publishedId;
+
+
+    // go to sponsor page
+    await BrowserService.page.goto(`https://employers.indeed.com/o/sponsor/edit/?publishedId=${publishedId}&jobId=${data.id}`, { waitUntil: 'load' });
+    //wait for header of page to show
+    await BrowserService.page.waitForXPath(`//*[@id="gnav-header-end"]`);
+
+    // click advanced
+    await BrowserService.page.waitForXPath(`//*[text()='Advanced']/parent::button`);
+    let [budgetAdvancedButton] = await BrowserService.page.$x(`//*[text()='Advanced']/parent::button`);
     await budgetAdvancedButton.click();
 
-    //cpc
-    if (budget_maxCPC) {
+    // update end date
+    if (data.budgetEndDate) {
+        //format the end date
+        let newEndDate = Moment(data.budgetEndDate).format('MM/DD/YYYY');
+        console.log('formatted end date : ' + data.budgetEndDate);
+
+        //activate the set end date checkbox 
+        await BrowserService.page.waitForXPath(`//*[@name="budgetShouldSetEndDate"]/parent::label`);
+        let [endDateCheckBox] = await BrowserService.page.$x(`//*[@name="budgetShouldSetEndDate"]/parent::label`);
+        await endDateCheckBox.click();
+        await BrowserService.page.waitForTimeout(500);
+
+        // check if input was shown, click the check box again if not
+        let [endDateInput] = await BrowserService.page.$x(`//*[@id="input"]`);
+        if (!endDateInput) {
+            await endDateCheckBox.click();
+            await BrowserService.page.waitForTimeout(500);
+            [endDateInput] = await BrowserService.page.$x(`//*[@id="input"]`);
+        }
+
+        //fill in the input
+        await endDateInput.click({ clickCount: 3 });
+        await BrowserService.page.keyboard.type(newEndDate);
+
+        //second time
+        for (let index = 0; index < 30; index++) {
+            await endDateInput.press('Backspace');
+        }
+        await BrowserService.page.keyboard.type(newEndDate);
+
+        //third time
+        for (let index = 0; index < 30; index++) {
+            await endDateInput.press('Backspace');
+        }
+        await BrowserService.page.keyboard.type(newEndDate);
+
+        //fourth time
+        await BrowserService.page.evaluate((newEndDate) => {
+            document.querySelector(`#input`).value = newEndDate;
+        }, newEndDate);
+    }
+
+    // update CPC
+    if (data.maxCPC) {
         await BrowserService.page.waitForXPath(`//*[@id="maxcpc"]`);
         let [maxCPC] = await BrowserService.page.$x(`//*[@id="maxcpc"]`);
-        if (budget_maxCPC) {
-            await maxCPC.click({ clickCount: 3 });
-            await maxCPC.press('Backspace');
-            await maxCPC.type(budget_maxCPC);
-        }
+        await maxCPC.click({ clickCount: 3 });
+        await maxCPC.press('Backspace');
+        await maxCPC.type(data.maxCPC);
     }
 
-
-    //budget 
-    if (budget_amount) {
+    // update budget
+    if (data.budget) {
         await BrowserService.page.waitForXPath(`//*[@id="advanced-budget"]`);
         let [budgetInput] = await BrowserService.page.$x(`//*[@id="advanced-budget"]`);
-        let budgetInDollar = Math.ceil(budget_amount).toString();
+        let budgetInDollar = Math.ceil(data.budget).toString();
         await budgetInput.click({ clickCount: 3 });
         await budgetInput.press('Backspace');
-        await budgetInput.type(budgetInDollar)
+        await budgetInput.type(budgetInDollar);
     }
 
-    //select custom end date option
-    if (budgetEndDate) {
-
-        //enable date input
-        await BrowserService.page.evaluate(() => {
-            if (document.querySelector(`#setEndDateCheckbox`).value == "false") {
-
-                document.querySelector(`#setEndDateCheckbox`).click()
-            }
-        });
-
-        //Fill in the end date
-        console.log('unformatted end date : ' + budgetEndDate);
-        budgetEndDate = Moment(budgetEndDate).format('MM/DD/YYYY');
-        console.log('formatted end date : ' + budgetEndDate);
-        await BrowserService.page.evaluate((budgetEndDate) => {
-            document.querySelector(`[id^=endDateContainer] > input[type=text]`).value = budgetEndDate;
-        }, budgetEndDate);
-
-
-        let [endDateInput] = await BrowserService.page.$x(`//*[starts-with(@id,"endDateContainer")]/input`);
-        await endDateInput.click({ clickCount: 3 });
-        for (let index = 0; index < 30; index++) {
-            await endDateInput.press('Backspace');
-        }
-        await BrowserService.page.keyboard.type(budgetEndDate)
-            //second time
-        for (let index = 0; index < 30; index++) {
-            await endDateInput.press('Backspace');
-        }
-        await BrowserService.page.keyboard.type(budgetEndDate)
-            //third time
-        for (let index = 0; index < 30; index++) {
-            await endDateInput.press('Backspace');
-        }
-        await BrowserService.page.keyboard.type(budgetEndDate)
-
-
-
-    }
-
-    //click save and continue button
-    await BrowserService.page.waitForXPath(`//*[text()='Save and continue']`);
-    let [saveAndContinueButton] = await BrowserService.page.$x(`//*[text()='Save and continue']`);
-    await saveAndContinueButton.click();
-    await BrowserService.page.waitForTimeout(7 * 1000);
-
-    //click confirm 
-    try {
-        await Helpers.clickConfirm();
-        await BrowserService.page.waitForTimeout(4 * 1000);
-    } catch (error) {
-        console.log('error : confirm not found, after updating the sponsor page')
-    }
-
-
+    //save changes 
+    let [submitButton] = await BrowserService.page.$x(`//*[@data-dd-action-name="sponsored-button"]`);
+    await submitButton.click();
+    await BrowserService.page.waitForTimeout(3000);
 
 }
-
-
 
 module.exports = UpdateJobService;

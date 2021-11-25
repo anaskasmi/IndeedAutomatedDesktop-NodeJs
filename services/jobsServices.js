@@ -511,7 +511,6 @@ JobsServices.fillIn_adDurationDate = async(endDateIncreaseNumber) => {
         document.querySelector(`#input`).value = newEndDate;
     }, newEndDate);
 
-
 }
 
 JobsServices.fillIn_CPC = async(budget_maxCPC) => {

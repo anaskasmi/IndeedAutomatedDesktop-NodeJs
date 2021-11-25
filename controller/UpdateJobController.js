@@ -35,6 +35,7 @@ UpdateJobController.updateJob = async(req, res) => {
             budgetEndDate: req.body.budgetEndDate
         }
         await UpdateJobService.updateJob(data);
+        await UpdateJobService.updateBudgetSection(data);
 
         return res.status(200).json({ "msg": "Job Updated successfully" });
 
