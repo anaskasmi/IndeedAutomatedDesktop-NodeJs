@@ -74,22 +74,10 @@ BrowserService.getNewBrowser = async function() {
 BrowserService.getNewPage = async function() {
     //get new page 
     BrowserService.page = await BrowserService.browser.newPage();
-    BrowserService.page.setDefaultTimeout(2 * 60 * 1000);
+    BrowserService.page.setDefaultTimeout(1 * 60 * 1000);
     BrowserService.page.on('response', async(response) => {
         try {
-            // if (response.url().includes('no-dupe-posting')) {
-            //     this.page.waitForTimeout(3000);
-            //     let [thiIsADifferentJob] = await this.page.$x(`//*[@for="next-step-radio--continue"]`);
-            //     if (thiIsADifferentJob) {
-            //         await thiIsADifferentJob.click()
-            //     }
-            //     let [continueButton] = await this.page.$x(`//*[@data-tn-element="sorepost-next-step-continue-continue"]`);
-            //     if (continueButton) {
-            //         await continueButton.click()
-            //         this.page.waitForTimeout(3000);
-            //     }
 
-            // }
 
             if (response.url().includes('orientation-sheet')) {
                 try {
@@ -128,37 +116,7 @@ BrowserService.getNewPage = async function() {
             }
 
 
-            // if (response.url().includes('https://d3l2aiuysuvlk2.cloudfront.net/brotli/hiresignal/343126bfbc2d8bf6a72e/scripts/hiresignal-534.js')) {
-            //     // await this.page.waitForTimeout(3000);
-            //     let [skipButton] = await this.page.$x(`//*[@data-tn-element="navControlButton-skip"]`);
-            //     if (skipButton) {
-            //         console.log('found skip button')
-            //         await skipButton.click();
-            //     }
-            // }
 
-
-
-            // if (response.url().includes('did-you-hire-sheet')) {
-            //     {
-            //         // this.page.waitForTimeout(3000);
-            //         try {
-            //             await BrowserService.page.waitForXPath(`//*[@value="no"]/parent::label`)
-            //         } catch (error) {
-            //             console.log('couldnt found the no button on the (did you hire sheet)')
-            //         }
-            //         let [noLabel] = await BrowserService.page.$x(`//*[@value="no"]/parent::label`);
-            //         if (noLabel) {
-            //             //click no
-            //             await noLabel.click();
-            //             //click continue
-            //             let [continueButton] = await BrowserService.page.$x(`//*[@data-tn-element="sheet-next-button"]`);
-            //             await continueButton.click();
-            //         }
-
-
-            //     }
-            // }
         } catch (error) {
             console.log('error catched on  event listener : ' + error)
         }

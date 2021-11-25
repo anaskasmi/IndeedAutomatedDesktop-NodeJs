@@ -5,129 +5,120 @@ const Moment = require('moment');
 let UpdateJobService = {};
 
 
+UpdateJobService.updateJob = async(data) => {
 
-UpdateJobService.setListeners = async(id) => {
+    await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/preview-job?id=${data.id}`, { waitUntil: 'load' });
 
-    //add listeners
-    await BrowserService.page.on('response',
-        async function clickOtherOnCompensationDetailsPage(response) {
-            //compensation-details
-            if (response.url().includes('compensation-details')) {
-                await BrowserService.page.waitForTimeout(2000);
-                try {
-                    await BrowserService.page.waitForXPath(`//*[contains(text(),'None')]/parent::label`);
-                    let noneButton = await BrowserService.page.$x(`//*[contains(text(),'None')]/parent::label`);
-                    await noneButton[0].click();
-                    await BrowserService.page.waitForTimeout(200);
-                    await Helpers.clickConfirm()
-                } catch (error) {
-                    console.log('clickOtherOnCompensationDetailsPage : ' + error);
-                }
-                await BrowserService.page.removeListener('response', clickOtherOnCompensationDetailsPage);
-
-            }
-        }
-    );
-
-
-
-}
-
-UpdateJobService.updateGettingStartedSection = async(id, jobTitle, location) => {
-    // if no data passed return
-    if (!jobTitle && !location.city && !location.state) {
-        return;
-    }
-    await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/preview-job?id=${id}`, { waitUntil: 'load' });
-
-    //visite the getting started page
-    await BrowserService.page.waitForXPath(`//*[@data-tn-element="locationEditLink"]`);
-    let [gettingStartedLink] = await BrowserService.page.$x(`//*[@data-tn-element="locationEditLink"]`);
-    await gettingStartedLink.click();
-    await BrowserService.page.waitForXPath(`//*[@data-test-id="sheet-title"]`);
+    //wait for header of page to show
+    await BrowserService.page.waitForXPath(`//*[@data-testid="sheet-header"]`);
 
     //update title
-    if (jobTitle) {
-        console.log('filling the title')
-        await BrowserService.page.waitForXPath(`//*[@class="highlightable icl-TextInput-control"]`);
-        let [jobTitleInput] = await BrowserService.page.$x(`//*[@class="highlightable icl-TextInput-control"]`);
-        //click the job title input
+    if (data.jobTitle) {
+        console.log('filling the title');
+        // open the title input
+        await BrowserService.page.waitForXPath(`//*[@title="Edit Job title"]`);
+        let [jobTitleEditButton] = await BrowserService.page.$x(`//*[@title="Edit Job title"]`);
+        await jobTitleEditButton.click();
+
+        // find job title
+        await BrowserService.page.waitForXPath(`//*[@data-testid="highlight-overlay"]`);
+        let [jobTitleInput] = await BrowserService.page.$x(`//*[@data-testid="highlight-overlay"]`);
+
+        //select all in the job title input
         await jobTitleInput.click({ clickCount: 3 });
+
+        //delete all
         for (let index = 0; index < 76; index++) {
             await jobTitleInput.press('Backspace');
         }
 
-
-        //clear input
-        // await Helpers.clearInput();
         //type the job title
-        await BrowserService.page.keyboard.type(jobTitle)
+        await BrowserService.page.keyboard.type(data.jobTitle)
         await BrowserService.page.waitForTimeout(2000);
+
+        // click update
+        let [updateTitleButton] = await BrowserService.page.$x(`//*[@data-testid="edit-field-update"]`);
+        await updateTitleButton.click();
+        await BrowserService.page.waitForTimeout(1000);
+
+
     }
 
 
     //update location
-    if (location && location.city && location.state) {
-        await Helpers.makeSureUrlIsGettingStarted();
+    if (data.location && data.location.city && data.location.state) {
+        console.log('filling the location');
+        let fullLocation = data.location.city + ', ' + data.location.state;
 
-        //click one location option
-        await BrowserService.page.waitForXPath(`//*[@id="roleLocationTypeRadiosOneLocation"]/following-sibling::div`);
-        let [oneLocation] = await BrowserService.page.$x(`//*[@id="roleLocationTypeRadiosOneLocation"]/following-sibling::div`);
-        await oneLocation.click();
+        // unlock the location input
+        await BrowserService.page.waitForXPath(`//*[@title="Edit Work location"]`);
+        let [jobLocationEditButton] = await BrowserService.page.$x(`//*[@title="Edit Work location"]`);
+        await jobLocationEditButton.click();
 
-        //click don't include street option 
-        await BrowserService.page.waitForXPath(`//*[@id="ecl-RadioItem-label-HideExactLocation"]`);
-        let [dontIncludeStreetOption] = await BrowserService.page.$x(`//*[@id="ecl-RadioItem-label-HideExactLocation"]`);
-        await dontIncludeStreetOption.click({ clickCount: 2 });
+        // chose in one loacation 
+        await BrowserService.page.waitForXPath(`//*[@data-testid="ONE_LOCATION"]`);
+        let [oneLocationChoice] = await BrowserService.page.$x(`//*[@data-testid="ONE_LOCATION"]/parent::label`);
+        await oneLocationChoice.click();
 
-        //Fill in city
-        await BrowserService.page.waitForXPath(`//*[@id="precise-address-city-input"]`);
-        let [cityInput] = await BrowserService.page.$x(`//*[@id="precise-address-city-input"]`);
-        let fullLocation = location.city + ', ' + location.state;
-        if (process.env.TYPING_METHODE == "keyboard") {
-            await cityInput.click();
-            await Helpers.clearInput();
-            await cityInput.type(fullLocation, { delay: 20 });
-            await BrowserService.page.waitForTimeout(3000);
-            await BrowserService.page.keyboard.press('ArrowDown');
-            await BrowserService.page.keyboard.press('Enter');
-        } else {
-            await BrowserService.page.evaluate((locationCityAndState) => {
-                document.querySelector(`#precise-address-city-input`).value = locationCityAndState;
-            }, fullLocation);
-            await cityInput.type(' ');
-            await cityInput.press('Backspace');
-            await BrowserService.page.waitForTimeout(3000);
-            await BrowserService.page.keyboard.press('ArrowDown');
-            await BrowserService.page.keyboard.press('Enter');
+        // chose in one loacation 
+        let [dontIncludeAddressChoice] = await BrowserService.page.$x(`//*[@id="remote.draftJobPosts.attributes.workLocationType-OneMileRadius"]`);
+        await dontIncludeAddressChoice.click();
+
+        // find address input
+        let [addressInput] = await BrowserService.page.$x(`//*[@data-testid="precise-address-city"]`);
+
+        //select all
+        await addressInput.click({ clickCount: 3 });
+
+        //delete all
+        for (let index = 0; index < 76; index++) {
+            await addressInput.press('Backspace');
         }
 
-        //select state 
-        await BrowserService.page.select('[name="region"]', location.state);
-        await BrowserService.page.waitForTimeout(2000);
+        //type the new address
+        await addressInput.type(fullLocation, { delay: 20 });
+        await BrowserService.page.waitForTimeout(3000);
+        await BrowserService.page.keyboard.press('ArrowDown');
+        await BrowserService.page.keyboard.press('Enter');
+
+        // click somewhere else, to apply changes
+        let [zipCodeInput] = await BrowserService.page.$x(`//*[@data-testid="precise-address-city"]`);
+        await zipCodeInput.click({ clickCount: 3 });
+        await BrowserService.page.waitForTimeout(1000);
+
+        // click update
+        let [updateTitleButton] = await BrowserService.page.$x(`//*[@data-testid="edit-field-update"]`);
+        await updateTitleButton.click();
+        await BrowserService.page.waitForTimeout(1000);
 
     }
 
-    // save the modifications
-    await BrowserService.page.waitForXPath(`//*[@data-tn-element="sheet-next-button"]`);
-    let [updateButton] = await BrowserService.page.$x(`//*[@data-tn-element="sheet-next-button"]`);
-    await updateButton.click();
-    await BrowserService.page.waitForTimeout(6 * 1000);
 
-    try {
+    //update description
+    if (data.description) {
+        console.log('filling the description');
+        // open the description input
+        await BrowserService.page.waitForXPath(`//*[@title="Edit Job description"]`);
+        let [jobTitleEditButton] = await BrowserService.page.$x(`//*[@title="Edit Job description"]`);
+        await jobTitleEditButton.click();
 
-        //deal with additional details page
-        let [additionalJobDetailsPageExist] = await BrowserService.page.$x(`//*[@for="CO_FBOOK_PAGE"]`)
-        if (additionalJobDetailsPageExist) {
-            await Helpers.clickConfirm();
-            await BrowserService.page.waitForTimeout(3 * 1000);
-        }
-        //click confirm 
-        await Helpers.clickConfirm();
-        await BrowserService.page.waitForTimeout(3 * 1000);
-    } catch (error) {
-        console.log('error : confirm not found, after updating the getting started page')
+        //start filling the descritpion
+        let jobDescriptionHtml = data.description;
+        await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'job description')]`);
+        await BrowserService.page.$eval('#JobDescription-editor-editor-content', (el, jobDescriptionHtml) => { el.innerHTML = jobDescriptionHtml }, jobDescriptionHtml);
+
+        //click to apply changements
+        let [descriptionInput] = await BrowserService.page.$x(`//*[@id="JobDescription-editor-editor-content"]`);
+        await descriptionInput.click({ clickCount: 2 });
+
+        // click update
+        let [updateTitleButton] = await BrowserService.page.$x(`//*[@data-testid="edit-field-update"]`);
+        await updateTitleButton.click();
+        await BrowserService.page.waitForTimeout(1000);
+
+
     }
+
 
 }
 

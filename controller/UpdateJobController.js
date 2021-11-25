@@ -25,21 +25,16 @@ UpdateJobController.getNewBrowser = async function(req, res) {
 UpdateJobController.updateJob = async(req, res) => {
     req.setTimeout(0);
     try {
-        await UpdateJobService.setListeners();
-        //update getting started 
-        if (req.body.id || req.body.jobTitle || req.body.location) {
-            await UpdateJobService.updateGettingStartedSection(req.body.id, req.body.jobTitle, req.body.location);
+        let data = {
+            id: req.body.id,
+            jobTitle: req.body.jobTitle,
+            location: req.body.location,
+            description: req.body.description,
+            budget: req.body.budget,
+            maxCPC: req.body.maxCPC,
+            budgetEndDate: req.body.budgetEndDate
         }
-
-        //update description
-        if (req.body.description) {
-            await UpdateJobService.updateDescriptionSection(req.body.id, req.body.description);
-        }
-
-        //update job service
-        if (req.body.budget || req.body.maxCPC || req.body.budgetEndDate) {
-            await UpdateJobService.updateSponsorJobSection(req.body.id, req.body.budget, req.body.maxCPC, req.body.budgetEndDate);
-        }
+        await UpdateJobService.updateJob(data);
 
         return res.status(200).json({ "msg": "Job Updated successfully" });
 

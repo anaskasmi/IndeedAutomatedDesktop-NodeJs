@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 let connectToMongoDb = function() {
     let mongoDbString;
     if (process.env.CURRENT_USER == 'ANAS') {
-        mongoDbString = process.env.MONGO_STRING_ANAS;
+        mongoDbString = process.env.MONGO_STRING_ANAS_ATLAS;
         console.log('CURRENT USER :  ANAS')
     } else if (process.env.CURRENT_USER == 'TONYA') {
         mongoDbString = process.env.MONGO_STRING_TONYA
