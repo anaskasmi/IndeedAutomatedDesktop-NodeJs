@@ -4,6 +4,7 @@ const express = require('express');
 const JobsController = require('../controller/JobsController');
 const ResumesController = require('../controller/ResumesController');
 const UpdateJobController = require('../controller/UpdateJobController');
+const IndeedInvoiceController = require('../controller/IndeedInvoiceController');
 //config
 const router = express.Router();
 
@@ -67,5 +68,11 @@ router.post('/transferResumeOfOneCandidate', ResumesController.transferResumeOfO
 router.post('/transferAllResumesForOneJob', ResumesController.transferAllResumesForOneJob)
 router.post('/getCandidatesBetweenTwoDates', ResumesController.getCandidatesBetweenTwoDates)
 router.post('/transferResumesOfCandidatesList', ResumesController.transferResumesOfCandidatesList)
+
+
+//generate Invoice route
+
+router.post('/invoiceGenerator', IndeedInvoiceController.generateInvoice)
+
 
 module.exports = router;
