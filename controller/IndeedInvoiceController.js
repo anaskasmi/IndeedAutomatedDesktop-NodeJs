@@ -1,4 +1,3 @@
-//https: //analytics.indeed.com/analytics/performance/jobs?startDate=2021-11-07&endDate=2021-12-03
 require('dotenv').config();
 
 //services
@@ -13,8 +12,10 @@ IndeedInvoiceController.generateInvoice = async function(req, res) {
             dates: req.body.dates,
             jobsNumbers: req.body.jobsNumbers,
         };
-        await IndeedInvoiceService.generateInvoice(data);
-        return res.status(200).json({ 'msg': "opened successfully" });
+        let filePath = await IndeedInvoiceService.generateInvoice(data);
+        return res.status(200).redirect(filePath);
+        // return res.download(filePath);
+        // return res.status(200).json({ 'msg': "opened successfully" });
     } catch (error) {
         console.log(error)
         return res.status(500).json({ error: error });

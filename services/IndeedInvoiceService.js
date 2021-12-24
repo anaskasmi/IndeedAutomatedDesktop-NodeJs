@@ -1,5 +1,6 @@
 const BrowserService = require("./BrowserService");
 const ExcelJS = require('exceljs');
+const path = require('path');
 
 let IndeedInvoiceService = {};
 
@@ -63,8 +64,7 @@ let jobsFakeArray = [{
 
 
 
-IndeedInvoiceService.generateExcel = async() => {
-    let jobsArray = jobsFakeArray;
+IndeedInvoiceService.generateExcel = async(jobsArray) => {
 
     // create new workbook and worksheet
     const workbook = new ExcelJS.Workbook();
@@ -188,13 +188,15 @@ IndeedInvoiceService.generateExcel = async() => {
     });
 
 
-    await workbook.xlsx.writeFile("invoice.xlsx");
+    const homeDir = require('os').homedir();
+    const desktopDir = `${homeDir}/Desktop/invoice.xlsx`;
+    await workbook.xlsx.writeFile(desktopDir);
+    return desktopDir;
+
 };
 
 
 IndeedInvoiceService.generateInvoice = async(data) => {
-    return IndeedInvoiceService.generateExcel();
-    console.log(data);
     if (data.dates.length != 2) {
         throw Error('dates must have start date and end date')
     }
@@ -221,7 +223,7 @@ IndeedInvoiceService.generateInvoice = async(data) => {
     await BrowserService.page.keyboard.type(data.jobsNumbers[0]);
 
     //wait for table to filter results
-    await BrowserService.page.waitForTimeout(3000);
+    await BrowserService.page.waitForTimeout(4000);
     await BrowserService.page.waitForXPath(`//*[@class="perf-JobTitleCell-content"]/div/a`);
 
     // get the number of rows
@@ -234,35 +236,42 @@ IndeedInvoiceService.generateInvoice = async(data) => {
 
     let jobsArray = [];
     for (let currentRowNumber = 1; currentRowNumber <= rowsNumber; currentRowNumber++) {
+        console.log(currentRowNumber);
         let job = {};
         // Job title
         let [jobTitleHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[2]`);
         job.jobTitle = await BrowserService.page.evaluate(cell => cell.innerText, jobTitleHandler);
 
         // Location
-        let [jobLocationHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[4]`);
+        let [jobLocationHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[3]`);
         job.jobLocation = await BrowserService.page.evaluate(cell => cell.innerText, jobLocationHandler);
 
         // Company
-        let [jobCompanyHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[5]`);
+        let [jobCompanyHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[4]`);
         job.jobCompany = await BrowserService.page.evaluate(cell => cell.innerText, jobCompanyHandler);
 
         // Total cost
-        let [jobTotalCostHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[11]`);
+        let [jobTotalCostHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[10]`);
         job.jobTotalCost = await BrowserService.page.evaluate(cell => cell.innerText, jobTotalCostHandler);
+        job.jobTotalCost = job.jobTotalCost.replace('$', '');
 
         // Average CPC
-        let [averageCPCHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[9]`);
+        let [averageCPCHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[8]`);
         job.averageCPC = await BrowserService.page.evaluate(cell => cell.innerText, averageCPCHandler);
+        job.averageCPC = job.averageCPC.replace('$', '');
 
         // Average CPA
-        let [averageCPAHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[10]`);
+        let [averageCPAHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[9]`);
         job.averageCPA = await BrowserService.page.evaluate(cell => cell.innerText, averageCPAHandler);
-
-
+        job.averageCPA = job.averageCPA.replace('$', '');
         jobsArray.push(job);
-        console.log(job);
     }
+
+
+    let filePath = await IndeedInvoiceService.generateExcel(jobsArray);
+    console.log(filePath);
+    return filePath;
+
 
 
 };
