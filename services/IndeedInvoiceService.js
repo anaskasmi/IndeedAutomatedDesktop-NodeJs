@@ -197,13 +197,24 @@ IndeedInvoiceService.generateExcel = async(jobsArray) => {
 
 
 IndeedInvoiceService.generateInvoice = async(data) => {
+
     if (data.dates.length != 2) {
         throw Error('dates must have start date and end date')
     }
+
     if (data.jobsNumbers.length == 0) {
         throw Error('a minimum of one job number is required')
     }
+
     await BrowserService.page.goto(`https://analytics.indeed.com/analytics/performance/jobs?startDate=${data.dates[0]}&endDate=${data.dates[1]}`, { waitUntil: "load" });
+
+
+    // make sure all headers exists
+    await IndeedInvoiceService.checkNeededColumns();
+
+    // get headers indexes
+    let HeadersIndexes = await IndeedInvoiceService.getHeadersIndexes();
+
     // open numbers list
     await BrowserService.page.waitForXPath(`//*[@id="page-size-options-button"]`);
     let [numbersList] = await BrowserService.page.$x(`//*[@id="page-size-options-button"]`);
@@ -228,7 +239,6 @@ IndeedInvoiceService.generateInvoice = async(data) => {
 
     // get the number of rows
     let rowsNumber = (await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div`)).length;
-    console.log(rowsNumber);
     if (!rowsNumber) {
         console.log('0 job found');
         throw Error('0 Job found');
@@ -236,32 +246,38 @@ IndeedInvoiceService.generateInvoice = async(data) => {
 
     let jobsArray = [];
     for (let currentRowNumber = 1; currentRowNumber <= rowsNumber; currentRowNumber++) {
-        console.log(currentRowNumber);
         let job = {};
+
         // Job title
-        let [jobTitleHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[2]`);
+        let jobTitleIndex = HeadersIndexes.find(({ name }) => name === 'Job title').index;
+        let [jobTitleHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${jobTitleIndex}]`);
         job.jobTitle = await BrowserService.page.evaluate(cell => cell.innerText, jobTitleHandler);
 
         // Location
-        let [jobLocationHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[3]`);
+        let locationIndex = HeadersIndexes.find(({ name }) => name === 'Location').index;
+        let [jobLocationHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${locationIndex}]`);
         job.jobLocation = await BrowserService.page.evaluate(cell => cell.innerText, jobLocationHandler);
 
         // Company
-        let [jobCompanyHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[4]`);
+        let companyIndex = HeadersIndexes.find(({ name }) => name === 'Location').index;
+        let [jobCompanyHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${companyIndex}]`);
         job.jobCompany = await BrowserService.page.evaluate(cell => cell.innerText, jobCompanyHandler);
 
         // Total cost
-        let [jobTotalCostHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[10]`);
+        let totalCostIndex = HeadersIndexes.find(({ name }) => name === 'Total cost').index;
+        let [jobTotalCostHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${totalCostIndex}]`);
         job.jobTotalCost = await BrowserService.page.evaluate(cell => cell.innerText, jobTotalCostHandler);
         job.jobTotalCost = job.jobTotalCost.replace('$', '');
 
         // Average CPC
-        let [averageCPCHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[8]`);
+        let AVGCPCIndex = HeadersIndexes.find(({ name }) => name === 'AVG CPC').index;
+        let [averageCPCHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${AVGCPCIndex}]`);
         job.averageCPC = await BrowserService.page.evaluate(cell => cell.innerText, averageCPCHandler);
         job.averageCPC = job.averageCPC.replace('$', '');
 
         // Average CPA
-        let [averageCPAHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[9]`);
+        let AVGCPAIndex = HeadersIndexes.find(({ name }) => name === 'AVG CPC').index;
+        let [averageCPAHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${AVGCPAIndex}]`);
         job.averageCPA = await BrowserService.page.evaluate(cell => cell.innerText, averageCPAHandler);
         job.averageCPA = job.averageCPA.replace('$', '');
         jobsArray.push(job);
@@ -275,4 +291,74 @@ IndeedInvoiceService.generateInvoice = async(data) => {
 
 
 };
+
+IndeedInvoiceService.getHeadersIndexes = async() => {
+    // wait for page to load 
+    await BrowserService.page.waitForXPath(`//*[text()='Job title']/parent::button/parent::div/parent::div/div`);
+    let titlesIndexes = [{
+            'name': 'Job title',
+            'index': null
+        },
+        {
+            'name': 'Location',
+            'index': null
+        },
+        {
+            'name': 'Company',
+            'index': null
+        },
+        {
+            'name': 'AVG CPA',
+            'index': null
+        }, {
+            'name': 'AVG CPC',
+            'index': null
+        }, {
+            'name': 'Total cost',
+            'index': null
+        }
+    ];
+    // get the list of headers 
+    let headersList = await BrowserService.page.$x(`//*[text()='Job title']/parent::button/parent::div/parent::div/div`);
+
+    for (const titleObj of titlesIndexes) {
+        for (const [index, headerItem] of headersList.entries()) {
+            let headertitleText = await BrowserService.page.evaluate(headerItem => headerItem.innerText, headerItem);
+            if (titleObj.name == headertitleText) {
+                titleObj.index = index + 1;
+            }
+        }
+    }
+    console.log(titlesIndexes);
+    return titlesIndexes;
+
+};
+IndeedInvoiceService.checkNeededColumns = async() => {
+    // wait for the columns edit button to load
+    await BrowserService.page.waitForXPath(`//*[text()='Edit columns']`);
+    await BrowserService.page.waitForTimeout(4000);
+
+    // open it 
+    let [editColumnsButton] = await BrowserService.page.$x(`//*[text()='Edit columns']/parent::button`);
+    await editColumnsButton.click();
+
+    // TODO : change to select all 
+    let requiredCheckBoxes = ['jobCompany', 'location', 'localCosts', 'averageCpc', 'averageCpa']
+    for (const requiredCheckBoxe of requiredCheckBoxes) {
+        // wait for the checkboxes to show 
+        await BrowserService.page.waitForXPath(`//*[@value="${requiredCheckBoxe}"]/parent::label`);
+        let isCurrentCheckBoxActive = await BrowserService.page.$x(`//*[@value="${requiredCheckBoxe}" and @checked]`);
+        if (isCurrentCheckBoxActive.length == 0) {
+            let [currentCheckBoxHandler] = await BrowserService.page.$x(`//*[@value="${requiredCheckBoxe}"]/parent::label`);
+            await currentCheckBoxHandler.click();
+        }
+    }
+
+    // click on Done 
+    let [doneButton] = await BrowserService.page.$x(`//*[text()='Done']`)
+    await doneButton.click();
+
+};
+
+
 module.exports = IndeedInvoiceService;

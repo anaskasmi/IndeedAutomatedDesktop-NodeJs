@@ -13,13 +13,10 @@ IndeedInvoiceController.generateInvoice = async function(req, res) {
             jobsNumbers: req.body.jobsNumbers,
         };
         let filePath = await IndeedInvoiceService.generateInvoice(data);
-        return res.status(200).redirect(filePath);
-        // return res.download(filePath);
-        // return res.status(200).json({ 'msg': "opened successfully" });
+        return res.status(200).json({ 'msg': filePath });
     } catch (error) {
-        console.log(error)
+        console.log(error);
         return res.status(500).json({ error: error });
-
     }
 }
 module.exports = IndeedInvoiceController;
