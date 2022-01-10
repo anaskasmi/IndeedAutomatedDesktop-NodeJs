@@ -73,12 +73,12 @@ IndeedInvoiceService.generateExcel = async(jobsArray) => {
 
     // insert headers
     worksheet.columns = [
-        { header: 'Job title', width: 50 },
-        { header: 'Location', width: 18 },
-        { header: 'Company', width: 18 },
-        { header: 'Total Cost', width: 18 },
-        { header: 'Average CPC', width: 18 },
-        { header: 'Average CPA', width: 32 },
+        { header: 'Job title' },
+        { header: 'Location' },
+        { header: 'Company' },
+        { header: 'Total Cost' },
+        { header: 'Average CPC' },
+        { header: 'Average CPA' },
     ];
 
     // prepare empty sums
@@ -112,57 +112,84 @@ IndeedInvoiceService.generateExcel = async(jobsArray) => {
 
     // style all worksheet
     worksheet.eachRow({ includeEmpty: true }, function(row, rowNumber) {
-        row.font = { size: 14, bold: false };
-        row.height = 25;
-
-        row.eachCell(function(cell, colNumber) {
-            if (rowNumber == 1) {
-                row.height = 20;
+        row.font = { size: 11, bold: false };
+        if (rowNumber == 1) {
+            row.eachCell(function(cell, colNumber) {
                 cell.border = {
                     top: { style: 'thin', },
                     left: { style: 'thin' },
                     bottom: { style: 'thin' },
                     right: { style: 'thin' }
                 };
-            }
+                cell.alignment = {
+                    vertical: 'middle',
+                };
 
-            cell.alignment = {
-                vertical: 'middle',
-                horizontal: 'center'
-            };
-            cell.border = {
-                bottom: { style: 'thin', color: { argb: '0048f0' } },
-            };
-        });
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    bgColor: { argb: 'FF00FF00' }
+                };
+
+
+            });
+        } else {
+            row.eachCell(function(cell, colNumber) {
+                cell.alignment = {
+                    vertical: 'middle',
+                };
+
+            });
+        }
+
     });
 
 
     // style headers 
-    worksheet.getRow(1).font = { size: 14, bold: true, color: { argb: '3f87c6' }, };
+    worksheet.getRow(1).font = { size: 11, bold: true, color: { argb: '33ff66 ' }, };
 
     // add average & total cells
     const totalCostCell = worksheet.getCell(`D${jobsArray.length + 2}`);
     totalCostCell.value = parseFloat(sumOfTotalCost);
-    totalCostCell.font = { size: 14, bold: true, color: { argb: '3f87c6' }, };;
+    totalCostCell.font = { size: 11, bold: true, color: { argb: '3f87c6' }, };;
     totalCostCell.alignment = {
         vertical: 'middle',
-        horizontal: 'center'
     };
+    // add percentage
+    const totalCostPercentage = worksheet.getCell(`D${jobsArray.length + 3}`);
+    totalCostPercentage.value = "6%";
+    totalCostPercentage.font = { size: 11, bold: true, color: { argb: '3f87c6' }, };;
+    totalCostPercentage.alignment = {
+        vertical: 'middle',
+    };
+    // add percentage result
+    const totalCostPercentageResult = worksheet.getCell(`D${jobsArray.length + 4}`);
+    totalCostPercentageResult.value = parseFloat(sumOfTotalCost) * .06;
+    totalCostPercentageResult.font = { size: 11, bold: true, color: { argb: '3f87c6' }, };;
+    totalCostPercentageResult.alignment = {
+        vertical: 'middle',
+    };
+    // add percentage + result sum
+    const totalCostPercentageResultSum = worksheet.getCell(`D${jobsArray.length + 5}`);
+    totalCostPercentageResultSum.value = parseFloat(sumOfTotalCost) * .06 + parseFloat(sumOfTotalCost);
+    totalCostPercentageResultSum.font = { size: 11, bold: true, color: { argb: '3f87c6' }, };;
+    totalCostPercentageResultSum.alignment = {
+        vertical: 'middle',
+    };
+
 
     const avgOfCPACell = worksheet.getCell(`E${jobsArray.length + 2}`);
     avgOfCPACell.value = parseFloat(avgOfCPA);
-    avgOfCPACell.font = { size: 14, bold: true, color: { argb: '3f87c6' }, };;
+    avgOfCPACell.font = { size: 11, bold: true, color: { argb: '3f87c6' }, };;
     avgOfCPACell.alignment = {
         vertical: 'middle',
-        horizontal: 'center'
     };
 
     const avgOfCPCCell = worksheet.getCell(`F${jobsArray.length + 2}`);
     avgOfCPCCell.value = parseFloat(avgOfCPC);
-    avgOfCPCCell.font = { size: 14, bold: true, color: { argb: '3f87c6' }, };;
+    avgOfCPCCell.font = { size: 11, bold: true, color: { argb: '3f87c6' }, };;
     avgOfCPCCell.alignment = {
         vertical: 'middle',
-        horizontal: 'center'
     };
 
 
@@ -171,21 +198,35 @@ IndeedInvoiceService.generateExcel = async(jobsArray) => {
     worksheet.getColumn(5).numFmt = "$#,##0.00";
     worksheet.getColumn(6).numFmt = "$#,##0.00";
 
-    // style signature
-    worksheet.getCell(`A${jobsArray.length + 3}`).value = 'Kind regards,';
-    worksheet.getCell(`A${jobsArray.length + 3}`).font = { size: 14, color: { argb: '183f77' }, };
-    worksheet.getCell(`A${jobsArray.length + 4}`).value = 'John McCaffrey';
-    worksheet.getCell(`A${jobsArray.length + 4}`).font = { size: 16, bold: true, color: { argb: '183f77' }, };
 
-    // add logo
-    const logo = workbook.addImage({
-        filename: 'services/logo.png',
-        extension: 'png',
+
+    worksheet.columns.forEach(function(column, i) {
+        var maxLength = 0;
+        column["eachCell"]({ includeEmpty: true }, function(cell) {
+            var columnLength = cell.value ? cell.value.toString().length : 10;
+            if (columnLength > maxLength) {
+                maxLength = columnLength;
+            }
+        });
+        column.width = (maxLength < 10 ? 10 : maxLength) + 10;
     });
-    worksheet.addImage(logo, {
-        tl: { col: 0, row: jobsArray.length + 4 },
-        ext: { width: 60, height: 60 }
-    });
+
+    // // style signature
+    // worksheet.getCell(`A${jobsArray.length + 3}`).value = 'Kind regards,';
+    // worksheet.getCell(`A${jobsArray.length + 3}`).font = { size: 14, color: { argb: '183f77' }, };
+    // worksheet.getCell(`A${jobsArray.length + 4}`).value = 'John McCaffrey';
+    // worksheet.getCell(`A${jobsArray.length + 4}`).font = { size: 16, bold: true, color: { argb: '183f77' }, };
+
+    // // add logo
+    // const logo = workbook.addImage({
+    //     filename: 'services/logo.png',
+    //     extension: 'png',
+    // });
+    // worksheet.addImage(logo, {
+    //     tl: { col: 0, row: jobsArray.length + 4 },
+    //     ext: { width: 60, height: 60 }
+    // });
+
 
 
     const homeDir = require('os').homedir();
@@ -194,6 +235,7 @@ IndeedInvoiceService.generateExcel = async(jobsArray) => {
     return desktopDir;
 
 };
+
 
 
 IndeedInvoiceService.generateInvoice = async(data) => {
@@ -285,6 +327,7 @@ IndeedInvoiceService.generateInvoice = async(data) => {
 
 
     let filePath = await IndeedInvoiceService.generateExcel(jobsArray);
+
     console.log(filePath);
     return filePath;
 
