@@ -73,11 +73,16 @@ IndeedInvoiceService.generateExcel = async(jobsArray) => {
 
     // insert headers
     worksheet.columns = [
-        { header: 'Job title' },
+        { header: 'Job title', },
+        { header: '', width: 1 },
         { header: 'Location' },
+        { header: '', width: 1 },
         { header: 'Company' },
+        { header: '', width: 1 },
         { header: 'Total Cost' },
+        { header: '', width: 1 },
         { header: 'Average CPC' },
+        { header: '', width: 1 },
         { header: 'Average CPA' },
     ];
 
@@ -91,18 +96,26 @@ IndeedInvoiceService.generateExcel = async(jobsArray) => {
         const job = jobsArray[index];
 
         // calculations
-        sumOfTotalCost = sumOfTotalCost + parseFloat(job.jobTotalCost);
-        sumOfCPC = sumOfCPC + parseFloat(job.averageCPC);
-        sumOfCPA = sumOfCPA + parseFloat(job.averageCPA);
+        if (parseFloat(job.averageCPC)) {
+            sumOfTotalCost = sumOfTotalCost + parseFloat(job.jobTotalCost);
+        }
+
+        if (parseFloat(job.averageCPC)) {
+            sumOfCPC = sumOfCPC + parseFloat(job.averageCPC);
+        }
+
+        if (parseFloat(job.averageCPA)) {
+            sumOfCPA = sumOfCPA + parseFloat(job.averageCPA);
+        }
 
         // inserting
         var rowValues = [];
         rowValues[1] = job.jobTitle;
-        rowValues[2] = job.jobLocation;
-        rowValues[3] = job.jobCompany;
-        rowValues[4] = parseFloat(job.jobTotalCost);
-        rowValues[5] = parseFloat(job.averageCPC);
-        rowValues[6] = parseFloat(job.averageCPA);
+        rowValues[3] = job.jobLocation;
+        rowValues[5] = job.jobCompany;
+        rowValues[7] = parseFloat(job.jobTotalCost);
+        rowValues[9] = parseFloat(job.averageCPC);
+        rowValues[11] = parseFloat(job.averageCPA);
         worksheet.insertRow(2 + index, rowValues);
     }
 
@@ -149,66 +162,97 @@ IndeedInvoiceService.generateExcel = async(jobsArray) => {
     worksheet.getRow(1).font = { size: 11, bold: true, color: { argb: '33ff66 ' }, };
 
     // add average & total cells
-    const totalCostCell = worksheet.getCell(`D${jobsArray.length + 2}`);
+    const totalCostCell = worksheet.getCell(`G${jobsArray.length + 2}`);
     totalCostCell.value = parseFloat(sumOfTotalCost);
-    totalCostCell.font = { size: 11, bold: true, color: { argb: '3f87c6' }, };;
+    totalCostCell.font = { size: 11, bold: true, };
+    totalCostCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'ff9d52' },
+        bgColor: { argb: 'ff9d52' }
+    };
     totalCostCell.alignment = {
         vertical: 'middle',
     };
+
     // add percentage
-    const totalCostPercentage = worksheet.getCell(`D${jobsArray.length + 3}`);
-    totalCostPercentage.value = "6%";
-    totalCostPercentage.font = { size: 11, bold: true, color: { argb: '3f87c6' }, };;
+    const totalCostPercentage = worksheet.getCell(`G${jobsArray.length + 3}`);
+    totalCostPercentage.value = 0.06;
+    totalCostPercentage.numFmt = '0.00%';
+    totalCostPercentage.font = { size: 11, bold: true, };
     totalCostPercentage.alignment = {
         vertical: 'middle',
     };
+
     // add percentage result
-    const totalCostPercentageResult = worksheet.getCell(`D${jobsArray.length + 4}`);
-    totalCostPercentageResult.value = parseFloat(sumOfTotalCost) * .06;
-    totalCostPercentageResult.font = { size: 11, bold: true, color: { argb: '3f87c6' }, };;
+    const totalCostPercentageResult = worksheet.getCell(`G${jobsArray.length + 4}`);
+    totalCostPercentageResult.value = parseFloat((sumOfTotalCost * .06).toFixed(2));
+    totalCostPercentageResult.font = { size: 11, bold: true, };
     totalCostPercentageResult.alignment = {
         vertical: 'middle',
     };
+
     // add percentage + result sum
-    const totalCostPercentageResultSum = worksheet.getCell(`D${jobsArray.length + 5}`);
-    totalCostPercentageResultSum.value = parseFloat(sumOfTotalCost) * .06 + parseFloat(sumOfTotalCost);
-    totalCostPercentageResultSum.font = { size: 11, bold: true, color: { argb: '3f87c6' }, };;
+    const totalCostPercentageResultSum = worksheet.getCell(`G${jobsArray.length + 5}`);
+    totalCostPercentageResultSum.value = parseFloat((sumOfTotalCost * .06 + sumOfTotalCost).toFixed(2));
+    totalCostPercentageResultSum.font = { size: 11, bold: true, };
+    totalCostPercentageResultSum.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'ffee52' },
+        bgColor: { argb: 'ffee52' }
+
+    };
     totalCostPercentageResultSum.alignment = {
         vertical: 'middle',
     };
 
 
-    const avgOfCPACell = worksheet.getCell(`E${jobsArray.length + 2}`);
+    const avgOfCPACell = worksheet.getCell(`I${jobsArray.length + 2}`);
     avgOfCPACell.value = parseFloat(avgOfCPA);
-    avgOfCPACell.font = { size: 11, bold: true, color: { argb: '3f87c6' }, };;
+    avgOfCPACell.font = { size: 11, bold: true, };
+    avgOfCPACell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'ff9d52' },
+        bgColor: { argb: 'ff9d52' }
+    };
     avgOfCPACell.alignment = {
         vertical: 'middle',
     };
 
-    const avgOfCPCCell = worksheet.getCell(`F${jobsArray.length + 2}`);
+    const avgOfCPCCell = worksheet.getCell(`K${jobsArray.length + 2}`);
     avgOfCPCCell.value = parseFloat(avgOfCPC);
-    avgOfCPCCell.font = { size: 11, bold: true, color: { argb: '3f87c6' }, };;
+    avgOfCPCCell.font = { size: 11, bold: true, };
+    avgOfCPCCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'ff9d52' },
+        bgColor: { argb: 'ff9d52' }
+    };
     avgOfCPCCell.alignment = {
         vertical: 'middle',
     };
 
 
     // format money cols
-    worksheet.getColumn(4).numFmt = "$#,##0.00";
-    worksheet.getColumn(5).numFmt = "$#,##0.00";
-    worksheet.getColumn(6).numFmt = "$#,##0.00";
+    worksheet.getColumn(7).numFmt = "$#,##0.00";
+    worksheet.getColumn(9).numFmt = "$#,##0.00";
+    worksheet.getColumn(11).numFmt = "$#,##0.00";
+    // format percentage
+    totalCostPercentage.numFmt = '0.00%';
 
 
 
     worksheet.columns.forEach(function(column, i) {
         var maxLength = 0;
         column["eachCell"]({ includeEmpty: true }, function(cell) {
-            var columnLength = cell.value ? cell.value.toString().length : 10;
+            var columnLength = cell.value ? cell.value.toString().length : 4;
             if (columnLength > maxLength) {
                 maxLength = columnLength;
             }
         });
-        column.width = (maxLength < 10 ? 10 : maxLength) + 10;
+        column.width = maxLength;
     });
 
     // // style signature
@@ -310,18 +354,27 @@ IndeedInvoiceService.generateInvoice = async(data) => {
         let [jobTotalCostHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${totalCostIndex}]`);
         job.jobTotalCost = await BrowserService.page.evaluate(cell => cell.innerText, jobTotalCostHandler);
         job.jobTotalCost = job.jobTotalCost.replace('$', '');
+        if (!parseFloat(job.jobTotalCost)) {
+            job.jobTotalCost = 0;
+        }
 
         // Average CPC
         let AVGCPCIndex = HeadersIndexes.find(({ name }) => name === 'AVG CPC').index;
         let [averageCPCHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${AVGCPCIndex}]`);
         job.averageCPC = await BrowserService.page.evaluate(cell => cell.innerText, averageCPCHandler);
         job.averageCPC = job.averageCPC.replace('$', '');
+        if (!parseFloat(job.averageCPC)) {
+            job.averageCPC = 0;
+        }
 
         // Average CPA
         let AVGCPAIndex = HeadersIndexes.find(({ name }) => name === 'AVG CPC').index;
         let [averageCPAHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${AVGCPAIndex}]`);
         job.averageCPA = await BrowserService.page.evaluate(cell => cell.innerText, averageCPAHandler);
         job.averageCPA = job.averageCPA.replace('$', '');
+        if (!parseFloat(job.averageCPA)) {
+            job.averageCPA = 0;
+        }
         jobsArray.push(job);
     }
 
