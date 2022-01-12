@@ -279,9 +279,14 @@ JobsServices.fillIn_isJobFullTimeOrPartTime = async(jobDetails_WhatTypeOfJobIsIt
 
 
 JobsServices.fillIn_schedule = async() => {
-    await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'other')]/parent::label`);
-    let [otherScheduleOption] = await BrowserService.page.$x(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'other')]/parent::label`);
-    await otherScheduleOption.click();
+    await BrowserService.page.waitForXPath(`//*[text()='What is the schedule for this job?']/following-sibling::button`);
+    let [scheduleFieldset] = await BrowserService.page.$x(`//*[text()='What is the schedule for this job?']/following-sibling::button`);
+    await scheduleFieldset.click();
+
+    await BrowserService.page.waitForXPath(`//span[text()='Other']`);
+    let [otherOption] = await BrowserService.page.$x(`//span[text()='Other']`);
+    await otherOption.click();
+
 }
 
 JobsServices.fillIn_hiresNumber = async(jobDetails_intHiresNeeded) => {
