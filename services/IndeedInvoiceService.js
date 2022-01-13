@@ -64,7 +64,7 @@ let jobsFakeArray = [{
 
 
 
-IndeedInvoiceService.generateExcel = async(jobsArray) => {
+IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
 
     // create new workbook and worksheet
     const workbook = new ExcelJS.Workbook();
@@ -141,7 +141,8 @@ IndeedInvoiceService.generateExcel = async(jobsArray) => {
                 cell.fill = {
                     type: 'pattern',
                     pattern: 'solid',
-                    bgColor: { argb: 'FF00FF00' }
+                    fgColor: { argb: '2c2e3e' },
+                    bgColor: { argb: '2c2e3e' }
                 };
 
 
@@ -243,40 +244,34 @@ IndeedInvoiceService.generateExcel = async(jobsArray) => {
     totalCostPercentage.numFmt = '0.00%';
 
 
-
     worksheet.columns.forEach(function(column, i) {
         var maxLength = 0;
         column["eachCell"]({ includeEmpty: true }, function(cell) {
-            var columnLength = cell.value ? cell.value.toString().length : 4;
+            var columnLength = cell.value ? cell.value.toString().length + 5 : 10;
             if (columnLength > maxLength) {
                 maxLength = columnLength;
             }
         });
-        column.width = maxLength;
+        if (i == 1 || i == 3 || i == 5 || i == 7 || i == 9) {
+            column.width = 5;
+        } else {
+            column.width = maxLength;
+        }
     });
-
-    // // style signature
-    // worksheet.getCell(`A${jobsArray.length + 3}`).value = 'Kind regards,';
-    // worksheet.getCell(`A${jobsArray.length + 3}`).font = { size: 14, color: { argb: '183f77' }, };
-    // worksheet.getCell(`A${jobsArray.length + 4}`).value = 'John McCaffrey';
-    // worksheet.getCell(`A${jobsArray.length + 4}`).font = { size: 16, bold: true, color: { argb: '183f77' }, };
-
-    // // add logo
-    // const logo = workbook.addImage({
-    //     filename: 'services/logo.png',
-    //     extension: 'png',
-    // });
-    // worksheet.addImage(logo, {
-    //     tl: { col: 0, row: jobsArray.length + 4 },
-    //     ext: { width: 60, height: 60 }
-    // });
-
 
 
     const homeDir = require('os').homedir();
-    const desktopDir = `${homeDir}/Desktop/invoice.xlsx`;
-    await workbook.xlsx.writeFile(desktopDir);
-    return desktopDir;
+    let jobsNumbersString = jobsNumbers.join(',');
+    try {
+        const desktopDir = `${homeDir}/Desktop/(${jobsNumbersString}).xlsx`;
+        await workbook.xlsx.writeFile(desktopDir);
+
+    } catch (error) {
+        const desktopDir = `${homeDir}/Desktop/invoice.xlsx`;
+        await workbook.xlsx.writeFile(desktopDir);
+
+    }
+    return true;
 
 };
 
@@ -317,7 +312,7 @@ IndeedInvoiceService.generateInvoice = async(data) => {
     await searchBar.click({ clickCount: 3 });
 
     // type in the job number 
-    await BrowserService.page.keyboard.type(data.jobsNumbers[0]);
+    await BrowserService.page.keyboard.type(data.jobsNumbers.join(' '));
 
     //wait for table to filter results
     await BrowserService.page.waitForTimeout(4000);
@@ -379,7 +374,7 @@ IndeedInvoiceService.generateInvoice = async(data) => {
     }
 
 
-    let filePath = await IndeedInvoiceService.generateExcel(jobsArray);
+    let filePath = await IndeedInvoiceService.generateExcel(jobsArray, data.jobsNumbers);
 
     console.log(filePath);
     return filePath;
@@ -425,7 +420,6 @@ IndeedInvoiceService.getHeadersIndexes = async() => {
             }
         }
     }
-    console.log(titlesIndexes);
     return titlesIndexes;
 
 };
