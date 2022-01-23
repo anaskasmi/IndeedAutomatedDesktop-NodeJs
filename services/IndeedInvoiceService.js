@@ -307,7 +307,7 @@ IndeedInvoiceService.generateInvoice = async(data) => {
     await lastButton.click();
 
     // parse Jobs Table
-    let jobsArray = await parseJobsTable(data.jobsNumbers, headersIndexes);
+    let jobsArray = await IndeedInvoiceService.parseJobsTable(data.jobsNumbers, headersIndexes);
     // generate excel file
     let filePath = await IndeedInvoiceService.generateExcel(jobsArray, data.jobsNumbers);
 
