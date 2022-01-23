@@ -30,8 +30,8 @@ connectToMongoDb().then(() => {
         res.header('Access-Control-Max-Age', 60 * 60 * 24 * 365);
         next();
     });
-
     //ROUTES
+    app.use('/api/description-builder', require('./routes/description-builder/descriptionBuilder.routes'))
     app.use('/api/jobs', jobsRouter);
     app.use('/js', express.static(path.join(__dirname, "/public/dist/js/")));
     app.use('/css', express.static(path.join(__dirname, "/public/dist/css/")));
