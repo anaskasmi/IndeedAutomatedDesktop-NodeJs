@@ -1,4 +1,4 @@
 const ExperiencesSet = require("../../../../models/Experience/ExperiencesSet")
 exports.findAll = async() => {
-    return ExperiencesSet.find();
+    return ExperiencesSet.find().populate({ path: 'experiences' });
 }
