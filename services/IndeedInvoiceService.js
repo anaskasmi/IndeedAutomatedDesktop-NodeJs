@@ -329,10 +329,12 @@ IndeedInvoiceService.parseJobsTable = async(jobsNumbers, headersIndexes) => {
 
         //wait for table to filter results
         await BrowserService.page.waitForTimeout(4000);
-        await BrowserService.page.waitForXPath(`//*[@class="perf-JobTitleCell-content"]/div/a`);
-
-        // get the number of rows
-        let rowsNumber = (await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div`)).length;
+        let [resultsExists] = await BrowserService.page.$x(`//*[@class="perf-JobTitleCell-content"]/div/a`);
+        let rowsNumber = 0;
+        if (resultsExists) {
+            // get the number of rows
+            rowsNumber = (await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div`)).length;
+        }
 
         for (let currentRowNumber = 1; currentRowNumber <= rowsNumber; currentRowNumber++) {
             let job = {};
