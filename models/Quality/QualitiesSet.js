@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const QualitiesSetSchema = mongoose.Schema({
     name: { type: String },
-    Qualities: [{ type: Schema.Types.ObjectId, ref: 'Quality' }]
+    qualities: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Quality' }]
 
 });
 

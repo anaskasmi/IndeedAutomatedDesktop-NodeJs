@@ -553,30 +553,34 @@ JobsServices.fillIn_adBudget = async(budget_amount) => {
 }
 
 JobsServices.closeJob = async(jobId) => {
-    await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'load' });
+    await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
     await BrowserService.page.waitForTimeout(2000);
-    if (!(await BrowserService.page.url()).includes('jobs/view?id=')) {
+    if (!(await BrowserService.page.url()).includes(`j#job-details?id=${jobId}`)) {
         console.log('Closing job redirected.. trying again..')
         await BrowserService.page.reload();
-        await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'load' });
+        await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
+    }
+    if (!(await BrowserService.page.url()).includes(`j#job-details?id=${jobId}`)) {
+        console.log('Closing job redirected.. trying again..')
+        await BrowserService.page.reload();
+        await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
     }
 
 
-
     //open status bar
-    await BrowserService.page.waitForXPath(`//*[starts-with(@id,"menu-button--menu")]`);
-    let [jobStatusMenu] = await BrowserService.page.$x(`//*[starts-with(@id,"menu-button--menu")]/span`);
+    await BrowserService.page.waitForXPath(`//*[@data-shield-id="job-status-input"]/span`);
+    let [jobStatusMenu] = await BrowserService.page.$x(`//*[@data-shield-id="job-status-input"]/span`);
     await jobStatusMenu.click();
     await BrowserService.page.waitForTimeout(2000);
 
     // click close
-    await BrowserService.page.waitForXPath(`//*[@data-valuetext="Close job"]`);
-    let [closeOption] = await BrowserService.page.$x(`//*[@data-valuetext="Close job"]`);
+    await BrowserService.page.waitForXPath(`//*[@data-shield-id="job-status-closed"]/span`);
+    let [closeOption] = await BrowserService.page.$x(`//*[@data-shield-id="job-status-closed"]/span`);
     await closeOption.click();
 
     // click I didnt hire anyone
-    await BrowserService.page.waitForXPath(`//*[@data-tn-element="noHire-radio"]/parent::label`);
-    let [IDidntHireChoice] = await BrowserService.page.$x(`//*[@data-tn-element="noHire-radio"]/parent::label`);
+    await BrowserService.page.waitForXPath(`//*[@id="noHire"]`);
+    let [IDidntHireChoice] = await BrowserService.page.$x(`//*[@id="noHire"]/parent::label`);
     await IDidntHireChoice.click();
 
 
@@ -586,14 +590,20 @@ JobsServices.closeJob = async(jobId) => {
     await continueCloseButton.click();
 
     //click other
-    await BrowserService.page.waitForXPath(`//*[@data-tn-element="other-checkbox"]/parent::label`);
+    // await BrowserService.page.waitForXPath(`//*[@data-tn-element="other-checkbox"]/parent::label`);
+    await BrowserService.page.waitForTimeout(2000);
     let [otherButton] = await BrowserService.page.$x(`//*[@data-tn-element="other-checkbox"]/parent::label`);
-    await otherButton.click();
+    if (otherButton) {
+        await otherButton.click();
+    }
 
     // click submit
-    await BrowserService.page.waitForXPath(`//*[@data-tn-element="submit-button"]`);
+    // await BrowserService.page.waitForXPath(`//*[@data-tn-element="submit-button"]`);
+    await BrowserService.page.waitForTimeout(2000);
     let [submitButton] = await BrowserService.page.$x(`//*[@data-tn-element="submit-button"]`)
-    await submitButton.click();
+    if (submitButton) {
+        await submitButton.click();
+    }
 
     await BrowserService.page.waitForTimeout(2000);
 
