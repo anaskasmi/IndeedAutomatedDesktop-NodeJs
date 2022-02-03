@@ -8,8 +8,6 @@ const IndeedInvoiceController = require('../controller/IndeedInvoiceController')
 //config
 const router = express.Router();
 
-
-
 //login routes
 router.get('/getNewBrowserForRepost', JobsController.getNewBrowser)
 router.get('/getNewBrowserForUpdate', UpdateJobController.getNewBrowser)
@@ -71,7 +69,6 @@ router.post('/transferResumesOfCandidatesList', ResumesController.transferResume
 
 
 //generate Invoice route
-
 router.post('/invoiceGenerator', IndeedInvoiceController.generateInvoice)
 
 
