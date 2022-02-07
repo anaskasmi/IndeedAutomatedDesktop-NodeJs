@@ -8,5 +8,6 @@ router.use('/incentives', require('./incentives/incentives.routes'));
 router.use('/applyMethods', require('./applyMethods/applyMethods.routes'));
 router.use('/qualities', require('./qualities/qualities.routes'));
 router.use('/companies', require('./companies/companies.routes'));
+router.use('/tags', require('./tags/tags.routes'));
 
 module.exports = router;

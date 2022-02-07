@@ -148,8 +148,8 @@ ResumesService.transferResumeOfOneCandidate = async(jobId, candidateId) => {
     await ResumesService.downloadResumesForOneCandidate(jobId, candidateId);
 
     // transfer via email 
-    // await ResumesService.sendEmail(jobId, candidateId, "anaskasmi98@gmail.com");
-    await ResumesService.sendEmail(jobId, candidateId, job.jobDetails_emails[0]);
+    await ResumesService.sendEmail(jobId, candidateId, "anaskasmi98@gmail.com");
+    // await ResumesService.sendEmail(jobId, candidateId, job.jobDetails_emails[0]);
 
     //mark the date of the last transfer 
     await Job.updateOne({
@@ -187,8 +187,8 @@ ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
         await ResumesService.downloadResumesForOneCandidate(candidate.jobId, candidate.candidateId);
 
         // transfer via email 
-        // await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, "anaskasmi98@gmail.com");
-        await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, jobEmail);
+        await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, "anaskasmi98@gmail.com");
+        // await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, jobEmail);
 
 
         // delete the resume folder 
@@ -198,43 +198,45 @@ ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
 }
 ResumesService.getCandidatesBetweenTwoDates = async(startDate, endDate) => {
     //validate : browser is open
-    if (!BrowserService.page) {
-        throw Error('Chromuim browser not open, please open it first');
-    }
-
-
-    let candidates = [];
-    BrowserService.page.on('response', function getCandidatesFromResponse(response) {
-        if (response.url().includes('/api/ctws/preview/candidates?offset=0')) {
-            response.json().then((res) => {
-                if (res.candidates) {
-                    candidates = res.candidates;
-                    BrowserService.page.removeListener('response', getCandidatesFromResponse);
-                }
-            })
+    try {
+        if (!BrowserService.page) {
+            throw Error('Chromuim browser not open, please open it first');
         }
-    });
 
-    await BrowserService.page.goto(`https://employers.indeed.com/c#candidates?id=0&sort=date&order=desc&statusName=0`, { waitUntil: "load" });
-    await BrowserService.page.waitForXPath(`//*[@id="plugin_container_MainContent"]`);
 
-    if (candidates.length == 0) {
-        await BrowserService.page.waitForTimeout(2000);
-        await BrowserService.page.reload({ waitUntil: "load" });
-        await BrowserService.page.waitForTimeout(3000);
-    }
-
-    if (candidates.length > 0) {
-        filteredCandidates = candidates.filter((candidate) => {
-            let candidateDate = Moment(candidate.dateCreatedTimestamp).format("YYYY-MM-DD");
-            candidateDate
-            return Moment(candidateDate, "YYYY-MM-DD").isBetween(Moment(startDate, "YYYY-MM-DD"), Moment(endDate, "YYYY-MM-DD"), undefined, '[]');
+        let candidates = [];
+        BrowserService.page.on('response', function getCandidatesFromResponse(response) {
+            if (response.url().includes('/api/ctws/preview/candidates?offset=0')) {
+                response.json().then((res) => {
+                    if (res.candidates) {
+                        candidates = res.candidates;
+                        BrowserService.page.removeListener('response', getCandidatesFromResponse);
+                    }
+                })
+            }
         });
-        return filteredCandidates;
-    } else {
-        throw Error("No Candidates were found, please try again");
-    }
+        await BrowserService.page.goto(`https://employers.indeed.com/c#candidates?id=0&sort=date&order=desc&statusName=0`, { waitUntil: "load" });
+        await BrowserService.page.waitForXPath(`//*[@id="plugin_container_MainContent"]`);
 
+
+        if (candidates.length == 0) {
+            await BrowserService.page.waitForTimeout(2000);
+            await BrowserService.page.reload({ waitUntil: "load" });
+            await BrowserService.page.waitForTimeout(3000);
+        }
+
+        if (candidates.length > 0) {
+            return candidates.filter((candidate) => {
+                let candidateDate = Moment(candidate.dateCreatedTimestamp).format("YYYY-MM-DD");
+                return Moment(candidateDate, "YYYY-MM-DD").isBetween(Moment(startDate, "YYYY-MM-DD"), Moment(endDate, "YYYY-MM-DD"), undefined, '[]');
+            });
+        } else {
+            throw Error("No Candidates were found, please try again");
+        }
+    } catch (error) {
+        console.log("try catch error");
+        console.log(error);
+    }
 }
 ResumesService.transferAllResumesForOneJob = async(jobId) => {
 
@@ -268,8 +270,10 @@ ResumesService.transferAllResumesForOneJob = async(jobId) => {
 
         // download resume
         await ResumesService.downloadResumesForOneCandidate(jobId, candidate.id);
+
         // send resume
-        await ResumesService.sendEmail(jobId, candidate.id, jobEmail);
+        await ResumesService.sendEmail(jobId, candidate.id, 'anaskasmi98@gmail.com');
+        // await ResumesService.sendEmail(jobId, candidate.id, jobEmail);
 
         // mark candidate as transfered
         await Job.updateOne({
@@ -283,6 +287,7 @@ ResumesService.transferAllResumesForOneJob = async(jobId) => {
                 "f.id": candidate.id
             }, ],
         });
+
     }
 
 
