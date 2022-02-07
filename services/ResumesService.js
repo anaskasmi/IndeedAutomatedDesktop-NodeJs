@@ -40,7 +40,7 @@ ResumesService.getJobEmail = async(jobId) => {
 
     // go to 
     await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: "load" });
-    await BrowserService.page.waitForXPath(`//*[@id="plugin_container_MainContent"]`);
+    await BrowserService.page.waitForXPath(`//*[@id="plugin_container_JobDescriptionPageTop"]`);
     // check emails
     if (emails || emails.length) {
         //save the new email if job in db
@@ -98,7 +98,7 @@ ResumesService.getCandidatesDetails = async(jobId) => {
 
     // go to 
     await BrowserService.page.goto(`https://employers.indeed.com/c#candidates?id=${jobId}&sort=datedefault&order=desc&statusName=0`, { waitUntil: "load" });
-    await BrowserService.page.waitForXPath(`//*[@data-testid="CandidateStatusNavTabs"]`);
+    await BrowserService.page.waitForXPath(`//*[@id="employerAssistTooltipWrapper"]`);
 
     // check emails
     if (candidatesRetrieved || candidatesRetrieved.length) {
@@ -148,8 +148,8 @@ ResumesService.transferResumeOfOneCandidate = async(jobId, candidateId) => {
     await ResumesService.downloadResumesForOneCandidate(jobId, candidateId);
 
     // transfer via email 
-    await ResumesService.sendEmail(jobId, candidateId, "anaskasmi98@gmail.com");
-    // await ResumesService.sendEmail(jobId, candidateId, job.jobDetails_emails[0]);
+    // await ResumesService.sendEmail(jobId, candidateId, "anaskasmi98@gmail.com");
+    await ResumesService.sendEmail(jobId, candidateId, job.jobDetails_emails[0]);
 
     //mark the date of the last transfer 
     await Job.updateOne({
@@ -187,8 +187,8 @@ ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
         await ResumesService.downloadResumesForOneCandidate(candidate.jobId, candidate.candidateId);
 
         // transfer via email 
-        await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, "anaskasmi98@gmail.com");
-        // await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, jobEmail);
+        // await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, "anaskasmi98@gmail.com");
+        await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, jobEmail);
 
 
         // delete the resume folder 
@@ -198,45 +198,42 @@ ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
 }
 ResumesService.getCandidatesBetweenTwoDates = async(startDate, endDate) => {
     //validate : browser is open
-    try {
-        if (!BrowserService.page) {
-            throw Error('Chromuim browser not open, please open it first');
-        }
-
-
-        let candidates = [];
-        BrowserService.page.on('response', function getCandidatesFromResponse(response) {
-            if (response.url().includes('/api/ctws/preview/candidates?offset=0')) {
-                response.json().then((res) => {
-                    if (res.candidates) {
-                        candidates = res.candidates;
-                        BrowserService.page.removeListener('response', getCandidatesFromResponse);
-                    }
-                })
-            }
-        });
-        await BrowserService.page.goto(`https://employers.indeed.com/c#candidates?id=0&sort=date&order=desc&statusName=0`, { waitUntil: "load" });
-        await BrowserService.page.waitForXPath(`//*[@id="plugin_container_MainContent"]`);
-
-
-        if (candidates.length == 0) {
-            await BrowserService.page.waitForTimeout(2000);
-            await BrowserService.page.reload({ waitUntil: "load" });
-            await BrowserService.page.waitForTimeout(3000);
-        }
-
-        if (candidates.length > 0) {
-            return candidates.filter((candidate) => {
-                let candidateDate = Moment(candidate.dateCreatedTimestamp).format("YYYY-MM-DD");
-                return Moment(candidateDate, "YYYY-MM-DD").isBetween(Moment(startDate, "YYYY-MM-DD"), Moment(endDate, "YYYY-MM-DD"), undefined, '[]');
-            });
-        } else {
-            throw Error("No Candidates were found, please try again");
-        }
-    } catch (error) {
-        console.log("try catch error");
-        console.log(error);
+    if (!BrowserService.page) {
+        throw Error('Chromuim browser not open, please open it first');
     }
+
+
+    let candidates = [];
+    BrowserService.page.on('response', function getCandidatesFromResponse(response) {
+        if (response.url().includes('/api/ctws/preview/candidates?offset=0')) {
+            response.json().then((res) => {
+                if (res.candidates) {
+                    candidates = res.candidates;
+                    BrowserService.page.removeListener('response', getCandidatesFromResponse);
+                }
+            })
+        }
+    });
+
+    await BrowserService.page.goto(`https://employers.indeed.com/c#candidates?id=0&sort=date&order=desc&statusName=0`, { waitUntil: "load" });
+    await BrowserService.page.waitForXPath(`//*[@id="plugin_container_MainContent"]`);
+
+    if (candidates.length == 0) {
+        await BrowserService.page.waitForTimeout(2000);
+        await BrowserService.page.reload({ waitUntil: "load" });
+        await BrowserService.page.waitForTimeout(3000);
+    }
+
+    if (candidates.length > 0) {
+        filteredCandidates = candidates.filter((candidate) => {
+            let candidateDate = Moment(candidate.dateCreatedTimestamp).format("YYYY-MM-DD");
+            return Moment(candidateDate, "YYYY-MM-DD").isBetween(Moment(startDate, "YYYY-MM-DD"), Moment(endDate, "YYYY-MM-DD"), undefined, '[]');
+        });
+        return filteredCandidates;
+    } else {
+        throw Error("No Candidates were found, please try again");
+    }
+
 }
 ResumesService.transferAllResumesForOneJob = async(jobId) => {
 
@@ -270,10 +267,8 @@ ResumesService.transferAllResumesForOneJob = async(jobId) => {
 
         // download resume
         await ResumesService.downloadResumesForOneCandidate(jobId, candidate.id);
-
         // send resume
-        await ResumesService.sendEmail(jobId, candidate.id, 'anaskasmi98@gmail.com');
-        // await ResumesService.sendEmail(jobId, candidate.id, jobEmail);
+        await ResumesService.sendEmail(jobId, candidate.id, jobEmail);
 
         // mark candidate as transfered
         await Job.updateOne({
@@ -287,7 +282,6 @@ ResumesService.transferAllResumesForOneJob = async(jobId) => {
                 "f.id": candidate.id
             }, ],
         });
-
     }
 
 
