@@ -40,7 +40,7 @@ ResumesService.getJobEmail = async(jobId) => {
 
     // go to 
     await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: "load" });
-    await BrowserService.page.waitForXPath(`//*[@id="plugin_container_JobDescriptionPageTop"]`);
+    await BrowserService.page.waitForXPath(`//*[@id="plugin_container_MainContent"]`);
     // check emails
     if (emails || emails.length) {
         //save the new email if job in db
@@ -98,7 +98,7 @@ ResumesService.getCandidatesDetails = async(jobId) => {
 
     // go to 
     await BrowserService.page.goto(`https://employers.indeed.com/c#candidates?id=${jobId}&sort=datedefault&order=desc&statusName=0`, { waitUntil: "load" });
-    await BrowserService.page.waitForXPath(`//*[@id="employerAssistTooltipWrapper"]`);
+    await BrowserService.page.waitForXPath(`//*[@data-testid="CandidateStatusNavTabs"]`);
 
     // check emails
     if (candidatesRetrieved || candidatesRetrieved.length) {
