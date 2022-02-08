@@ -109,6 +109,7 @@ ResumesService.getCandidatesDetails = async(jobId) => {
     });
 
     // go to 
+    await BrowserService.page.evaluate(() => window.stop());
     await BrowserService.page.goto(`https://employers.indeed.com/c#candidates?id=${jobId}&sort=datedefault&order=desc&statusName=0`, { waitUntil: "load" });
     await BrowserService.page.waitForXPath(`//*[@id="employerAssistTooltipWrapper"]`);
 
@@ -226,7 +227,7 @@ ResumesService.getCandidatesBetweenTwoDates = async(startDate, endDate) => {
             })
         }
     });
-
+    await BrowserService.page.evaluate(() => window.stop());
     await BrowserService.page.goto(`https://employers.indeed.com/c#candidates?id=0&sort=date&order=desc&statusName=0`, { waitUntil: "load" });
     await BrowserService.page.waitForXPath(`//*[@id="plugin_container_MainContent"]`);
 
@@ -328,6 +329,7 @@ ResumesService.deleteJobFolders = async(jobId) => {
 ResumesService.downloadResumesForOneCandidate = async(jobId, candidateId) => {
     await BrowserService.page._client.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: path.join(__dirname, '..', 'resumes', jobId, candidateId) });
     try {
+        await BrowserService.page.evaluate(() => window.stop());
         await BrowserService.page.goto(`https://employers.indeed.com/c/resume?id=${candidateId}&ctx=&isPDFView=false`, { waitUntil: "networkidle2" });
     } catch (error) {}
     await BrowserService.page.waitForTimeout(3000);
