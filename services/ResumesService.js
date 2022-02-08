@@ -305,7 +305,7 @@ ResumesService.deleteCandidateFolder = async(jobId, candidateId) => {
     try {
         fs.rmSync(folderPath, { recursive: true });
     } catch (error) {
-        console.log(error)
+        // console.log(error)
     }
 };
 
@@ -317,9 +317,9 @@ ResumesService.deleteCandidateFolder = async(jobId, candidateId) => {
 ResumesService.deleteJobFolders = async(jobId) => {
     let jobFolderPath = path.join(__dirname, '..', 'resumes', jobId);
     try {
-        fs.rmdirSync(jobFolderPath, { recursive: true });
+        fs.rmSync(jobFolderPath, { recursive: true });
     } catch (error) {
-        console.log(error)
+        // console.log(error)
     }
 };
 
@@ -327,9 +327,7 @@ ResumesService.downloadResumesForOneCandidate = async(jobId, candidateId) => {
     await BrowserService.page._client.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: path.join(__dirname, '..', 'resumes', jobId, candidateId) });
     try {
         await BrowserService.page.goto(`https://employers.indeed.com/c/resume?id=${candidateId}&ctx=&isPDFView=false`, { waitUntil: "networkidle2" });
-    } catch (error) {
-        console.log(error);
-    }
+    } catch (error) {}
     await BrowserService.page.waitForTimeout(5000);
 };
 
