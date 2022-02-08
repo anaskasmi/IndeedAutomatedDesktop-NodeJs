@@ -14,8 +14,6 @@ let ResumesService = {};
 
 ResumesService.getJobEmail = async(jobId) => {
     try {
-
-
         //if job has email return it 
         let job = await Job.findOne({
             job_id: jobId,
@@ -39,32 +37,36 @@ ResumesService.getJobEmail = async(jobId) => {
                 })
             }
         });
+        let emailFound = false;
+        let numberOfRetries = 5;
+        while (!emailFound && numberOfRetries != 0) {
+            // show this if its not the first time reloading
+            if (numberOfRetries < 5) {
 
-        // go to 
-        await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`);
-        await BrowserService.page.waitForXPath(`//*[@id="plugin_container_MainContent"]`);
-        if (!emails || !emails.length) {
-            console.log("reloading page ...");
+                console.log(`job with id ${jobId} doesnt seem to have an email`);
+                console.log("reloading page ...", numberOfRetries, 'Number Of Retries left');
+            }
             await BrowserService.page.evaluate(() => window.stop());
             await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`);
+            await BrowserService.page.waitForTimeout(3000);
             await BrowserService.page.waitForXPath(`//*[@id="plugin_container_MainContent"]`);
-        }
 
-        // check emails
-        if (emails && emails.length) {
-            //save the new email if job in db
-            if (job) {
+            // check emails
+            if (emails && emails.length) {
+                //save the new email if job in db
                 await Job.findOneAndUpdate({
                     job_id: jobId,
                 }, {
                     jobDetails_emails: emails
-                })
+                });
+                emailFound = true;
             }
-            // return it
-            return emails[0];
-        } else {
-            return false;
+            numberOfRetries--;
         }
+
+        // return it
+        return emails[0];
+
     } catch (error) {
         console.log("getJobEmail Error : ", error);
     }
@@ -328,7 +330,7 @@ ResumesService.downloadResumesForOneCandidate = async(jobId, candidateId) => {
     try {
         await BrowserService.page.goto(`https://employers.indeed.com/c/resume?id=${candidateId}&ctx=&isPDFView=false`, { waitUntil: "networkidle2" });
     } catch (error) {}
-    await BrowserService.page.waitForTimeout(5000);
+    await BrowserService.page.waitForTimeout(3000);
 };
 
 
