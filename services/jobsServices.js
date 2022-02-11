@@ -494,7 +494,6 @@ JobsServices.fillIn_adDurationDate = async(endDateIncreaseNumber) => {
 
     // change its Format
     newEndDate = newEndDate.format('MM/DD/YYYY');
-    console.log('newEndDate + format : ' + newEndDate);
 
     //fill in the input
     let [endDateInput] = await BrowserService.page.$x(`//*[@id="input"]`);
@@ -556,7 +555,8 @@ JobsServices.closeJob = async(jobId) => {
 
     let inTheOldJobPage = false;
     while (!inTheOldJobPage) {
-        if (!(await BrowserService.page.url()).includes(`j#job-details?id=${jobId}`)) {
+        let [editButton] = await BrowserService.page.$x(`//*[@data-tn-entityid="${jobId}"]`);
+        if (!(await BrowserService.page.url()).includes(`j#job-details?id=${jobId}`) || !editButton) {
             console.log('Closing job redirected.. trying again..')
             await BrowserService.page.reload();
             await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
@@ -565,12 +565,20 @@ JobsServices.closeJob = async(jobId) => {
         }
     }
 
-    // make sure the current page is not the home page 
-    await BrowserService.page.waitForTimeout(2000);
-    let [homePageIndicator] = await BrowserService.page.$x(`//*[@data-shield-id="jobs-status-starred"]`);
-    if (homePageIndicator) {
-        console.log('Indeed keeps redirecting to the home page, please close the job manually ');
-        throw Error('Indeed keeps redirecting to the home page, please close the job manually');
+    await BrowserService.page.waitForTimeout(4000);
+
+
+    inTheOldJobPage = false;
+    await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
+    while (!inTheOldJobPage) {
+        let [editButton] = await BrowserService.page.$x(`//*[@data-tn-entityid="${jobId}"]`);
+        if (!(await BrowserService.page.url()).includes(`j#job-details?id=${jobId}`) || !editButton) {
+            console.log('Closing job page was redirected.. trying again..')
+            await BrowserService.page.reload();
+            await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
+        } else {
+            inTheOldJobPage = true;
+        }
     }
 
     //open status bar
