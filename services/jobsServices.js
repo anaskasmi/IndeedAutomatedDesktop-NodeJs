@@ -90,17 +90,82 @@ JobsServices.downloadCookies = async() => {
     await fs.writeFile(path.join('cookies', 'cookies.json'), JSON.stringify(cookies, null, 2));
 }
 
+// original
+// JobsServices.scrapAllJobs = async(totalPagesNumber = 4) => {
+//     //delete old jobs
+//     await Job.deleteMany({});
+
+//     const jobsArray = [];
+
+//     function getJobsFromReponse(response) {
+//         if (response.url().includes('/api/jobs?page')) {
+//             response.json().then(async(res) => {
+//                 if (res.jobs) {
+//                     for (const job of res.jobs) {
+//                         jobsArray.push(job);
+//                     }
+//                     console.log('Total jobs found : ' + jobsArray.length + ' jobs')
+//                 }
+//             })
+//         }
+//     }
+//     BrowserService.page.on('response', getJobsFromReponse);
+
+//     console.log('regrabing jobs from Indeed..')
+//     for (let currentPage = 1; currentPage <= totalPagesNumber; currentPage++) {
+//         console.log('page : ' + currentPage)
+//             // await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?p=${currentPage}`);
+//         await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?page=${currentPage}&pageSize=50&tab=0&field=DATECREATED&dir=DESC&status=open%2Cpaused`);
+
+//         await BrowserService.page.waitForTimeout(4000);
+//         await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
+
+//     }
+//     BrowserService.page.removeListener('response', getJobsFromReponse);
+//     let normalizedJobs = await normalizeJobs(jobsArray);
+//     await Job.insertMany(normalizedJobs);
+// }
 
 JobsServices.scrapAllJobs = async(totalPagesNumber = 4) => {
+
+
+    await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?page=1&pageSize=50&tab=0&field=DATECREATED&dir=DESC&status=open%2Cpaused`);
+
+    await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
+    const html = await BrowserService.page.evaluate(() => document.querySelector('*').outerHTML);
+    let csrfToken = html.split(`csrf":"`)[1];
+    csrfToken = csrfToken.split(`"`)[0];
+    console.log(csrfToken);
+
+    await BrowserService.page.setRequestInterception(true);
+    BrowserService.page.once('request', async request => {
+        let indeedHeaders = request.headers();
+        let axiosRes = await axios.get(`https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=50&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&indeedcsrftoken=${csrfToken}`, {
+            headers: {
+                ...indeedHeaders
+            }
+        });
+        console.log(axiosRes);
+        request.continue();
+        BrowserService.page.setRequestInterception(false);
+    });
+
+
     //delete old jobs
     await Job.deleteMany({});
 
     const jobsArray = [];
+    let jobsTotal = 0;
 
     function getJobsFromReponse(response) {
         if (response.url().includes('/api/jobs?page')) {
             response.json().then(async(res) => {
                 if (res.jobs) {
+                    if (!jobsTotal) {
+                        jobsTotal = res.totalResults;
+                        totalPagesNumber = Math.round(jobsTotal / 50);
+                        console.log('Total pages found : ' + totalPagesNumber)
+                    }
                     for (const job of res.jobs) {
                         jobsArray.push(job);
                     }
@@ -109,26 +174,39 @@ JobsServices.scrapAllJobs = async(totalPagesNumber = 4) => {
             })
         }
     }
-    BrowserService.page.on('response', getJobsFromReponse);
+    // BrowserService.page.on('response', getJobsFromReponse);
 
     console.log('regrabing jobs from Indeed..')
     for (let currentPage = 1; currentPage <= totalPagesNumber; currentPage++) {
         console.log('page : ' + currentPage)
-            // await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?p=${currentPage}`);
+        await page.setRequestInterception(true);
+        let headers = null;
+        page.once('request', request => {
+            headers = request.headers();
+            console.log(headers);
+            axios.get("https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=100&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&indeedcsrftoken=YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx")
+            var data = {
+                'method': 'GET',
+                'postData': querystring.stringify(postData),
+                'headers': {
+                    ...request.headers(),
+                },
+            };
+            request.continue(data);
+            // Immediately disable setRequestInterception, or all other requests will hang
+            page.setRequestInterception(false);
+        });
+
         await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?page=${currentPage}&pageSize=50&tab=0&field=DATECREATED&dir=DESC&status=open%2Cpaused`);
 
         await BrowserService.page.waitForTimeout(4000);
         await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
-
     }
     BrowserService.page.removeListener('response', getJobsFromReponse);
     let normalizedJobs = await normalizeJobs(jobsArray);
     await Job.insertMany(normalizedJobs);
 
-
-
 }
-
 
 JobsServices.getAllJobsFromDb = async() => {
     let jobs = await Job.find();
