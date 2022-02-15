@@ -13,50 +13,63 @@ let ResumesService = {};
 
 
 ResumesService.getJobEmail = async(jobId) => {
+    try {
+        //if job has email return it 
+        let job = await Job.findOne({
+            job_id: jobId,
+        });
 
-    //if job has email return it 
-    let job = await Job.findOne({
-        job_id: jobId,
-    });
-
-    if (job && job.jobDetails_emails != null && job.jobDetails_emails.length > 0) {
-        return job.jobDetails_emails[0];
-    }
-    if (!BrowserService.page) {
-        throw Error('Chromuim browser not open, please open it first');
-    }
-    // else grab it from indeed
-    let emails = [];
-    BrowserService.page.on('response', function getJobIdFromJobPage(response) {
-        if (response.url().includes('jobs/view?id=')) {
-            response.json().then((res) => {
-                if (res.job) {
-                    emails = res.job.emails;
-                    BrowserService.page.removeListener('response', getJobIdFromJobPage);
-                }
-            })
+        if (job && job.jobDetails_emails != null && job.jobDetails_emails.length > 0) {
+            return job.jobDetails_emails[0];
         }
-    });
-
-    // go to 
-    await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: "load" });
-    await BrowserService.page.waitForXPath(`//*[@id="plugin_container_MainContent"]`);
-    // check emails
-    if (emails || emails.length) {
-        //save the new email if job in db
-        if (job) {
-            await Job.findOneAndUpdate({
-                job_id: jobId,
-            }, {
-                jobDetails_emails: emails
-            })
+        if (!BrowserService.page) {
+            throw Error('Chromuim browser not open, please open it first');
         }
+        // else grab it from indeed
+        let emails = [];
+        BrowserService.page.on('response', function getJobIdFromJobPage(response) {
+            if (response.url().includes('jobs/view?id=')) {
+                response.json().then((res) => {
+                    if (res.job) {
+                        emails = res.job.emails;
+                        BrowserService.page.removeListener('response', getJobIdFromJobPage);
+                    }
+                })
+            }
+        });
+        let emailFound = false;
+        let numberOfRetries = 5;
+        while (!emailFound && numberOfRetries != 0) {
+            // show this if its not the first time reloading
+            if (numberOfRetries < 5) {
+
+                console.log(`job with id ${jobId} doesnt seem to have an email`);
+                console.log("reloading page ...", numberOfRetries, 'Number Of Retries left');
+            }
+            await BrowserService.page.evaluate(() => window.stop());
+            await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`);
+            await BrowserService.page.waitForTimeout(3000);
+            await BrowserService.page.waitForXPath(`//*[@id="plugin_container_MainContent"]`);
+
+            // check emails
+            if (emails && emails.length) {
+                //save the new email if job in db
+                await Job.findOneAndUpdate({
+                    job_id: jobId,
+                }, {
+                    jobDetails_emails: emails
+                });
+                emailFound = true;
+            }
+            numberOfRetries--;
+        }
+
         // return it
         return emails[0];
-    } else {
-        return false;
-    }
 
+    } catch (error) {
+        console.log("getJobEmail Error : ", error);
+    }
 };
 
 
@@ -76,9 +89,8 @@ ResumesService.getCandidatesDetails = async(jobId) => {
             response.json().then((res) => {
                 if (res.candidates) {
                     let candidatesFromResponse = res.candidates
-                    for (let index = 0; index < candidatesFromResponse.length; index++) {
+                    for (const currentCandidate of candidatesFromResponse) {
                         try {
-                            const currentCandidate = candidatesFromResponse[index];
                             let candidateId = currentCandidate.candidateId;
                             let resumeName = 'Resume' + currentCandidate.name.replace(' ', '');
                             candidatesRetrieved.push({
@@ -97,8 +109,9 @@ ResumesService.getCandidatesDetails = async(jobId) => {
     });
 
     // go to 
+    await BrowserService.page.evaluate(() => window.stop());
     await BrowserService.page.goto(`https://employers.indeed.com/c#candidates?id=${jobId}&sort=datedefault&order=desc&statusName=0`, { waitUntil: "load" });
-    await BrowserService.page.waitForXPath(`//*[@data-testid="CandidateStatusNavTabs"]`);
+    await BrowserService.page.waitForXPath(`//*[@id="employerAssistTooltipWrapper"]`);
 
     // check emails
     if (candidatesRetrieved || candidatesRetrieved.length) {
@@ -214,7 +227,7 @@ ResumesService.getCandidatesBetweenTwoDates = async(startDate, endDate) => {
             })
         }
     });
-
+    await BrowserService.page.evaluate(() => window.stop());
     await BrowserService.page.goto(`https://employers.indeed.com/c#candidates?id=0&sort=date&order=desc&statusName=0`, { waitUntil: "load" });
     await BrowserService.page.waitForXPath(`//*[@id="plugin_container_MainContent"]`);
 
@@ -225,12 +238,10 @@ ResumesService.getCandidatesBetweenTwoDates = async(startDate, endDate) => {
     }
 
     if (candidates.length > 0) {
-        filteredCandidates = candidates.filter((candidate) => {
+        return candidates.filter((candidate) => {
             let candidateDate = Moment(candidate.dateCreatedTimestamp).format("YYYY-MM-DD");
-            candidateDate
             return Moment(candidateDate, "YYYY-MM-DD").isBetween(Moment(startDate, "YYYY-MM-DD"), Moment(endDate, "YYYY-MM-DD"), undefined, '[]');
         });
-        return filteredCandidates;
     } else {
         throw Error("No Candidates were found, please try again");
     }
@@ -295,9 +306,9 @@ ResumesService.transferAllResumesForOneJob = async(jobId) => {
 ResumesService.deleteCandidateFolder = async(jobId, candidateId) => {
     let folderPath = path.join(__dirname, '..', 'resumes', jobId, candidateId)
     try {
-        fs.rmdirSync(folderPath, { recursive: true });
+        fs.rmSync(folderPath, { recursive: true });
     } catch (error) {
-        console.log(error)
+        // console.log(error)
     }
 };
 
@@ -309,18 +320,19 @@ ResumesService.deleteCandidateFolder = async(jobId, candidateId) => {
 ResumesService.deleteJobFolders = async(jobId) => {
     let jobFolderPath = path.join(__dirname, '..', 'resumes', jobId);
     try {
-        fs.rmdirSync(jobFolderPath, { recursive: true });
+        fs.rmSync(jobFolderPath, { recursive: true });
     } catch (error) {
-        console.log(error)
+        // console.log(error)
     }
 };
 
 ResumesService.downloadResumesForOneCandidate = async(jobId, candidateId) => {
     await BrowserService.page._client.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: path.join(__dirname, '..', 'resumes', jobId, candidateId) });
     try {
+        await BrowserService.page.evaluate(() => window.stop());
         await BrowserService.page.goto(`https://employers.indeed.com/c/resume?id=${candidateId}&ctx=&isPDFView=false`, { waitUntil: "networkidle2" });
     } catch (error) {}
-    await BrowserService.page.waitForTimeout(5000);
+    await BrowserService.page.waitForTimeout(3000);
 };
 
 
@@ -362,6 +374,7 @@ ResumesService.sendEmail = async(jobId, candidateId, jobEmail) => {
 
     //Step 2: Setting up message options
     const messageOptions = {
+        // to: "anaskasmi98@gmail.com",
         to: jobEmail,
         from: process.env.EMAILSENDER_EMAIL,
         attachments: [{

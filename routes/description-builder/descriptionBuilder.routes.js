@@ -9,5 +9,6 @@ router.use('/applyMethods', require('./applyMethods/applyMethods.routes'));
 router.use('/qualities', require('./qualities/qualities.routes'));
 router.use('/companies', require('./companies/companies.routes'));
 router.use('/roleDescriptions', require('./roleDescriptions/roleDescriptions.routes'));
+router.use('/tags', require('./tags/tags.routes'));
 
 module.exports = router;

@@ -494,7 +494,6 @@ JobsServices.fillIn_adDurationDate = async(endDateIncreaseNumber) => {
 
     // change its Format
     newEndDate = newEndDate.format('MM/DD/YYYY');
-    console.log('newEndDate + format : ' + newEndDate);
 
     //fill in the input
     let [endDateInput] = await BrowserService.page.$x(`//*[@id="input"]`);
@@ -553,19 +552,34 @@ JobsServices.fillIn_adBudget = async(budget_amount) => {
 }
 
 JobsServices.closeJob = async(jobId) => {
-    await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
-    await BrowserService.page.waitForTimeout(2000);
-    if (!(await BrowserService.page.url()).includes(`j#job-details?id=${jobId}`)) {
-        console.log('Closing job redirected.. trying again..')
-        await BrowserService.page.reload();
-        await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
-    }
-    if (!(await BrowserService.page.url()).includes(`j#job-details?id=${jobId}`)) {
-        console.log('Closing job redirected.. trying again..')
-        await BrowserService.page.reload();
-        await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
+
+    let inTheOldJobPage = false;
+    while (!inTheOldJobPage) {
+        let [editButton] = await BrowserService.page.$x(`//*[@data-tn-entityid="${jobId}"]`);
+        if (!(await BrowserService.page.url()).includes(`j#job-details?id=${jobId}`) || !editButton) {
+            console.log('Closing job redirected.. trying again..')
+            await BrowserService.page.reload();
+            await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
+        } else {
+            inTheOldJobPage = true;
+        }
     }
 
+    await BrowserService.page.waitForTimeout(4000);
+
+
+    inTheOldJobPage = false;
+    await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
+    while (!inTheOldJobPage) {
+        let [editButton] = await BrowserService.page.$x(`//*[@data-tn-entityid="${jobId}"]`);
+        if (!(await BrowserService.page.url()).includes(`j#job-details?id=${jobId}`) || !editButton) {
+            console.log('Closing job page was redirected.. trying again..')
+            await BrowserService.page.reload();
+            await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
+        } else {
+            inTheOldJobPage = true;
+        }
+    }
 
     //open status bar
     await BrowserService.page.waitForXPath(`//*[@data-shield-id="job-status-input"]/span`);
@@ -579,32 +593,32 @@ JobsServices.closeJob = async(jobId) => {
     await closeOption.click();
 
     // click I didnt hire anyone
-    await BrowserService.page.waitForXPath(`//*[@id="noHire"]`);
+    await BrowserService.page.waitForTimeout(2000);
     let [IDidntHireChoice] = await BrowserService.page.$x(`//*[@id="noHire"]/parent::label`);
-    await IDidntHireChoice.click();
+    if (IDidntHireChoice) {
+        await IDidntHireChoice.click();
 
+        //click continue
+        await BrowserService.page.waitForXPath(`//*[@data-tn-element="continue-button"]`);
+        let [continueCloseButton] = await BrowserService.page.$x(`//*[@data-tn-element="continue-button"]`)
+        if (continueCloseButton) {
+            await continueCloseButton.click();
+        }
 
-    //click continue
-    await BrowserService.page.waitForXPath(`//*[@data-tn-element="continue-button"]`);
-    let [continueCloseButton] = await BrowserService.page.$x(`//*[@data-tn-element="continue-button"]`)
-    await continueCloseButton.click();
+        //click other
+        await BrowserService.page.waitForXPath(`//*[@data-tn-element="other-checkbox"]/parent::label`);
+        let [otherButton] = await BrowserService.page.$x(`//*[@data-tn-element="other-checkbox"]/parent::label`);
+        if (otherButton) {
+            await otherButton.click();
+        }
 
-    //click other
-    // await BrowserService.page.waitForXPath(`//*[@data-tn-element="other-checkbox"]/parent::label`);
-    await BrowserService.page.waitForTimeout(2000);
-    let [otherButton] = await BrowserService.page.$x(`//*[@data-tn-element="other-checkbox"]/parent::label`);
-    if (otherButton) {
-        await otherButton.click();
+        // click submit
+        await BrowserService.page.waitForXPath(`//*[@data-tn-element="submit-button"]`);
+        let [submitButton] = await BrowserService.page.$x(`//*[@data-tn-element="submit-button"]`)
+        if (submitButton) {
+            await submitButton.click();
+        }
     }
-
-    // click submit
-    // await BrowserService.page.waitForXPath(`//*[@data-tn-element="submit-button"]`);
-    await BrowserService.page.waitForTimeout(2000);
-    let [submitButton] = await BrowserService.page.$x(`//*[@data-tn-element="submit-button"]`)
-    if (submitButton) {
-        await submitButton.click();
-    }
-
     await BrowserService.page.waitForTimeout(2000);
 
 }
