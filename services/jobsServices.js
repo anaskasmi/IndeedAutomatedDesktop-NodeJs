@@ -9,6 +9,7 @@ const path = require('path');
 const Job = require('./../models/Job')
 const BrowserService = require('./BrowserService');
 const Helpers = require('../utilities/Helpers');
+const { log } = require('console');
 
 
 let JobsServices = {};
@@ -16,19 +17,62 @@ let JobsServices = {};
 
 
 JobsServices.openPostJobPage = async() => {
-    await BrowserService.page.goto(`https://employers.indeed.com/p#post-job`, { waitUntil: "networkidle2" });
-    await BrowserService.page.waitForTimeout(3000);
 
-    let [skipButton] = await BrowserService.page.$x(`//*[@data-tn-element="navControlButton-skip"]`);
-    if (skipButton) {
-        console.log('found skip button')
-        await skipButton.click();
+    await BrowserService.page.goto(`https://employers.indeed.com/j?from=gnav-empcenter#jobs`);
+    await BrowserService.page.waitForXPath(`//*[@data-testid="header-post-job"]`);
+
+    let [startNewJobButton] = await BrowserService.page.$x(`//*[@data-testid="header-post-job"]`);
+    await startNewJobButton.click();
+    await BrowserService.page.waitForNavigation({ waitUntil: "networkidle2" });
+
+
+    // handle survey page 
+    let [surveyPageIndicator] = await BrowserService.page.$x(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'Before We Start')]`);
+    if (surveyPageIndicator) {
+        let [IDidntHireChoice] = await BrowserService.page.$x(`//*[@name="did-you-hire-radio"]/parent::label`);
+        if (IDidntHireChoice) {
+            await IDidntHireChoice.click();
+
+            //click other
+            await BrowserService.page.waitForXPath(`//*[@name="other"]/parent::label`);
+            let [otherButton] = await BrowserService.page.$x(`//*[@name="other"]/parent::label`);
+            if (otherButton) {
+                await otherButton.click();
+            }
+
+            // click submit
+            await BrowserService.page.waitForXPath(`//*[@type="submit"]`);
+            let [submitButton] = await BrowserService.page.$x(`//*[@type="submit"]`)
+            if (submitButton) {
+                await submitButton.click();
+                await BrowserService.page.waitForNavigation({ waitUntil: "networkidle2" });
+            }
+
+        }
     }
 
-    let [isIntroPage] = await BrowserService.page.$x(`//*[text()='How would you like to start your job post?']`);
-    let [continueButton] = await BrowserService.page.$x(`//*[text()='Continue']`)
-    if (continueButton && isIntroPage) {
-        await continueButton.click()
+    // handle introduction page 
+    let [introPageIndicator] = await BrowserService.page.$x(`//*[@for="StartFromScratch-radio"]`);
+    if (introPageIndicator) {
+        await introPageIndicator.click();
+        await BrowserService.page.waitForXPath(`//*[@type="submit"]`);
+        let [submitButton] = await BrowserService.page.$x(`//*[@id="sheet-next-button"]`)
+        if (submitButton) {
+            await submitButton.click();
+            await BrowserService.page.waitForNavigation({ waitUntil: "networkidle2" });
+        }
+    }
+
+    // handle orientation page 
+    let [orientationPageIndicator] = await BrowserService.page.$x(`//*[@data-testid="orientation-radio-selector"]`);
+    if (orientationPageIndicator) {
+        // click submit
+        await BrowserService.page.waitForXPath(`//*[@type="submit"]`);
+        let [submitButton] = await BrowserService.page.$x(`//*[@type="submit"]`)
+        if (submitButton) {
+            await submitButton.click();
+            await BrowserService.page.waitForNavigation({ waitUntil: "networkidle2" });
+        }
     }
 
 }
@@ -130,15 +174,18 @@ JobsServices.scrapAllJobs = async() => {
 
     let jobsArray = [];
     let totalResults = 0;
-
-    await BrowserService.page.evaluate(() => window.stop());
-    await BrowserService.page.goto(`https://employers.indeed.com/j?from=gnav-empcenter#jobs`);
-
-    await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
-    const html = await BrowserService.page.evaluate(() => document.querySelector('*').outerHTML);
-    let csrfToken = html.split(`csrf":"`)[1];
-    csrfToken = csrfToken.split(`"`)[0];
-    console.log(csrfToken);
+    let csrfToken;
+    try {
+        await BrowserService.page.evaluate(() => window.stop());
+        await BrowserService.page.goto(`https://employers.indeed.com/j?from=gnav-empcenter#jobs`);
+        await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
+        const html = await BrowserService.page.evaluate(() => document.querySelector('*').outerHTML);
+        csrfToken = html.split(`csrf":"`)[1];
+        csrfToken = csrfToken.split(`"`)[0];
+        console.log(csrfToken);
+    } catch (error) {
+        console.log(error);
+    }
 
     await BrowserService.page.setRequestInterception(true);
 
@@ -163,30 +210,29 @@ JobsServices.scrapAllJobs = async() => {
             request.continue();
         }
     });
+
     while (!jobsArray.length || jobsArray.length != totalResults) {
         await BrowserService.page.evaluate(() => window.stop());
         await BrowserService.page.goto(`https://employers.indeed.com/j?from=gnav-empcenter#jobs`);
         await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
         await BrowserService.page.waitForTimeout(2000);
     }
+
     BrowserService.page.removeAllListeners();
     BrowserService.page.setRequestInterception(false);
-
-
 
 }
 
 JobsServices.getAllJobsFromDb = async() => {
-    let jobs = await Job.find();
-    return jobs
+
+    return Job.find();
 
 }
 
 JobsServices.getJobDataFromDb = async(jobId) => {
-    let job = await Job.findOne({
+    return Job.findOne({
         job_id: jobId,
     });
-    return job
 
 }
 
@@ -688,7 +734,7 @@ JobsServices.fillIn_email = async(jobDetails_emails) => {
 
 JobsServices.close_questions = async() => {
     await BrowserService.page.waitForTimeout(2000);
-    let xButtons = await BrowserService.page.$x(`//*[contains(@class,'CloseButton')]`);
+    let xButtons = await BrowserService.page.$x(`//*[contains(@id,'CloseButton')]`);
     for (const xButton of xButtons) {
         await xButton.click();
     }
