@@ -126,10 +126,13 @@ JobsServices.downloadCookies = async() => {
 //     await Job.insertMany(normalizedJobs);
 // }
 
-JobsServices.scrapAllJobs = async(totalPagesNumber = 4) => {
+JobsServices.scrapAllJobs = async() => {
 
+    let jobsArray = [];
+    let totalResults = 0;
 
-    await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?page=1&pageSize=50&tab=0&field=DATECREATED&dir=DESC&status=open%2Cpaused`);
+    await BrowserService.page.evaluate(() => window.stop());
+    await BrowserService.page.goto(`https://employers.indeed.com/j?from=gnav-empcenter#jobs`);
 
     await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
     const html = await BrowserService.page.evaluate(() => document.querySelector('*').outerHTML);
@@ -138,73 +141,38 @@ JobsServices.scrapAllJobs = async(totalPagesNumber = 4) => {
     console.log(csrfToken);
 
     await BrowserService.page.setRequestInterception(true);
-    BrowserService.page.once('request', async request => {
-        let indeedHeaders = request.headers();
-        let axiosRes = await axios.get(`https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=50&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&indeedcsrftoken=${csrfToken}`, {
-            headers: {
-                ...indeedHeaders
-            }
-        });
-        console.log(axiosRes);
-        request.continue();
-        BrowserService.page.setRequestInterception(false);
-    });
 
-
-    //delete old jobs
-    await Job.deleteMany({});
-
-    const jobsArray = [];
-    let jobsTotal = 0;
-
-    function getJobsFromReponse(response) {
+    BrowserService.page.on('response', async response => {
         if (response.url().includes('/api/jobs?page')) {
             response.json().then(async(res) => {
-                if (res.jobs) {
-                    if (!jobsTotal) {
-                        jobsTotal = res.totalResults;
-                        totalPagesNumber = Math.round(jobsTotal / 50);
-                        console.log('Total pages found : ' + totalPagesNumber)
-                    }
-                    for (const job of res.jobs) {
-                        jobsArray.push(job);
-                    }
-                    console.log('Total jobs found : ' + jobsArray.length + ' jobs')
-                }
+                jobsArray = res.jobs;
+                totalResults = res.totalResults;
+                console.log("jobs total ", totalResults);
+                console.log("jobs grabbed", res.jobs.length);
+                let normalizedJobs = await normalizeJobs(jobsArray);
+                await Job.deleteMany({});
+                await Job.insertMany(normalizedJobs.reverse());
             })
         }
-    }
-    // BrowserService.page.on('response', getJobsFromReponse);
+    });
 
-    console.log('regrabing jobs from Indeed..')
-    for (let currentPage = 1; currentPage <= totalPagesNumber; currentPage++) {
-        console.log('page : ' + currentPage)
-        await page.setRequestInterception(true);
-        let headers = null;
-        page.once('request', request => {
-            headers = request.headers();
-            console.log(headers);
-            axios.get("https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=100&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&indeedcsrftoken=YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx")
-            var data = {
-                'method': 'GET',
-                'postData': querystring.stringify(postData),
-                'headers': {
-                    ...request.headers(),
-                },
-            };
-            request.continue(data);
-            // Immediately disable setRequestInterception, or all other requests will hang
-            page.setRequestInterception(false);
-        });
-
-        await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?page=${currentPage}&pageSize=50&tab=0&field=DATECREATED&dir=DESC&status=open%2Cpaused`);
-
-        await BrowserService.page.waitForTimeout(4000);
+    BrowserService.page.on('request', async request => {
+        if (request.url().includes('/api/jobs?page')) {
+            request.continue({ method: 'GET', headers: request.headers, url: `https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=200&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&indeedcsrftoken=${csrfToken}` });
+        } else {
+            request.continue();
+        }
+    });
+    while (!jobsArray.length || jobsArray.length != totalResults) {
+        await BrowserService.page.evaluate(() => window.stop());
+        await BrowserService.page.goto(`https://employers.indeed.com/j?from=gnav-empcenter#jobs`);
         await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
+        await BrowserService.page.waitForTimeout(2000);
     }
-    BrowserService.page.removeListener('response', getJobsFromReponse);
-    let normalizedJobs = await normalizeJobs(jobsArray);
-    await Job.insertMany(normalizedJobs);
+    BrowserService.page.removeAllListeners();
+    BrowserService.page.setRequestInterception(false);
+
+
 
 }
 
