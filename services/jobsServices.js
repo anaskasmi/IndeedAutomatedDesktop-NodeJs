@@ -183,44 +183,82 @@ JobsServices.getCSRFToken = async() => {
 }
 JobsServices.scrapAllJobs = async() => {
 
-    let jobsArray = [];
-    let totalResults = 0;
+
+
+
 
     await JobsServices.getCSRFToken();
 
-    await BrowserService.page.setRequestInterception(true);
-
-    BrowserService.page.on('response', async response => {
-        if (response.url().includes('/api/jobs?page')) {
-            response.json().then(async(res) => {
-                jobsArray = res.jobs;
-                totalResults = res.totalResults;
-                console.log("jobs total ", totalResults);
-                console.log("jobs grabbed", res.jobs.length);
-                let normalizedJobs = await normalizeJobs(jobsArray);
-                await Job.deleteMany({});
-                await Job.insertMany(normalizedJobs.reverse());
-            })
-        }
+    let response = await fetch(`https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=200&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&indeedcsrftoken=${JobsServices.csrfToken}`, {
+        "headers": {
+            "accept": "application/json",
+            "accept-language": "en-US,en;q=0.9",
+            "indeed-client-application": "ic-jobs-management",
+            "sec-ch-ua": "\"Chromium\";v=\"98\", \" Not A;Brand\";v=\"99\", \"Google Chrome\";v=\"98\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "x-datadog-origin": "rum",
+            "x-datadog-parent-id": "803278832719911147",
+            "x-datadog-sampled": "1",
+            "x-datadog-sampling-priority": "1",
+            "x-datadog-trace-id": "3401735100983902306",
+            "x-indeed-rpc": "1",
+            "cookie": "PCA=d71582ec4597e44c; ENC_CSRF=FZ28ZsZgL9YVB19O3cdGNyz1L8WB4OqQ; SHOE=\"SqK8kBnRzeUS1sU--H1Dj4KgkBZYEQhdWESMecOgHbqMpQZf2G55lVEUsstMux57kkQxH4npLWVnQCcGI5r3CukZKcM9cOJG2V7W8PKdVOqSfVLgHXyBLlHxISlwxGxUiw0AfisPWco=\"; __ssid=9a246326ee1c8eb163b789c953dd971; _ga=GA1.2.2074404572.1628624164; CSRF=YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx; SOCK=\"R5k9sLaUHmqUCY8-pcnmH75RN54=\"; SURF=St2AaCFM7FQQMCc8sDRD7NiaoGLEexE9; indeed_rcc=CTK; CTK=1fskali73q63u801; ADOC=2078510905073534; _gcl_au=1.1.838815195.1645654766; _ga=GA1.3.2074404572.1628624164; _gid=GA1.3.1686099092.1645654767; DRAWSTK=6c2bd346d9f65214; PPID=eyJraWQiOiJmNmJkN2U4Zi02MmQyLTQ5ZDAtOTA1ZS1kNjVhMTBlOTVhZjIiLCJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJhY2QzZmJiYWU1ZmFiNjE2IiwiYXVkIjoiYzFhYjhmMDRmIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImNyZWF0ZWQiOjE2MDAxMDY0NDMwMDAsInJlbV9tZSI6dHJ1ZSwiaXNzIjoiaHR0cHM6XC9cL3NlY3VyZS5pbmRlZWQuY29tIiwiZXhwIjoxNjQ1NjU2NTYwLCJpYXQiOjE2NDU2NTQ3NjAsImxvZ190cyI6MTYyODYyNDE5ODIxMCwiZW1haWwiOiJhbmFzQGthc21pLmRldiJ9.UBKmZb4d8dNatv7_EOoql0k_BN9aTj6KHC0pOJ7FRcp7G36G_3rVR5YTbespOF1IgQfzPucy_bf-ZdN1djLULg; INDEEDADS_HOME=6de620f32496e51e|draw; ADV=1; _clck=1jtdte3|1|ez8|0; mhit=2078510905073534; _gat_ga_tracker=1; _gat_UA-90780-1=1; _dd_s=rum=1&id=2c755c7a-ef7d-4059-bae2-ed4b29d70dbb&created=1645654764495&expire=1645656092353; _uetsid=aa0b35e094f611ec862fe181995ff0b3; _uetvid=aa0b693094f611ecb67c61d317bd5f5c; JSESSIONID=node0hq5hyfcebmza138wirfq9saei46180.node0; _clsk=pa3eff|1645655199926|8|0|h.clarity.ms/collect",
+            "Referer": "https://employers.indeed.com/jobs?page=1&pageSize=50&tab=0&field=DATECREATED&dir=DESC&status=open%2Cpaused",
+            "Referrer-Policy": "strict-origin-when-cross-origin"
+        },
+        "body": null,
+        "method": "GET"
     });
+    const data = await response.json();
 
-    BrowserService.page.on('request', async request => {
-        if (request.url().includes('/api/jobs?page')) {
-            request.continue({ method: 'GET', headers: request.headers, url: `https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=200&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&indeedcsrftoken=${JobsServices.csrfToken}` });
-        } else {
-            request.continue();
-        }
-    });
+    console.log('Jobs Found : ' + data.jobs.length);
+    let normalizedJobs = await normalizeJobs(data.jobs);
+    await Job.deleteMany({});
+    await Job.insertMany(normalizedJobs.reverse());
 
-    while (!jobsArray.length || jobsArray.length != totalResults) {
-        await BrowserService.page.evaluate(() => window.stop());
-        await BrowserService.page.goto(`https://employers.indeed.com/j?from=gnav-empcenter#jobs`);
-        await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
-        await BrowserService.page.waitForTimeout(2000);
-    }
 
-    BrowserService.page.removeAllListeners();
-    BrowserService.page.setRequestInterception(false);
+    // let jobsArray = [];
+    // let totalResults = 0;
+
+    // await JobsServices.getCSRFToken();
+
+    // await BrowserService.page.setRequestInterception(true);
+
+    // BrowserService.page.on('response', async response => {
+    //     if (response.url().includes('/api/jobs?page')) {
+    //         response.json().then(async(res) => {
+    //             jobsArray = res.jobs;
+    //             totalResults = res.totalResults;
+    //             console.log("jobs total ", totalResults);
+    //             console.log("jobs grabbed", res.jobs.length);
+    //             let normalizedJobs = await normalizeJobs(jobsArray);
+    //             await Job.deleteMany({});
+    //             await Job.insertMany(normalizedJobs.reverse());
+    //         })
+    //     }
+    // });
+
+    // BrowserService.page.on('request', async request => {
+    //     if (request.url().includes('/api/jobs?page')) {
+    //         request.continue({ method: 'GET', headers: request.headers, url: `https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=200&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&indeedcsrftoken=${JobsServices.csrfToken}` });
+    //     } else {
+    //         request.continue();
+    //     }
+    // });
+
+    // while (!jobsArray.length || jobsArray.length != totalResults) {
+    //     await BrowserService.page.evaluate(() => window.stop());
+    //     await BrowserService.page.goto(`https://employers.indeed.com/j?from=gnav-empcenter#jobs`);
+    //     await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
+    //     await BrowserService.page.waitForTimeout(2000);
+    // }
+
+    // BrowserService.page.removeAllListeners();
+    // BrowserService.page.setRequestInterception(false);
 
 }
 
