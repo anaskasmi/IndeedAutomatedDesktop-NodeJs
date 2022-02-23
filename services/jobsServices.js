@@ -4,12 +4,12 @@ const { findRangeType } = require('../utilities/findRangeType');
 const Moment = require('moment');
 const axios = require('axios');
 const path = require('path');
+const fetch = require('node-fetch');
 
 //models
 const Job = require('./../models/Job')
 const BrowserService = require('./BrowserService');
 const Helpers = require('../utilities/Helpers');
-const { log } = require('console');
 
 
 let JobsServices = {};
@@ -169,23 +169,24 @@ JobsServices.downloadCookies = async() => {
 //     let normalizedJobs = await normalizeJobs(jobsArray);
 //     await Job.insertMany(normalizedJobs);
 // }
-
-JobsServices.scrapAllJobs = async() => {
-
-    let jobsArray = [];
-    let totalResults = 0;
-    let csrfToken;
-    try {
+JobsServices.csrfToken = null;
+JobsServices.getCSRFToken = async() => {
+    if (!JobsServices.csrfToken) {
         await BrowserService.page.evaluate(() => window.stop());
         await BrowserService.page.goto(`https://employers.indeed.com/j?from=gnav-empcenter#jobs`);
         await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
         const html = await BrowserService.page.evaluate(() => document.querySelector('*').outerHTML);
-        csrfToken = html.split(`csrf":"`)[1];
-        csrfToken = csrfToken.split(`"`)[0];
-        console.log(csrfToken);
-    } catch (error) {
-        console.log(error);
+        JobsServices.csrfToken = html.split(`csrf":"`)[1];
+        JobsServices.csrfToken = JobsServices.csrfToken.split(`"`)[0];
+        console.log(JobsServices.csrfToken);
     }
+}
+JobsServices.scrapAllJobs = async() => {
+
+    let jobsArray = [];
+    let totalResults = 0;
+
+    await JobsServices.getCSRFToken();
 
     await BrowserService.page.setRequestInterception(true);
 
@@ -205,7 +206,7 @@ JobsServices.scrapAllJobs = async() => {
 
     BrowserService.page.on('request', async request => {
         if (request.url().includes('/api/jobs?page')) {
-            request.continue({ method: 'GET', headers: request.headers, url: `https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=200&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&indeedcsrftoken=${csrfToken}` });
+            request.continue({ method: 'GET', headers: request.headers, url: `https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=200&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&indeedcsrftoken=${JobsServices.csrfToken}` });
         } else {
             request.continue();
         }
@@ -260,8 +261,8 @@ JobsServices.fillIn_CompanyName = async(companyName) => {
 }
 
 JobsServices.fillIn_JobTitle = async(jobTitle) => {
-    await BrowserService.page.waitForXPath(`//*[@id="remote.draftJobPosts.title"]`);
-    let [jobTitleInput] = await BrowserService.page.$x(`//*[@id="remote.draftJobPosts.title"]`);
+    await BrowserService.page.waitForXPath(`//*[@data-testid="job-title"]`);
+    let [jobTitleInput] = await BrowserService.page.$x(`//*[@data-testid="job-title"]`);
     await jobTitleInput.click({ clickCount: 3 });
     await jobTitleInput.press('Backspace');
     await jobTitleInput.type(jobTitle);
@@ -299,8 +300,8 @@ JobsServices.fillIn_RolesLocation = async(location) => {
     [oneLocation] = await BrowserService.page.$x(`//*[@value="ONE_LOCATION"]/parent::label`);
     await oneLocation.click();
     //click dont include the address option
-    await BrowserService.page.waitForXPath(`//*[@data-testid="remote.draftJobPosts.attributes.workLocationType-OneMileRadius"]/parent::label`);
-    let [hideExactLocation] = await BrowserService.page.$x(`//*[@data-testid="remote.draftJobPosts.attributes.workLocationType-OneMileRadius"]/parent::label`);
+    await BrowserService.page.waitForXPath(`//*[contains(@id,"workLocationType-OneMileRadius")]`);
+    let [hideExactLocation] = await BrowserService.page.$x(`//*[contains(@id,"workLocationType-OneMileRadius")]`);
     await hideExactLocation.click();
     //fill in the city 
     await BrowserService.page.waitForXPath(`//*[@data-testid="precise-address-city"]`);
@@ -556,8 +557,8 @@ JobsServices.fillIn_description = async(jobDescriptionHtml) => {
 
 
 JobsServices.fillIn_isResumeRequired = async() => {
-    await BrowserService.page.waitForXPath(`//*[@name="remote.draftJobPosts.resumeRequired" and @value="YES"]/parent::label`);
-    let [resumeRequiredButton] = await BrowserService.page.$x(`//*[@name="remote.draftJobPosts.resumeRequired" and @value="YES"]/parent::label`);
+    await BrowserService.page.waitForXPath(`//*[contains(@name,"resumeRequired")]`);
+    let [resumeRequiredButton] = await BrowserService.page.$x(`//*[contains(@name,"resumeRequired")]`);
     await resumeRequiredButton.click();
     return true;
 }
@@ -645,91 +646,116 @@ JobsServices.fillIn_adBudget = async(budget_amount) => {
 
 JobsServices.closeJob = async(jobId) => {
 
-    let inTheOldJobPage = false;
-    while (!inTheOldJobPage) {
-        let [editButton] = await BrowserService.page.$x(`//*[@data-tn-entityid="${jobId}"]`);
-        if (!(await BrowserService.page.url()).includes(`j#job-details?id=${jobId}`) || !editButton) {
-            console.log('Closing job redirected.. trying again..')
-            await BrowserService.page.reload();
-            await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
-        } else {
-            inTheOldJobPage = true;
-        }
-    }
+    await JobsServices.getCSRFToken();
+    await BrowserService.page.goto(`https://employers.indeed.com/em/job-details/${jobId}`, { waitUntil: 'load' });
+    await fetch(`https://employers.indeed.com/graphql?indeedcsrftoken=${JobsServices.csrfToken}`, {
+        "headers": {
+            "accept": "application/json",
+            "accept-language": "en-US,en;q=0.9",
+            "content-type": "application/json",
+            "indeed-client-application": "ic-jobs-management",
+            "sec-ch-ua": "\"Chromium\";v=\"98\", \" Not A;Brand\";v=\"99\", \"Google Chrome\";v=\"98\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "x-datadog-origin": "rum",
+            "x-datadog-parent-id": "1705804123429147222",
+            "x-datadog-sampled": "1",
+            "x-datadog-sampling-priority": "1",
+            "x-datadog-trace-id": "5545931483359591976",
+            "x-indeed-rpc": "1",
+            "cookie": "PCA=d71582ec4597e44c; ENC_CSRF=FZ28ZsZgL9YVB19O3cdGNyz1L8WB4OqQ; SHOE=\"SqK8kBnRzeUS1sU--H1Dj4KgkBZYEQhdWESMecOgHbqMpQZf2G55lVEUsstMux57kkQxH4npLWVnQCcGI5r3CukZKcM9cOJG2V7W8PKdVOqSfVLgHXyBLlHxISlwxGxUiw0AfisPWco=\"; __ssid=9a246326ee1c8eb163b789c953dd971; _ga=GA1.2.2074404572.1628624164; CSRF=YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx; SOCK=\"R5k9sLaUHmqUCY8-pcnmH75RN54=\"; SURF=St2AaCFM7FQQMCc8sDRD7NiaoGLEexE9; indeed_rcc=CTK; CTK=1fsk8l3f1n02p801; ADOC=2078510905073534; _gcl_au=1.1.1100063608.1645652659; DRAWSTK=939f06d710b327e7; PPID=eyJraWQiOiJmNmJkN2U4Zi02MmQyLTQ5ZDAtOTA1ZS1kNjVhMTBlOTVhZjIiLCJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJhY2QzZmJiYWU1ZmFiNjE2IiwiYXVkIjoiYzFhYjhmMDRmIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImNyZWF0ZWQiOjE2MDAxMDY0NDMwMDAsInJlbV9tZSI6dHJ1ZSwiaXNzIjoiaHR0cHM6XC9cL3NlY3VyZS5pbmRlZWQuY29tIiwiZXhwIjoxNjQ1NjU0NDU0LCJpYXQiOjE2NDU2NTI2NTQsImxvZ190cyI6MTYyODYyNDE5ODIxMCwiZW1haWwiOiJhbmFzQGthc21pLmRldiJ9.WdjbJFnw70QzwZ0Xk1Ay-gCQX1zhs6GWjgwzJKbVjI3h-dhtQcwo_tyjp5c00Y77TV2hM-2j6gKaYmyX3aLB2g; INDEEDADS_HOME=6de620f32496e51e|draw; ADV=1; _ga=GA1.3.2074404572.1628624164; _gid=GA1.3.973980.1645652662; _clck=1imcv9h|1|ez8|0; mhit=2078510905073534; _uetsid=c2d38c6094f111ecaffbb978dbcd33ec; _uetvid=c2d3a5d094f111ec86d8d199e200fca9; JSESSIONID=node01pyo1xm3k8z4r1f8aks9yv7a2d39554.node0; _clsk=1503hje|1645653273605|6|0|e.clarity.ms/collect; _dd_s=rum=1&id=86e0ace2-aeae-4144-9d40-df6220fa0069&created=1645652657368&expire=1645654183030; _gali=job-status-input-5719373",
+            "Referer": `https://employers.indeed.com/em/job-details/${jobId}`,
+            "Referrer-Policy": "strict-origin-when-cross-origin"
+        },
+        "body": `{\"query\":\"\\nmutation batchUpdateJobStatus {\\n_${jobId}: updateJob(id: \\\"${jobId}\\\", jobInput: { status: DELETED }) {\\n    status\\n}\\n}\"}`,
+        "method": "POST"
+    });
+    await BrowserService.page.reload();
 
-    await BrowserService.page.waitForTimeout(4000);
 
 
-    inTheOldJobPage = false;
-    await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
-    while (!inTheOldJobPage) {
-        let [editButton] = await BrowserService.page.$x(`//*[@data-tn-entityid="${jobId}"]`);
-        if (!(await BrowserService.page.url()).includes(`j#job-details?id=${jobId}`) || !editButton) {
-            console.log('Closing job page was redirected.. trying again..')
-            await BrowserService.page.reload();
-            await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
-        } else {
-            inTheOldJobPage = true;
-        }
-    }
+    // let inTheOldJobPage = false;
+    // while (!inTheOldJobPage) {
+    //     let [editButton] = await BrowserService.page.$x(`//*[@data-testid="edit-job"]`);
+    //     if (!(await BrowserService.page.url()).includes(`job-details/${jobId}`) || !editButton) {
+    //         console.log('Closing job redirected.. trying again..')
+    //         await BrowserService.page.reload();
+    //         await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
+    //     } else {
+    //         inTheOldJobPage = true;
+    //     }
+    // }
 
-    //open status bar
-    await BrowserService.page.waitForXPath(`//*[@data-shield-id="job-status-input"]/span`);
-    let [jobStatusMenu] = await BrowserService.page.$x(`//*[@data-shield-id="job-status-input"]/span`);
-    await jobStatusMenu.click();
-    await BrowserService.page.waitForTimeout(2000);
+    // await BrowserService.page.waitForTimeout(4000);
 
-    // click close
-    await BrowserService.page.waitForXPath(`//*[@data-shield-id="job-status-closed"]/span`);
-    let [closeOption] = await BrowserService.page.$x(`//*[@data-shield-id="job-status-closed"]/span`);
-    await closeOption.click();
 
-    // click I didnt hire anyone
-    await BrowserService.page.waitForTimeout(2000);
-    let [IDidntHireChoice] = await BrowserService.page.$x(`//*[@id="noHire"]/parent::label`);
-    if (IDidntHireChoice) {
-        await IDidntHireChoice.click();
+    // inTheOldJobPage = false;
+    // await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
+    // while (!inTheOldJobPage) {
+    //     let [editButton] = await BrowserService.page.$x(`//*[@data-testid="edit-job"]`);
+    //     if (!(await BrowserService.page.url()).includes(`job-details/${jobId}`) || !editButton) {
+    //         console.log('Closing job page was redirected.. trying again..')
+    //         await BrowserService.page.reload();
+    //         await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
+    //     } else {
+    //         inTheOldJobPage = true;
+    //     }
+    // }
 
-        //click continue
-        await BrowserService.page.waitForXPath(`//*[@data-tn-element="continue-button"]`);
-        let [continueCloseButton] = await BrowserService.page.$x(`//*[@data-tn-element="continue-button"]`)
-        if (continueCloseButton) {
-            await continueCloseButton.click();
-        }
+    // //open status bar
+    // await BrowserService.page.waitForXPath(`//*[@data-testid="job-status-input""]/span`);
+    // let [jobStatusMenu] = await BrowserService.page.$x(`//*[@data-testid="job-status-input""]/span`);
+    // await jobStatusMenu.click();
+    // await BrowserService.page.waitForTimeout(2000);
 
-        //click other
-        await BrowserService.page.waitForXPath(`//*[@data-tn-element="other-checkbox"]/parent::label`);
-        let [otherButton] = await BrowserService.page.$x(`//*[@data-tn-element="other-checkbox"]/parent::label`);
-        if (otherButton) {
-            await otherButton.click();
-        }
+    // // click close
+    // await BrowserService.page.waitForXPath(`//*[@data-testid="job-status-closed"]/span`);
+    // let [closeOption] = await BrowserService.page.$x(`//*[@data-testid="job-status-closed"]/span`);
+    // await closeOption.click();
 
-        // click submit
-        await BrowserService.page.waitForXPath(`//*[@data-tn-element="submit-button"]`);
-        let [submitButton] = await BrowserService.page.$x(`//*[@data-tn-element="submit-button"]`)
-        if (submitButton) {
-            await submitButton.click();
-        }
-    }
-    await BrowserService.page.waitForTimeout(2000);
+    // // click I didnt hire anyone
+    // await BrowserService.page.waitForTimeout(2000);
+    // let [IDidntHireChoice] = await BrowserService.page.$x(`//*[@id="noHire"]/parent::label`);
+    // if (IDidntHireChoice) {
+    //     await IDidntHireChoice.click();
+
+    //     //click continue
+    //     await BrowserService.page.waitForXPath(`//*[@data-tn-element="continue-button"]`);
+    //     let [continueCloseButton] = await BrowserService.page.$x(`//*[@data-tn-element="continue-button"]`)
+    //     if (continueCloseButton) {
+    //         await continueCloseButton.click();
+    //     }
+
+    //     //click other
+    //     await BrowserService.page.waitForXPath(`//*[@data-tn-element="other-checkbox"]/parent::label`);
+    //     let [otherButton] = await BrowserService.page.$x(`//*[@data-tn-element="other-checkbox"]/parent::label`);
+    //     if (otherButton) {
+    //         await otherButton.click();
+    //     }
+
+    //     // click submit
+    //     await BrowserService.page.waitForXPath(`//*[@data-tn-element="submit-button"]`);
+    //     let [submitButton] = await BrowserService.page.$x(`//*[@data-tn-element="submit-button"]`)
+    //     if (submitButton) {
+    //         await submitButton.click();
+    //     }
+    // }
+    // await BrowserService.page.waitForTimeout(2000);
 
 }
 
 JobsServices.fillIn_email = async(jobDetails_emails) => {
-    // click on the add email button
-    // await BrowserService.page.waitForXPath(`//*[text()='Add an email']/parent::button`);
-    // let [addEmailButton] = await BrowserService.page.$x(`//*[text()='Add an email']/parent::button`);
-    // await addEmailButton.click({ clickCount: 3 });
-
     //fill in the email input
-    await BrowserService.page.waitForXPath(`//*[@name="remote.draftJobPosts.applyMethod.emails"]`);
-    let [emailInput] = await BrowserService.page.$x(`//*[@name="remote.draftJobPosts.applyMethod.emails"]`);
+    await BrowserService.page.waitForXPath(`//*[contains(@name,"applyMethod.emails")]`);
+    let [emailInput] = await BrowserService.page.$x(`//*[contains(@name,"applyMethod.emails")]`);
     await emailInput.click({ clickCount: 3 });
     await emailInput.press('Backspace');
     await Helpers.clearInput();
     await emailInput.type(jobDetails_emails);
     await BrowserService.page.waitForTimeout(2000);
-
 }
 
 JobsServices.close_questions = async() => {
