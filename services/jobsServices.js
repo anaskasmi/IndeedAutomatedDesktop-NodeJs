@@ -80,7 +80,7 @@ JobsServices.openPostJobPage = async() => {
 JobsServices.getJobFullDetails = async(jobId) => {
 
 
-    let unormalizedJobFromJobEditPage = await fetch(`https://employers.indeed.com/p/post-job/edit-job?id=${jobId}`, {
+    let response = await fetch(`https://employers.indeed.com/p/post-job/edit-job?id=${jobId}`, {
         "headers": {
             "accept": "*/*",
             "accept-language": "en-US,en;q=0.9",
@@ -108,7 +108,10 @@ JobsServices.getJobFullDetails = async(jobId) => {
         "body": null,
         "method": "GET"
     });
-    unormalizedJobFromJobEditPage = await unormalizedJobFromJobEditPage.json();
+    if (response.status != 200) {
+        throw Error('cant getJobFullDetails !');
+    }
+    let unormalizedJobFromJobEditPage = await response.json();
 
     let normalizedJob = await normalizeFullDetailedJob(unormalizedJobFromJobEditPage);
     //delete old job document
