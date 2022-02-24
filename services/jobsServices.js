@@ -78,48 +78,39 @@ JobsServices.openPostJobPage = async() => {
 }
 
 JobsServices.getJobFullDetails = async(jobId) => {
-    let unormalizedJobFromJobEditPage;
-    let unormalizedJobFromJobShowPage;
-    BrowserService.page.on('response', function getDetailsFromJobPage(response) {
-        if (response.url().includes('https://employers.indeed.com/p/post-job/edit-job?id=')) {
-            response.json().then((res) => {
-                if (res) {
-                    unormalizedJobFromJobEditPage = res;
-                }
 
-            })
-        }
+
+    let unormalizedJobFromJobEditPage = await fetch(`https://employers.indeed.com/p/post-job/edit-job?id=${jobId}`, {
+        "headers": {
+            "accept": "*/*",
+            "accept-language": "en-US,en;q=0.9",
+            "sec-ch-ua": "\"Chromium\";v=\"98\", \" Not A;Brand\";v=\"99\", \"Google Chrome\";v=\"98\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "x-datadog-origin": "rum",
+            "x-datadog-parent-id": "1573714256264127237",
+            "x-datadog-sampled": "1",
+            "x-datadog-sampling-priority": "1",
+            "x-datadog-trace-id": "4834355297958519855",
+            "x-indeed-api": "1",
+            "x-indeed-appname": "jobs",
+            "x-indeed-apptype": "desktop",
+            "x-indeed-rpc": "1",
+            "x-indeed-tk": "1fsmsvc51gvj9800",
+            "x-indeed-v": "fc6dfab357c1",
+            "cookie": "PCA=d71582ec4597e44c; ENC_CSRF=FZ28ZsZgL9YVB19O3cdGNyz1L8WB4OqQ; SHOE=\"SqK8kBnRzeUS1sU--H1Dj4KgkBZYEQhdWESMecOgHbqMpQZf2G55lVEUsstMux57kkQxH4npLWVnQCcGI5r3CukZKcM9cOJG2V7W8PKdVOqSfVLgHXyBLlHxISlwxGxUiw0AfisPWco=\"; __ssid=9a246326ee1c8eb163b789c953dd971; _ga=GA1.2.2074404572.1628624164; CSRF=YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx; SOCK=\"R5k9sLaUHmqUCY8-pcnmH75RN54=\"; SURF=St2AaCFM7FQQMCc8sDRD7NiaoGLEexE9; indeed_rcc=CTK; CTK=1fsmst2l4nbcp801; ADOC=2078510905073534; _gcl_au=1.1.533538122.1645740998; DRAWSTK=505aefd543b9769f; PPID=eyJraWQiOiJmNmJkN2U4Zi02MmQyLTQ5ZDAtOTA1ZS1kNjVhMTBlOTVhZjIiLCJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJhY2QzZmJiYWU1ZmFiNjE2IiwiYXVkIjoiYzFhYjhmMDRmIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImNyZWF0ZWQiOjE2MDAxMDY0NDMwMDAsInJlbV9tZSI6dHJ1ZSwiaXNzIjoiaHR0cHM6XC9cL3NlY3VyZS5pbmRlZWQuY29tIiwiZXhwIjoxNjQ1NzQyNzkwLCJpYXQiOjE2NDU3NDA5OTAsImxvZ190cyI6MTYyODYyNDE5ODIxMCwiZW1haWwiOiJhbmFzQGthc21pLmRldiJ9.0hJOu3gCRGpCUXoY0rdCJP-_j4EwddA6pyd1KmKmUSBTt38IG_3czQRMgJ-UeE_hIyLWcvYV51CfxGlK--9fXA; INDEEDADS_HOME=6de620f32496e51e|draw; ADV=1; _ga=GA1.3.2074404572.1628624164; _gid=GA1.3.152010480.1645741000; _clck=15fp4tx|1|ez9|0; LC=co=US&hl=en; mhit=2078510905073534; _uetsid=7062f16095bf11ecac83199edea1b822; _uetvid=7063171095bf11ec8b06cdd0e0f8434e; JSESSIONID=node010465lz77x4ghv2b0wcc9onem164537.node0; _clsk=mqwesz|1645741091446|3|1|j.clarity.ms/collect; _mkto_trk=id:699-SXJ-715&token:_mch-indeed.com-1645741106785-97259; __pdst=fa7ed747306141afb743c977e246cf8f; _gat_UA-90780-1=1; _dd_s=rum=1&id=3778e39a-ba96-409d-944c-042c147d5048&created=1645740996208&expire=1645742065440",
+            "Referer": "https://employers.indeed.com/p",
+            "Referrer-Policy": "strict-origin-when-cross-origin"
+        },
+        "body": null,
+        "method": "GET"
     });
-    await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/edit-job?id=${jobId}`, { waitUntil: 'load' });
-    await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'getting started')]`);
+    unormalizedJobFromJobEditPage = await unormalizedJobFromJobEditPage.json();
 
-    //get missing details from the job page
-    BrowserService.page.on('response', function getDetailsFromHomePage(response) {
-        if (response.url().includes('employers.indeed.com/j/jobs/view?id=')) {
-            response.json().then((res) => {
-                if (res.job) {
-                    unormalizedJobFromJobShowPage = res.job;
-                }
-
-            })
-        }
-    });
-    await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'load' });
-    await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'job description')]`);
-
-    //second retry
-    if (!unormalizedJobFromJobShowPage) {
-        console.log('unormalizedJobFromJobShowPage not found retry...')
-        await BrowserService.page.goto(`https://employers.indeed.com/j#jobs/view?id=${jobId}`, { waitUntil: 'load' });
-        await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'job description')]`);
-    }
-    if (!unormalizedJobFromJobEditPage) {
-        console.log('unormalizedJobFromJobEditPage not found retrying ...')
-        await BrowserService.page.goto(`https://employers.indeed.com/p#post-job/edit-job?id=${jobId}`, { waitUntil: 'load' });
-        await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'getting started')]`);
-    }
-    //normalize job
-    let normalizedJob = await normalizeFullDetailedJob(unormalizedJobFromJobEditPage, unormalizedJobFromJobShowPage);
+    let normalizedJob = await normalizeFullDetailedJob(unormalizedJobFromJobEditPage);
     //delete old job document
     await Job.findOneAndDelete({ job_id: jobId });
     //insert the new job document
@@ -134,41 +125,7 @@ JobsServices.downloadCookies = async() => {
     await fs.writeFile(path.join('cookies', 'cookies.json'), JSON.stringify(cookies, null, 2));
 }
 
-// original
-// JobsServices.scrapAllJobs = async(totalPagesNumber = 4) => {
-//     //delete old jobs
-//     await Job.deleteMany({});
 
-//     const jobsArray = [];
-
-//     function getJobsFromReponse(response) {
-//         if (response.url().includes('/api/jobs?page')) {
-//             response.json().then(async(res) => {
-//                 if (res.jobs) {
-//                     for (const job of res.jobs) {
-//                         jobsArray.push(job);
-//                     }
-//                     console.log('Total jobs found : ' + jobsArray.length + ' jobs')
-//                 }
-//             })
-//         }
-//     }
-//     BrowserService.page.on('response', getJobsFromReponse);
-
-//     console.log('regrabing jobs from Indeed..')
-//     for (let currentPage = 1; currentPage <= totalPagesNumber; currentPage++) {
-//         console.log('page : ' + currentPage)
-//             // await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?p=${currentPage}`);
-//         await BrowserService.page.goto(`https://employers.indeed.com/j#jobs?page=${currentPage}&pageSize=50&tab=0&field=DATECREATED&dir=DESC&status=open%2Cpaused`);
-
-//         await BrowserService.page.waitForTimeout(4000);
-//         await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
-
-//     }
-//     BrowserService.page.removeListener('response', getJobsFromReponse);
-//     let normalizedJobs = await normalizeJobs(jobsArray);
-//     await Job.insertMany(normalizedJobs);
-// }
 JobsServices.csrfToken = null;
 JobsServices.getCSRFToken = async() => {
     if (!JobsServices.csrfToken) {
@@ -221,44 +178,6 @@ JobsServices.scrapAllJobs = async() => {
     await Job.insertMany(normalizedJobs.reverse());
 
 
-    // let jobsArray = [];
-    // let totalResults = 0;
-
-    // await JobsServices.getCSRFToken();
-
-    // await BrowserService.page.setRequestInterception(true);
-
-    // BrowserService.page.on('response', async response => {
-    //     if (response.url().includes('/api/jobs?page')) {
-    //         response.json().then(async(res) => {
-    //             jobsArray = res.jobs;
-    //             totalResults = res.totalResults;
-    //             console.log("jobs total ", totalResults);
-    //             console.log("jobs grabbed", res.jobs.length);
-    //             let normalizedJobs = await normalizeJobs(jobsArray);
-    //             await Job.deleteMany({});
-    //             await Job.insertMany(normalizedJobs.reverse());
-    //         })
-    //     }
-    // });
-
-    // BrowserService.page.on('request', async request => {
-    //     if (request.url().includes('/api/jobs?page')) {
-    //         request.continue({ method: 'GET', headers: request.headers, url: `https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=200&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&indeedcsrftoken=${JobsServices.csrfToken}` });
-    //     } else {
-    //         request.continue();
-    //     }
-    // });
-
-    // while (!jobsArray.length || jobsArray.length != totalResults) {
-    //     await BrowserService.page.evaluate(() => window.stop());
-    //     await BrowserService.page.goto(`https://employers.indeed.com/j?from=gnav-empcenter#jobs`);
-    //     await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
-    //     await BrowserService.page.waitForTimeout(2000);
-    // }
-
-    // BrowserService.page.removeAllListeners();
-    // BrowserService.page.setRequestInterception(false);
 
 }
 
@@ -685,8 +604,7 @@ JobsServices.fillIn_adBudget = async(budget_amount) => {
 JobsServices.closeJob = async(jobId) => {
 
     await JobsServices.getCSRFToken();
-    await BrowserService.page.goto(`https://employers.indeed.com/em/job-details/${jobId}`, { waitUntil: 'load' });
-    await fetch(`https://employers.indeed.com/graphql?indeedcsrftoken=${JobsServices.csrfToken}`, {
+    let response = await fetch(`https://employers.indeed.com/graphql?indeedcsrftoken=${JobsServices.csrfToken}`, {
         "headers": {
             "accept": "application/json",
             "accept-language": "en-US,en;q=0.9",
@@ -711,77 +629,12 @@ JobsServices.closeJob = async(jobId) => {
         "body": `{\"query\":\"\\nmutation batchUpdateJobStatus {\\n_${jobId}: updateJob(id: \\\"${jobId}\\\", jobInput: { status: DELETED }) {\\n    status\\n}\\n}\"}`,
         "method": "POST"
     });
-    await BrowserService.page.reload();
-
-
-
-    // let inTheOldJobPage = false;
-    // while (!inTheOldJobPage) {
-    //     let [editButton] = await BrowserService.page.$x(`//*[@data-testid="edit-job"]`);
-    //     if (!(await BrowserService.page.url()).includes(`job-details/${jobId}`) || !editButton) {
-    //         console.log('Closing job redirected.. trying again..')
-    //         await BrowserService.page.reload();
-    //         await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
-    //     } else {
-    //         inTheOldJobPage = true;
-    //     }
-    // }
-
-    // await BrowserService.page.waitForTimeout(4000);
-
-
-    // inTheOldJobPage = false;
-    // await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
-    // while (!inTheOldJobPage) {
-    //     let [editButton] = await BrowserService.page.$x(`//*[@data-testid="edit-job"]`);
-    //     if (!(await BrowserService.page.url()).includes(`job-details/${jobId}`) || !editButton) {
-    //         console.log('Closing job page was redirected.. trying again..')
-    //         await BrowserService.page.reload();
-    //         await BrowserService.page.goto(`https://employers.indeed.com/j#job-details?id=${jobId}`, { waitUntil: 'load' });
-    //     } else {
-    //         inTheOldJobPage = true;
-    //     }
-    // }
-
-    // //open status bar
-    // await BrowserService.page.waitForXPath(`//*[@data-testid="job-status-input""]/span`);
-    // let [jobStatusMenu] = await BrowserService.page.$x(`//*[@data-testid="job-status-input""]/span`);
-    // await jobStatusMenu.click();
-    // await BrowserService.page.waitForTimeout(2000);
-
-    // // click close
-    // await BrowserService.page.waitForXPath(`//*[@data-testid="job-status-closed"]/span`);
-    // let [closeOption] = await BrowserService.page.$x(`//*[@data-testid="job-status-closed"]/span`);
-    // await closeOption.click();
-
-    // // click I didnt hire anyone
-    // await BrowserService.page.waitForTimeout(2000);
-    // let [IDidntHireChoice] = await BrowserService.page.$x(`//*[@id="noHire"]/parent::label`);
-    // if (IDidntHireChoice) {
-    //     await IDidntHireChoice.click();
-
-    //     //click continue
-    //     await BrowserService.page.waitForXPath(`//*[@data-tn-element="continue-button"]`);
-    //     let [continueCloseButton] = await BrowserService.page.$x(`//*[@data-tn-element="continue-button"]`)
-    //     if (continueCloseButton) {
-    //         await continueCloseButton.click();
-    //     }
-
-    //     //click other
-    //     await BrowserService.page.waitForXPath(`//*[@data-tn-element="other-checkbox"]/parent::label`);
-    //     let [otherButton] = await BrowserService.page.$x(`//*[@data-tn-element="other-checkbox"]/parent::label`);
-    //     if (otherButton) {
-    //         await otherButton.click();
-    //     }
-
-    //     // click submit
-    //     await BrowserService.page.waitForXPath(`//*[@data-tn-element="submit-button"]`);
-    //     let [submitButton] = await BrowserService.page.$x(`//*[@data-tn-element="submit-button"]`)
-    //     if (submitButton) {
-    //         await submitButton.click();
-    //     }
-    // }
-    // await BrowserService.page.waitForTimeout(2000);
+    if (response.status == 200) {
+        console.log("Job closed Successfully :" + `https://employers.indeed.com/em/job-details/${jobId}`);
+    } else {
+        console.log("Job closing failed !");
+        await BrowserService.page.goto(`https://employers.indeed.com/em/job-details/${jobId}`, { waitUntil: 'load' });
+    }
 
 }
 
