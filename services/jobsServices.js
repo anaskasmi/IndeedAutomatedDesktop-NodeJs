@@ -129,7 +129,7 @@ JobsServices.downloadCookies = async() => {
 }
 
 
-JobsServices.csrfToken = null;
+JobsServices.csrfToken = "YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx";
 JobsServices.getCSRFToken = async() => {
     if (!JobsServices.csrfToken) {
         await BrowserService.page.evaluate(() => window.stop());
@@ -199,8 +199,8 @@ JobsServices.getJobDataFromDb = async(jobId) => {
 
 JobsServices.unlockCompanyNameInput = async() => {
     //click pencil Icon
-    await BrowserService.page.waitForXPath(`//*[contains(text(),'Company name:')]/following-sibling::button`);
-    let [companyNamePencil] = await BrowserService.page.$x(`//*[contains(text(),'Company name:')]/following-sibling::button`);
+    await BrowserService.page.waitForXPath(`//*[@data-testid="display-field-edit" and contains(@title,'Company')]`);
+    let [companyNamePencil] = await BrowserService.page.$x(`//*[@data-testid="display-field-edit" and contains(@title,'Company')]`);
     if (companyNamePencil) {
         await companyNamePencil.click();
     }
@@ -357,16 +357,16 @@ JobsServices.fillIn_deadline = async(jobDetails_expectedHireDate) => {
 JobsServices.fillIn_paymentType = async(jobDetails_salaryRangeType, jobDetails_SalaryFrom, jobDetails_SalaryTo) => {
     //find the salary Range Type
     if (jobDetails_salaryRangeType) {
-        let jobSalaryRangeType = await BrowserService.page.$(`[name="remote.draftJobPosts.attributes.salaryRangeType"]`);
+        let jobSalaryRangeType = await BrowserService.page.$(`[name*='salaryRangeType']`);
         if (jobSalaryRangeType) {
-            await BrowserService.page.select(`[name="remote.draftJobPosts.attributes.salaryRangeType"]`, jobDetails_salaryRangeType)
+            await BrowserService.page.select(`[name*='salaryRangeType']`, jobDetails_salaryRangeType)
             return true;
         }
     } else if (jobDetails_SalaryFrom && jobDetails_SalaryTo) {
         jobDetails_salaryRangeType = findRangeType(jobDetails_SalaryFrom, jobDetails_SalaryTo)
-        let jobSalaryRangeType = await BrowserService.page.$(`[name="remote.draftJobPosts.attributes.salaryRangeType"]`);
+        let jobSalaryRangeType = await BrowserService.page.$(`[name*='salaryRangeType']`);
         if (jobSalaryRangeType) {
-            await BrowserService.page.select(`[name="remote.draftJobPosts.attributes.salaryRangeType"]`, jobDetails_salaryRangeType)
+            await BrowserService.page.select(`[name*='salaryRangeType']`, jobDetails_salaryRangeType)
             return true;
         }
     } else {
@@ -443,9 +443,6 @@ JobsServices.fillIn_salaryFromAndTo = async(jobDetails_SalaryFrom, jobDetails_Sa
                 await jobSalary2.press('Backspace');
             }
             return true;
-
-            break;
-
         default:
             break;
 
@@ -517,8 +514,8 @@ JobsServices.fillIn_description = async(jobDescriptionHtml) => {
 
 
 JobsServices.fillIn_isResumeRequired = async() => {
-    await BrowserService.page.waitForXPath(`//*[contains(@name,"resumeRequired")]`);
-    let [resumeRequiredButton] = await BrowserService.page.$x(`//*[contains(@name,"resumeRequired")]`);
+    await BrowserService.page.waitForXPath(`//*[contains(@name,"resumeRequired") and @value="YES"]/parent::label`);
+    let [resumeRequiredButton] = await BrowserService.page.$x(`//*[contains(@name,"resumeRequired") and @value="YES"]/parent::label`);
     await resumeRequiredButton.click();
     return true;
 }
