@@ -17,14 +17,12 @@ let JobsServices = {};
 
 
 JobsServices.openPostJobPage = async() => {
+    await BrowserService.page.evaluate(() => window.stop());
+    await BrowserService.page.goto(`https://employers.indeed.com/o/p`, { waitUntil: "load" });
 
-    await BrowserService.page.goto(`https://employers.indeed.com/j?from=gnav-empcenter#jobs`);
-    await BrowserService.page.waitForXPath(`//*[@data-testid="header-post-job"]`);
-
-    let [startNewJobButton] = await BrowserService.page.$x(`//*[@data-testid="header-post-job"]`);
-    await startNewJobButton.click();
-    await BrowserService.page.waitForNavigation({ waitUntil: "networkidle2" });
-
+    while (!(await BrowserService.page.url()).includes('jobId')) {
+        await BrowserService.page.goto(`https://employers.indeed.com/o/p`, { waitUntil: "load" });
+    }
 
     // handle survey page 
     let [surveyPageIndicator] = await BrowserService.page.$x(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'Before We Start')]`);
@@ -505,7 +503,6 @@ JobsServices.fillIn_description = async(jobDescriptionHtml) => {
     //start filling the descritpion
     await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'job description')]`);
     await BrowserService.page.$eval('#JobDescription-editor-editor-content', (el, jobDescriptionHtml) => { el.innerHTML = jobDescriptionHtml }, jobDescriptionHtml);
-
     //type space to apply changements
     let [descriptionInput] = await BrowserService.page.$x(`//*[@id="JobDescription-editor-editor-content"]`);
     await descriptionInput.click({ clickCount: 2 });
