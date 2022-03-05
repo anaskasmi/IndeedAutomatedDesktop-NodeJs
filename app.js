@@ -4,7 +4,8 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { connectToMongoDb } = require('./utilities/connectToMongoDb');
-const path = require('path')
+const path = require('path');
+const crelateReportsRouter = require('./routes/crelate-reports/crelateReportsRoutes');
 require('dotenv').config()
 try {
     connectToMongoDb().then(() => {
@@ -33,6 +34,7 @@ try {
         //ROUTES
         app.use('/api/description-builder', require('./routes/description-builder/descriptionBuilder.routes'))
         app.use('/api/jobs', jobsRouter);
+        app.use('/api/crelate-reports', crelateReportsRouter);
         app.use('/js', express.static(path.join(__dirname, "/public/dist/js/")));
         app.use('/css', express.static(path.join(__dirname, "/public/dist/css/")));
         app.use('/img', express.static(path.join(__dirname, "/public/dist/img/")));
