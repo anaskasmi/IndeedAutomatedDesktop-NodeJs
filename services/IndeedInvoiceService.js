@@ -4,66 +4,6 @@ const path = require('path');
 
 let IndeedInvoiceService = {};
 
-let jobsFakeArray = [{
-        jobTitle: 'job 1 mlkd mlkdmlk  dmlkmdk mlkdmldk  mlkdmkd mlkdm dlk mdlk dmkdml',
-        jobLocation: "ùmldùmdl dlùmd",
-        jobCompany: 'odpôp^dod^po',
-        jobTotalCost: '43.44',
-        averageCPC: "3.3",
-        averageCPA: "4.3"
-    },
-    {
-        jobTitle: 'job 2 mlkd mlkdmlk  dmlkmdk mlkdmldk  mlkdmkd mlkdm dlk mdlk dmkdml',
-        jobLocation: "ùmldùmdl dlùmd",
-        jobCompany: 'odpôp^dod^po',
-        jobTotalCost: '43.44',
-        averageCPC: "3.3",
-        averageCPA: "4.3"
-    },
-    {
-        jobTitle: 'job 3 mlkd mlkdmlk  dmlkmdk mlkdmldk  mlkdmkd mlkdm dlk mdlk dmkdml',
-        jobLocation: "ùmldùmdl dlùmd",
-        jobCompany: 'odpôp^dod^po',
-        jobTotalCost: '43.44',
-        averageCPC: "3.3",
-        averageCPA: "4.3"
-    },
-    {
-        jobTitle: 'job 4 mlkd mlkdmlk  dmlkmdk mlkdmldk  mlkdmkd mlkdm dlk mdlk dmkdml',
-        jobLocation: "ùmldùmdl dlùmd",
-        jobCompany: 'odpôp^dod^po',
-        jobTotalCost: '43.44',
-        averageCPC: "3.3",
-        averageCPA: "4.3"
-    },
-    {
-        jobTitle: 'job 5 mlkd mlkdmlk  dmlkmdk mlkdmldk  mlkdmkd mlkdm dlk mdlk dmkdml',
-        jobLocation: "ùmldùmdl dlùmd",
-        jobCompany: 'odpôp^dod^po',
-        jobTotalCost: '43.44',
-        averageCPC: "3.3",
-        averageCPA: "4.3"
-    },
-    {
-        jobTitle: 'job 6 mlkd mlkdmlk  dmlkmdk mlkdmldk  mlkdmkd mlkdm dlk mdlk dmkdml',
-        jobLocation: "ùmldùmdl dlùmd",
-        jobCompany: 'odpôp^dod^po',
-        jobTotalCost: '43.44',
-        averageCPC: "3.3",
-        averageCPA: "4.3"
-    },
-    {
-        jobTitle: 'job 7 mlkd mlkdmlk  dmlkmdk mlkdmldk  mlkdmkd mlkdm dlk mdlk dmkdml',
-        jobLocation: "ùmldùmdl dlùmd",
-        jobCompany: 'odpôp^dod^po',
-        jobTotalCost: '43.44',
-        averageCPC: "3.3",
-        averageCPA: "4.3"
-    },
-];
-
-
-
 IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
 
     // create new workbook and worksheet
@@ -316,6 +256,7 @@ IndeedInvoiceService.generateInvoice = async(data) => {
 };
 
 IndeedInvoiceService.parseJobsTable = async(jobsNumbers, headersIndexes) => {
+
     let jobsArray = [];
 
     for (const jobNumber of jobsNumbers) {
@@ -350,7 +291,7 @@ IndeedInvoiceService.parseJobsTable = async(jobsNumbers, headersIndexes) => {
             job.jobLocation = await BrowserService.page.evaluate(cell => cell.innerText, jobLocationHandler);
 
             // Company
-            let companyIndex = headersIndexes.find(({ name }) => name === 'Location').index;
+            let companyIndex = headersIndexes.find(({ name }) => name === 'Company').index;
             let [jobCompanyHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${companyIndex}]`);
             job.jobCompany = await BrowserService.page.evaluate(cell => cell.innerText, jobCompanyHandler);
 
@@ -373,7 +314,7 @@ IndeedInvoiceService.parseJobsTable = async(jobsNumbers, headersIndexes) => {
             }
 
             // Average CPA
-            let AVGCPAIndex = headersIndexes.find(({ name }) => name === 'AVG CPC').index;
+            let AVGCPAIndex = headersIndexes.find(({ name }) => name === 'AVG CPA').index;
             let [averageCPAHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${AVGCPAIndex}]`);
             job.averageCPA = await BrowserService.page.evaluate(cell => cell.innerText, averageCPAHandler);
             job.averageCPA = job.averageCPA.replace('$', '');
