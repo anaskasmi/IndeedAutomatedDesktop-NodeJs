@@ -132,7 +132,12 @@ CrelateReportsService.generateExcelFile = async(jobsWithCandidates) => {
 
     // insert rows starting from 2 because 1 has headers
     let currentRowIndex = 2;
+    let longestJobNameLength = 0;
+    let longestCandidateNameLength = 0;
     for (const job of jobsWithCandidates) {
+        if (longestJobNameLength < job.jobName.length) {
+            longestJobNameLength = job.jobName.length;
+        }
         // inserting job title row
         worksheet.mergeCells(`A${currentRowIndex}:K${currentRowIndex}`);
         worksheet.getCell(`A${currentRowIndex}`).value = `${job.jobName} (${job.candidates?.length} candidates)`;
@@ -148,6 +153,9 @@ CrelateReportsService.generateExcelFile = async(jobsWithCandidates) => {
 
         // insert candidates
         for (const candidate of job.candidates) {
+            if (longestCandidateNameLength < candidate.candidateName.length) {
+                longestCandidateNameLength = candidate.candidateName.length;
+            }
             let rowValues = [];
             rowValues[1] = job.jobName;
             rowValues[3] = candidate.stageName;
@@ -204,7 +212,9 @@ CrelateReportsService.generateExcelFile = async(jobsWithCandidates) => {
             column.width = 5;
         } else {
             if (i == 0) {
-                column.width = 50;
+                column.width = longestJobNameLength;
+            } else if (i == 4) {
+                column.width = longestCandidateNameLength;
             } else {
                 column.width = 20;
             }
