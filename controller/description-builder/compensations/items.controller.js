@@ -1,5 +1,16 @@
 const { compensationsService } = require("../../../services/description-builder/compensations/compensations.services");
 let compensationsItemsController = {};
+
+compensationsItemsController.populate = async(req, res) => {
+    try {
+        await compensationsService.items.populate();
+        return res.status(200).json({ 'msg': "populated successfully" });
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ error: error });
+    }
+}
+
 compensationsItemsController.findOne = async function(req, res) {
     try {
         let result = await compensationsService.items.findOne(req.params.id);
@@ -19,6 +30,8 @@ compensationsItemsController.findAll = async(req, res) => {
         return res.status(500).json({ error: error });
     }
 }
+
+
 
 compensationsItemsController.create = async(req, res) => {
     try {

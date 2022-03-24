@@ -4,6 +4,7 @@ const positionsItemsController = require('../../../controller/description-builde
 const router = express.Router();
 
 router.get('/', positionsItemsController.findAll)
+router.get('/populate', positionsItemsController.populate)
 router.get('/:id', positionsItemsController.findOne)
 router.post('/', positionsItemsController.create)
 router.patch('/:id', positionsItemsController.update)

@@ -3,6 +3,7 @@ const express = require('express');
 const compensationsItemsController = require('../../../controller/description-builder/compensations/items.controller');
 const router = express.Router();
 
+router.get('/populate', compensationsItemsController.populate)
 router.get('/', compensationsItemsController.findAll)
 router.get('/:id', compensationsItemsController.findOne)
 router.post('/', compensationsItemsController.create)
