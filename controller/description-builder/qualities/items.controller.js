@@ -1,5 +1,16 @@
 const { qualitiesService } = require("../../../services/description-builder/qualities/qualities.services");
 let qualitiesItemsController = {};
+
+qualitiesItemsController.populate = async function(req, res) {
+    try {
+        await qualitiesService.items.populate();
+        return res.status(200).json({ 'msg': "populated successfully" });
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ error: error });
+    }
+}
+
 qualitiesItemsController.findOne = async function(req, res) {
     try {
         let result = await qualitiesService.items.findOne(req.params.id);

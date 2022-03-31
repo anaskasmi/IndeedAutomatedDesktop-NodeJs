@@ -1,5 +1,14 @@
 const { applyMethodsService } = require("../../../services/description-builder/applyMethods/applyMethods.services");
 let applyMethodsItemsController = {};
+applyMethodsItemsController.populate = async(req, res) => {
+    try {
+        await applyMethodsService.items.populate();
+        return res.status(200).json({ 'msg': "populated successfully" });
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ error: error });
+    }
+}
 applyMethodsItemsController.findOne = async function(req, res) {
     try {
         let result = await applyMethodsService.items.findOne(req.params.id);

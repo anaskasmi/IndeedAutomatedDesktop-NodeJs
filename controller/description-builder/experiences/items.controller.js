@@ -1,5 +1,14 @@
 const { experiencesService } = require("../../../services/description-builder/experiences/experiences.services");
 let experiencesItemsController = {};
+experiencesItemsController.populate = async function(req, res) {
+    try {
+        await experiencesService.items.populate();
+        return res.status(200).json({ 'msg': "populated successfully" });
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ error: error });
+    }
+}
 experiencesItemsController.findOne = async function(req, res) {
     try {
         let result = await experiencesService.items.findOne(req.params.id);
