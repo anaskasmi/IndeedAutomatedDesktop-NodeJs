@@ -175,27 +175,32 @@ ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
         throw Error('Chromuim browser not open, please open it first');
     }
     for (const candidate of candidatesList) {
+        try {
 
-        //find the email
-        let jobEmail = await ResumesService.getJobEmail(candidate.jobId);
-        if (!jobEmail) {
-            console.log(`This Job has no email : ${candidate.jobTitle}`);
-            continue;
+
+            //find the email
+            let jobEmail = await ResumesService.getJobEmail(candidate.jobId);
+            if (!jobEmail) {
+                console.log(`This Job has no email : ${candidate.jobTitle}`);
+                continue;
+            }
+            // delete old folder 
+            await ResumesService.deleteCandidateFolder(candidate.jobId, candidate.candidateId);
+
+            // download candidates resume
+            await ResumesService.downloadResumesForOneCandidate(candidate.jobId, candidate.candidateId);
+
+            // transfer via email 
+            // await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, "anaskasmi98@gmail.com");
+            await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, jobEmail);
+
+
+            // delete the resume folder 
+            await ResumesService.deleteCandidateFolder(candidate.jobId, candidate.candidateId);
+        } catch (error) {
+            // print candidate.candidateId
+            console.log(error);
         }
-        // delete old folder 
-        await ResumesService.deleteCandidateFolder(candidate.jobId, candidate.candidateId);
-
-        // download candidates resume
-        await ResumesService.downloadResumesForOneCandidate(candidate.jobId, candidate.candidateId);
-
-        // transfer via email 
-        // await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, "anaskasmi98@gmail.com");
-        await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, jobEmail);
-
-
-        // delete the resume folder 
-        await ResumesService.deleteCandidateFolder(candidate.jobId, candidate.candidateId);
-
     }
 }
 ResumesService.getCandidatesBetweenTwoDates = async(startDate, endDate) => {
