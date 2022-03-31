@@ -1,5 +1,15 @@
 const { incentivesService } = require("../../../services/description-builder/incentives/incentives.services");
 let incentivesItemsController = {};
+incentivesItemsController.populate = async(req, res) => {
+    try {
+        await incentivesService.items.populate();
+        return res.status(200).json({ 'msg': "populated successfully" });
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ error: error });
+    }
+}
+
 incentivesItemsController.findOne = async function(req, res) {
     try {
         let result = await incentivesService.items.findOne(req.params.id);
@@ -9,6 +19,7 @@ incentivesItemsController.findOne = async function(req, res) {
         return res.status(500).json({ error: error });
     }
 }
+
 
 incentivesItemsController.findAll = async(req, res) => {
     try {

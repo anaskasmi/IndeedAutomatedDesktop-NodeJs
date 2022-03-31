@@ -4,6 +4,7 @@ const incentivesItemsController = require('../../../controller/description-build
 const router = express.Router();
 
 router.get('/', incentivesItemsController.findAll)
+router.get('/populate', incentivesItemsController.populate)
 router.get('/:id', incentivesItemsController.findOne)
 router.post('/', incentivesItemsController.create)
 router.patch('/:id', incentivesItemsController.update)
