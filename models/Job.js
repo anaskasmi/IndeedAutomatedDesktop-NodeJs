@@ -68,7 +68,7 @@ const JobSchema = mongoose.Schema({
 
     //candidates
     candidates: [],
-
+    benefits: []
 
 });
 

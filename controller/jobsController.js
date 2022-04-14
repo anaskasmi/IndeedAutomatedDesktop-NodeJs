@@ -394,6 +394,16 @@ JobsController.fillIn_email = async(req, res) => {
     }
 }
 
+JobsController.fillIn_benefits = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        await JobsServices.fillIn_benefits(req.body.benefits);
+        return res.status(200).json({ "msg": "benefits Filled In successfully" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
+
 JobsController.close_questions = async(req, res) => {
     req.setTimeout(0);
     try {

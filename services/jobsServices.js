@@ -18,12 +18,15 @@ let JobsServices = {};
 
 JobsServices.openPostJobPage = async() => {
     await BrowserService.page.evaluate(() => window.stop());
-    await BrowserService.page.goto(`https://employers.indeed.com/o/p`, { waitUntil: "load" });
+    await BrowserService.page.goto(`https://employers.indeed.com/o/p`, { waitUntil: "networkidle2" });
 
-    while (!(await BrowserService.page.url()).includes('jobId')) {
-        await BrowserService.page.goto(`https://employers.indeed.com/o/p`, { waitUntil: "load" });
+    if ((await BrowserService.page.url().includes('o/p/posting/orientation'))) {
+        let [submitButton] = await BrowserService.page.$x(`//*[@type="submit"]`)
+        if (submitButton) {
+            await submitButton.click();
+            await BrowserService.page.waitForNavigation({ waitUntil: "networkidle2" });
+        }
     }
-
     // handle survey page 
     let [surveyPageIndicator] = await BrowserService.page.$x(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'Before We Start')]`);
     if (surveyPageIndicator) {
@@ -75,8 +78,48 @@ JobsServices.openPostJobPage = async() => {
 
 }
 
-JobsServices.getJobFullDetails = async(jobId) => {
 
+JobsServices.getJobBenefits = async(jobId) => {
+    let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx`, {
+        "headers": {
+            "accept": "application/json",
+            "accept-language": "en-US,en;q=0.9",
+            "indeed-client-application": "ic-jobs-management",
+            "sec-ch-ua": "\"Chromium\";v=\"100\", \"Google Chrome\";v=\"100\", \";Not A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "x-datadog-origin": "rum",
+            "x-datadog-parent-id": "1256698936099227697",
+            "x-datadog-sampled": "1",
+            "x-datadog-sampling-priority": "1",
+            "x-datadog-trace-id": "4781717318849204701",
+            "x-indeed-rpc": "1",
+            "cookie": "PCA=d71582ec4597e44c; ENC_CSRF=FZ28ZsZgL9YVB19O3cdGNyz1L8WB4OqQ; SHOE=\"SqK8kBnRzeUS1sU--H1Dj4KgkBZYEQhdWESMecOgHbqMpQZf2G55lVEUsstMux57kkQxH4npLWVnQCcGI5r3CukZKcM9cOJG2V7W8PKdVOqSfVLgHXyBLlHxISlwxGxUiw0AfisPWco=\"; __ssid=9a246326ee1c8eb163b789c953dd971; _ga=GA1.2.2074404572.1628624164; CTK=1fcop12d2hud7801; CSRF=YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx; SOCK=\"R5k9sLaUHmqUCY8-pcnmH75RN54=\"; SURF=St2AaCFM7FQQMCc8sDRD7NiaoGLEexE9; indeed_rcc=CTK; ADOC=2078510905073534; _gcl_au=1.1.888899865.1649946557; _ga=GA1.3.2074404572.1628624164; _gid=GA1.3.31636305.1649946561; _uetsid=4629fce0bbff11ec955bc9046b9ae408; _uetvid=462a2510bbff11ec8cf823f3049ccb70; _gat_ga_tracker=1; _gat_UA-90780-1=1; DRAWSTK=5535f4ed1488baff; PPID=eyJraWQiOiJhOTU2Yzg2NC1mNGNkLTQzYzMtYTVjYy00NDQ4ZWRlMDJmM2UiLCJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJhY2QzZmJiYWU1ZmFiNjE2IiwiYXVkIjoiYzFhYjhmMDRmIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImNyZWF0ZWQiOjE2MDAxMDY0NDMwMDAsInJlbV9tZSI6dHJ1ZSwiaXNzIjoiaHR0cHM6XC9cL3NlY3VyZS5pbmRlZWQuY29tIiwiZXhwIjoxNjQ5OTQ4MzYxLCJpYXQiOjE2NDk5NDY1NjEsImxvZ190cyI6MTYyODYyNDE5ODIxMCwiZW1haWwiOiJhbmFzQGthc21pLmRldiJ9.2nB8NtNE0mniwuIIrF6GSlyDrtzXFSECAhdaGlRrA4du3B89LDz_LUZe3pLjrMBM1w0GjbksAi1nVfD0ags4ZA; INDEEDADS_HOME=6de620f32496e51e|draw; ADV=1; JSESSIONID=node0dm84vjgf4zgfbg9i0bonf4jh380305.node0; _clck=1qrqksu|1|f0m|0; _dd_s=rum=1&id=305f619c-0f05-4609-9506-360372c45e92&created=1649946554569&expire=1649947509187; _clsk=1v8duo9|1649946609636|3|0|d.clarity.ms/collect",
+            "Referer": `https://employers.indeed.com/em/job-details/${jobId}`,
+            "Referrer-Policy": "strict-origin-when-cross-origin"
+        },
+        "body": null,
+        "method": "GET"
+    });
+    if (response.status != 200) {
+        throw Error('cant getJobFullDetails !');
+    }
+    let jobUrl = (await response.json()).jobUrl;
+    await BrowserService.page.goto(jobUrl, { waitUntil: "networkidle2" });
+    let benefits = await BrowserService.page.$x(`//*[text()="Benefits:"]/following-sibling::ul/li`);
+    let benefitsTexts = [];
+    for (const benefitElemHandler of benefits) {
+        benefitsTexts.push(await BrowserService.page.evaluate(benefitElemHandler => benefitElemHandler.innerText, benefitElemHandler));
+    }
+    return benefitsTexts;
+
+
+}
+JobsServices.getJobFullDetails = async(jobId) => {
+    let benefits = await JobsServices.getJobBenefits(jobId);
 
     let response = await fetch(`https://employers.indeed.com/p/post-job/edit-job?id=${jobId}`, {
         "headers": {
@@ -116,7 +159,8 @@ JobsServices.getJobFullDetails = async(jobId) => {
     await Job.findOneAndDelete({ job_id: jobId });
     //insert the new job document
     const jobToSave = new Job(normalizedJob);
-    await jobToSave.save();
+    jobToSave.benefits = benefits;
+    normalizedJob = await jobToSave.save();
     return normalizedJob;
 }
 
@@ -140,10 +184,6 @@ JobsServices.getCSRFToken = async() => {
     }
 }
 JobsServices.scrapAllJobs = async() => {
-
-
-
-
 
     await JobsServices.getCSRFToken();
 
@@ -462,6 +502,22 @@ JobsServices.fillIn_paymentFrom = async(jobDetails_SalaryFrom) => {
         await jobSalary1.press('Backspace');
     } else {
         return false;
+    }
+}
+
+JobsServices.fillIn_benefits = async(benefits) => {
+    if (!benefits)
+        return;
+    await BrowserService.page.waitForXPath(`//button[contains(text(),"more")]`);
+    let [moreButton] = await BrowserService.page.$x(`//button[contains(text(),"more")]`);
+    if (moreButton)
+        await moreButton.click();
+
+    for (const benefit of benefits) {
+        let [benefitButton] = await BrowserService.page.$x(`//*[text()='${benefit}']`);
+        if (benefitButton) {
+            await benefitButton.click();
+        }
     }
 }
 
