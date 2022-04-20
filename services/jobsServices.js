@@ -370,13 +370,12 @@ JobsServices.fillIn_isJobFullTimeOrPartTime = async(jobDetails_WhatTypeOfJobIsIt
 
 
 JobsServices.fillIn_schedule = async() => {
-    await BrowserService.page.waitForXPath(`//button[contains(text(),"more")]`);
-    let [moreButton] = await BrowserService.page.$x(`//button[contains(text(),"more")]`);
+    await BrowserService.page.waitForXPath(`//span[contains(text(),"more")]/parent::button`);
+    let [moreButton] = await BrowserService.page.$x(`//span[contains(text(),"more")]/parent::button`);
     await moreButton.click();
     await BrowserService.page.waitForXPath(`//*[@data-testid="job-schedule"]/following-sibling::label/div/div[text()="Other"]`);
     let [otherOption] = await BrowserService.page.$x(`//*[@data-testid="job-schedule"]/following-sibling::label/div/div[text()="Other"]`);
     await otherOption.click();
-
 }
 
 JobsServices.fillIn_hiresNumber = async(jobDetails_intHiresNeeded) => {
@@ -508,8 +507,8 @@ JobsServices.fillIn_paymentFrom = async(jobDetails_SalaryFrom) => {
 JobsServices.fillIn_benefits = async(benefits) => {
     if (!benefits)
         return;
-    await BrowserService.page.waitForXPath(`//button[contains(text(),"more")]`);
-    let [moreButton] = await BrowserService.page.$x(`//button[contains(text(),"more")]`);
+    await BrowserService.page.waitForXPath(`//span[contains(text(),"more")]/parent::button`);
+    let [moreButton] = await BrowserService.page.$x(`//span[contains(text(),"more")]/parent::button`);
     if (moreButton)
         await moreButton.click();
 
