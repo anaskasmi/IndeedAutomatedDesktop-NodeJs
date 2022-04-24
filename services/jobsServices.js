@@ -308,16 +308,19 @@ JobsServices.fillIn_RolesLocation = async(location) => {
     await BrowserService.page.waitForTimeout(2 * 1000);
     await cityInput.click();
     await BrowserService.page.waitForTimeout(2 * 1000);
+    await BrowserService.page.select(`[data-testid="precise-address-administrative-area-select"]`, state);
     for (let index = 0; index < 30; index++) {
         await cityInput.press("Backspace");
     }
-    await cityInput.type(city + ', ' + state, { delay: 20 });
-    await BrowserService.page.waitForTimeout(3000);
+
+    await cityInput.type(city + ', ' + state, { delay: 80 });
+    await BrowserService.page.waitForTimeout(12000);
     await BrowserService.page.keyboard.press('ArrowDown');
+    await BrowserService.page.waitForTimeout(4000);
     await BrowserService.page.keyboard.press('Enter');
 
-
-
+    await BrowserService.page.waitForXPath(`//*[@data-testid="precise-map"]`);
+    await BrowserService.page.waitForTimeout(4000);
 }
 
 JobsServices.clickSaveAndContinue = async() => {
