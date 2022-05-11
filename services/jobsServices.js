@@ -5,16 +5,16 @@ const Moment = require('moment');
 const axios = require('axios');
 const path = require('path');
 const fetch = require('node-fetch');
-
+const fs = require('fs');
 //models
 const Job = require('./../models/Job')
 const BrowserService = require('./BrowserService');
 const Helpers = require('../utilities/Helpers');
-
-
+const { saveCookies } = require('../utilities/saveCookies');
+const { request, gql, GraphQLClient } = require('graphql-request');
 let JobsServices = {};
 
-
+JobsServices.cookie = "CTK=1fons205gq95n800; _ga=GA1.2.1290977942.1641478710; __ssid=bf8ae6e35787c381087fda8d23d5747; indeed_rcc=CTK; optimizelyEndUserId=oeu1641993689011r0.2506574572419835; _gcl_au=1.1.529284552.1646848796; OptanonConsent=isIABGlobal=false&datestamp=Wed+Mar+09+2022+18%3A59%3A58+GMT%2B0100+(UTC%2B01%3A00)&version=6.30.0&hosts=&consentId=a5e28c21-527d-4479-bfa8-37f6f154a213&interactionCount=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A1%2CC0003%3A1%2CC0004%3A1%2CC0007%3A1&isGpcEnabled=0&AwaitingReconsent=false; CO=US; LOCALE=en; _gid=GA1.2.719067217.1652148645; SURF=ajWNfC3kKEWt5wAf755cSGhHpcM2Kv3Y; CSRF=bUW4RbPHjgJ2S9m577tFsW4FxkggWhan; SHARED_INDEED_CSRF_TOKEN=HV2bVQekiaSvBwbtApejHxWFXEs9CMCb; gonetap=1; PPEDIT=1652194083; PPID=eyJraWQiOiI5OTlhOWE1Yy00YjhhLTQwNzktYjZkMy0xYTRkZTZjYWU1NTIiLCJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJiNTdhZWEyNmFmZmY0YjM5IiwiYXVkIjoiYzFhYjhmMDRmIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF1dGgiOiJnb29nbGUiLCJjcmVhdGVkIjoxNjAwMDE0Mzg3MDAwLCJyZW1fbWUiOnRydWUsImlzcyI6Imh0dHBzOlwvXC9zZWN1cmUuaW5kZWVkLmNvbSIsImV4cCI6MTY1MjE5NTkwMCwiaWF0IjoxNjUyMTk0MTAwLCJsb2dfdHMiOjE2NTIxOTQxMDAyMDMsImVtYWlsIjoiYW5hc2thc21pOThAZ21haWwuY29tIn0.-ufVpD6orRjS1W-h7YNUQTCi4FH4BuJwitmE71vNj2HmLe3mY9dlhDLFrDDb4HVVToqNe-7x9HfiHEgnO8v7VA; SOCK=\"wGFnw4sYhE5AdKlleEPSAv8hmT4=\"; SHOE=\"5KyiIc0v0PxOyohmbGKUCd6raSUMUqtK0g_CPLIHhLkq53RW2uH8yLz3X0NoXikkxRvcxl7sTybxaj9Rp1Z2OocsMU_PKVDH_OVbC_CmquKUrdmCrvCLCQn8GV0pVtcILBYCa-qhRlGUWR2VJ5LEh4bAtQ==\"; LC=co=US&hl=en; PCA=d71582ec4597e44c; DRAWSTK=656d9199bb193747; ADOC=2078510905073534; mhit=2078510905073534; INDEEDADS_HOME=6de620f32496e51e|draw; ADV=1; _ga=GA1.3.1290977942.1641478710; _gid=GA1.3.719067217.1652148645; g_state={\"i_l\":1,\"i_p\":1652201367794}; _clck=10gn0uv|1|f1c|0; ENC_CSRF=F9iJQWong5d8ki38Sovio60L7hDhW38t; _gat_ga_tracker=1; _gat_UA-90780-1=1; _uetsid=5f5fdbf0d07011ecb5898f382275259c; _uetvid=5f603510d07011ecb3ec63c0912038c1; _clsk=xhgz0v|1652195100101|4|0|l.clarity.ms/collect; JSESSIONID=node0be0ri3tiel941hve5fcryyhd73613.node0; _dd_s=rum=1&id=08ddec66-0d5e-486e-818b-255c880fa3ea&created=1652194119386&expire=1652195983859";
 
 JobsServices.openPostJobPage = async() => {
     await BrowserService.page.evaluate(() => window.stop());
@@ -80,7 +80,7 @@ JobsServices.openPostJobPage = async() => {
 
 
 JobsServices.getJobBenefits = async(jobId) => {
-    let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx`, {
+    let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${JobsServices.csrfToken}`, {
         "headers": {
             "accept": "application/json",
             "accept-language": "en-US,en;q=0.9",
@@ -97,7 +97,7 @@ JobsServices.getJobBenefits = async(jobId) => {
             "x-datadog-sampling-priority": "1",
             "x-datadog-trace-id": "4781717318849204701",
             "x-indeed-rpc": "1",
-            "cookie": "PCA=d71582ec4597e44c; ENC_CSRF=FZ28ZsZgL9YVB19O3cdGNyz1L8WB4OqQ; SHOE=\"SqK8kBnRzeUS1sU--H1Dj4KgkBZYEQhdWESMecOgHbqMpQZf2G55lVEUsstMux57kkQxH4npLWVnQCcGI5r3CukZKcM9cOJG2V7W8PKdVOqSfVLgHXyBLlHxISlwxGxUiw0AfisPWco=\"; __ssid=9a246326ee1c8eb163b789c953dd971; _ga=GA1.2.2074404572.1628624164; CTK=1fcop12d2hud7801; CSRF=YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx; SOCK=\"R5k9sLaUHmqUCY8-pcnmH75RN54=\"; SURF=St2AaCFM7FQQMCc8sDRD7NiaoGLEexE9; indeed_rcc=CTK; ADOC=2078510905073534; _gcl_au=1.1.888899865.1649946557; _ga=GA1.3.2074404572.1628624164; _gid=GA1.3.31636305.1649946561; _uetsid=4629fce0bbff11ec955bc9046b9ae408; _uetvid=462a2510bbff11ec8cf823f3049ccb70; _gat_ga_tracker=1; _gat_UA-90780-1=1; DRAWSTK=5535f4ed1488baff; PPID=eyJraWQiOiJhOTU2Yzg2NC1mNGNkLTQzYzMtYTVjYy00NDQ4ZWRlMDJmM2UiLCJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJhY2QzZmJiYWU1ZmFiNjE2IiwiYXVkIjoiYzFhYjhmMDRmIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImNyZWF0ZWQiOjE2MDAxMDY0NDMwMDAsInJlbV9tZSI6dHJ1ZSwiaXNzIjoiaHR0cHM6XC9cL3NlY3VyZS5pbmRlZWQuY29tIiwiZXhwIjoxNjQ5OTQ4MzYxLCJpYXQiOjE2NDk5NDY1NjEsImxvZ190cyI6MTYyODYyNDE5ODIxMCwiZW1haWwiOiJhbmFzQGthc21pLmRldiJ9.2nB8NtNE0mniwuIIrF6GSlyDrtzXFSECAhdaGlRrA4du3B89LDz_LUZe3pLjrMBM1w0GjbksAi1nVfD0ags4ZA; INDEEDADS_HOME=6de620f32496e51e|draw; ADV=1; JSESSIONID=node0dm84vjgf4zgfbg9i0bonf4jh380305.node0; _clck=1qrqksu|1|f0m|0; _dd_s=rum=1&id=305f619c-0f05-4609-9506-360372c45e92&created=1649946554569&expire=1649947509187; _clsk=1v8duo9|1649946609636|3|0|d.clarity.ms/collect",
+            "cookie": JobsServices.cookie,
             "Referer": `https://employers.indeed.com/em/job-details/${jobId}`,
             "Referrer-Policy": "strict-origin-when-cross-origin"
         },
@@ -121,40 +121,34 @@ JobsServices.getJobBenefits = async(jobId) => {
 JobsServices.getJobFullDetails = async(jobId) => {
     let benefits = await JobsServices.getJobBenefits(jobId);
 
-    let response = await fetch(`https://employers.indeed.com/p/post-job/edit-job?id=${jobId}`, {
+    let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${JobsServices.csrfToken}`, {
         "headers": {
-            "accept": "*/*",
+            "accept": "application/json",
             "accept-language": "en-US,en;q=0.9",
-            "sec-ch-ua": "\"Chromium\";v=\"98\", \" Not A;Brand\";v=\"99\", \"Google Chrome\";v=\"98\"",
+            "indeed-client-application": "ic-jobs-management",
+            "sec-ch-ua": "\"Google Chrome\";v=\"101\", \"Chromium\";v=\"101\", \";Not A Brand\";v=\"99\"",
             "sec-ch-ua-mobile": "?0",
             "sec-ch-ua-platform": "\"Windows\"",
             "sec-fetch-dest": "empty",
             "sec-fetch-mode": "cors",
             "sec-fetch-site": "same-origin",
             "x-datadog-origin": "rum",
-            "x-datadog-parent-id": "1573714256264127237",
+            "x-datadog-parent-id": "8745621754032032889",
             "x-datadog-sampled": "1",
             "x-datadog-sampling-priority": "1",
-            "x-datadog-trace-id": "4834355297958519855",
-            "x-indeed-api": "1",
-            "x-indeed-appname": "jobs",
-            "x-indeed-apptype": "desktop",
+            "x-datadog-trace-id": "4918356813273448204",
             "x-indeed-rpc": "1",
-            "x-indeed-tk": "1fsmsvc51gvj9800",
-            "x-indeed-v": "fc6dfab357c1",
-            "cookie": "PCA=d71582ec4597e44c; ENC_CSRF=FZ28ZsZgL9YVB19O3cdGNyz1L8WB4OqQ; SHOE=\"SqK8kBnRzeUS1sU--H1Dj4KgkBZYEQhdWESMecOgHbqMpQZf2G55lVEUsstMux57kkQxH4npLWVnQCcGI5r3CukZKcM9cOJG2V7W8PKdVOqSfVLgHXyBLlHxISlwxGxUiw0AfisPWco=\"; __ssid=9a246326ee1c8eb163b789c953dd971; _ga=GA1.2.2074404572.1628624164; CSRF=YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx; SOCK=\"R5k9sLaUHmqUCY8-pcnmH75RN54=\"; SURF=St2AaCFM7FQQMCc8sDRD7NiaoGLEexE9; indeed_rcc=CTK; CTK=1fsmst2l4nbcp801; ADOC=2078510905073534; _gcl_au=1.1.533538122.1645740998; DRAWSTK=505aefd543b9769f; PPID=eyJraWQiOiJmNmJkN2U4Zi02MmQyLTQ5ZDAtOTA1ZS1kNjVhMTBlOTVhZjIiLCJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJhY2QzZmJiYWU1ZmFiNjE2IiwiYXVkIjoiYzFhYjhmMDRmIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImNyZWF0ZWQiOjE2MDAxMDY0NDMwMDAsInJlbV9tZSI6dHJ1ZSwiaXNzIjoiaHR0cHM6XC9cL3NlY3VyZS5pbmRlZWQuY29tIiwiZXhwIjoxNjQ1NzQyNzkwLCJpYXQiOjE2NDU3NDA5OTAsImxvZ190cyI6MTYyODYyNDE5ODIxMCwiZW1haWwiOiJhbmFzQGthc21pLmRldiJ9.0hJOu3gCRGpCUXoY0rdCJP-_j4EwddA6pyd1KmKmUSBTt38IG_3czQRMgJ-UeE_hIyLWcvYV51CfxGlK--9fXA; INDEEDADS_HOME=6de620f32496e51e|draw; ADV=1; _ga=GA1.3.2074404572.1628624164; _gid=GA1.3.152010480.1645741000; _clck=15fp4tx|1|ez9|0; LC=co=US&hl=en; mhit=2078510905073534; _uetsid=7062f16095bf11ecac83199edea1b822; _uetvid=7063171095bf11ec8b06cdd0e0f8434e; JSESSIONID=node010465lz77x4ghv2b0wcc9onem164537.node0; _clsk=mqwesz|1645741091446|3|1|j.clarity.ms/collect; _mkto_trk=id:699-SXJ-715&token:_mch-indeed.com-1645741106785-97259; __pdst=fa7ed747306141afb743c977e246cf8f; _gat_UA-90780-1=1; _dd_s=rum=1&id=3778e39a-ba96-409d-944c-042c147d5048&created=1645740996208&expire=1645742065440",
-            "Referer": "https://employers.indeed.com/p",
+            "cookie": JobsServices.cookie,
+            "Referer": `https://employers.indeed.com/em/job-details/${jobId}`,
             "Referrer-Policy": "strict-origin-when-cross-origin"
         },
         "body": null,
         "method": "GET"
     });
-    if (response.status != 200) {
-        throw Error('cant getJobFullDetails !');
-    }
-    let unormalizedJobFromJobEditPage = await response.json();
 
-    let normalizedJob = await normalizeFullDetailedJob(unormalizedJobFromJobEditPage);
+    const data = await response.json();
+    let normalizedJob = await normalizeFullDetailedJob(data);
+
     //delete old job document
     await Job.findOneAndDelete({ job_id: jobId });
     //insert the new job document
@@ -166,12 +160,13 @@ JobsServices.getJobFullDetails = async(jobId) => {
 
 
 JobsServices.downloadCookies = async() => {
+
     const cookies = await BrowserService.page.cookies();
     await fs.writeFile(path.join('cookies', 'cookies.json'), JSON.stringify(cookies, null, 2));
 }
 
 
-JobsServices.csrfToken = "YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx";
+JobsServices.csrfToken = "bUW4RbPHjgJ2S9m577tFsW4FxkggWhan";
 JobsServices.getCSRFToken = async() => {
     if (!JobsServices.csrfToken) {
         await BrowserService.page.evaluate(() => window.stop());
@@ -184,9 +179,7 @@ JobsServices.getCSRFToken = async() => {
     }
 }
 JobsServices.scrapAllJobs = async() => {
-
     await JobsServices.getCSRFToken();
-
     let response = await fetch(`https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=200&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&indeedcsrftoken=${JobsServices.csrfToken}`, {
         "headers": {
             "accept": "application/json",
@@ -204,7 +197,7 @@ JobsServices.scrapAllJobs = async() => {
             "x-datadog-sampling-priority": "1",
             "x-datadog-trace-id": "3401735100983902306",
             "x-indeed-rpc": "1",
-            "cookie": "PCA=d71582ec4597e44c; ENC_CSRF=FZ28ZsZgL9YVB19O3cdGNyz1L8WB4OqQ; SHOE=\"SqK8kBnRzeUS1sU--H1Dj4KgkBZYEQhdWESMecOgHbqMpQZf2G55lVEUsstMux57kkQxH4npLWVnQCcGI5r3CukZKcM9cOJG2V7W8PKdVOqSfVLgHXyBLlHxISlwxGxUiw0AfisPWco=\"; __ssid=9a246326ee1c8eb163b789c953dd971; _ga=GA1.2.2074404572.1628624164; CSRF=YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx; SOCK=\"R5k9sLaUHmqUCY8-pcnmH75RN54=\"; SURF=St2AaCFM7FQQMCc8sDRD7NiaoGLEexE9; indeed_rcc=CTK; CTK=1fskali73q63u801; ADOC=2078510905073534; _gcl_au=1.1.838815195.1645654766; _ga=GA1.3.2074404572.1628624164; _gid=GA1.3.1686099092.1645654767; DRAWSTK=6c2bd346d9f65214; PPID=eyJraWQiOiJmNmJkN2U4Zi02MmQyLTQ5ZDAtOTA1ZS1kNjVhMTBlOTVhZjIiLCJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJhY2QzZmJiYWU1ZmFiNjE2IiwiYXVkIjoiYzFhYjhmMDRmIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImNyZWF0ZWQiOjE2MDAxMDY0NDMwMDAsInJlbV9tZSI6dHJ1ZSwiaXNzIjoiaHR0cHM6XC9cL3NlY3VyZS5pbmRlZWQuY29tIiwiZXhwIjoxNjQ1NjU2NTYwLCJpYXQiOjE2NDU2NTQ3NjAsImxvZ190cyI6MTYyODYyNDE5ODIxMCwiZW1haWwiOiJhbmFzQGthc21pLmRldiJ9.UBKmZb4d8dNatv7_EOoql0k_BN9aTj6KHC0pOJ7FRcp7G36G_3rVR5YTbespOF1IgQfzPucy_bf-ZdN1djLULg; INDEEDADS_HOME=6de620f32496e51e|draw; ADV=1; _clck=1jtdte3|1|ez8|0; mhit=2078510905073534; _gat_ga_tracker=1; _gat_UA-90780-1=1; _dd_s=rum=1&id=2c755c7a-ef7d-4059-bae2-ed4b29d70dbb&created=1645654764495&expire=1645656092353; _uetsid=aa0b35e094f611ec862fe181995ff0b3; _uetvid=aa0b693094f611ecb67c61d317bd5f5c; JSESSIONID=node0hq5hyfcebmza138wirfq9saei46180.node0; _clsk=pa3eff|1645655199926|8|0|h.clarity.ms/collect",
+            "cookie": JobsServices.cookie,
             "Referer": "https://employers.indeed.com/jobs?page=1&pageSize=50&tab=0&field=DATECREATED&dir=DESC&status=open%2Cpaused",
             "Referrer-Policy": "strict-origin-when-cross-origin"
         },
@@ -673,7 +666,7 @@ JobsServices.closeJob = async(jobId) => {
             "x-datadog-sampling-priority": "1",
             "x-datadog-trace-id": "5545931483359591976",
             "x-indeed-rpc": "1",
-            "cookie": "PCA=d71582ec4597e44c; ENC_CSRF=FZ28ZsZgL9YVB19O3cdGNyz1L8WB4OqQ; SHOE=\"SqK8kBnRzeUS1sU--H1Dj4KgkBZYEQhdWESMecOgHbqMpQZf2G55lVEUsstMux57kkQxH4npLWVnQCcGI5r3CukZKcM9cOJG2V7W8PKdVOqSfVLgHXyBLlHxISlwxGxUiw0AfisPWco=\"; __ssid=9a246326ee1c8eb163b789c953dd971; _ga=GA1.2.2074404572.1628624164; CSRF=YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx; SOCK=\"R5k9sLaUHmqUCY8-pcnmH75RN54=\"; SURF=St2AaCFM7FQQMCc8sDRD7NiaoGLEexE9; indeed_rcc=CTK; CTK=1fsk8l3f1n02p801; ADOC=2078510905073534; _gcl_au=1.1.1100063608.1645652659; DRAWSTK=939f06d710b327e7; PPID=eyJraWQiOiJmNmJkN2U4Zi02MmQyLTQ5ZDAtOTA1ZS1kNjVhMTBlOTVhZjIiLCJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJhY2QzZmJiYWU1ZmFiNjE2IiwiYXVkIjoiYzFhYjhmMDRmIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImNyZWF0ZWQiOjE2MDAxMDY0NDMwMDAsInJlbV9tZSI6dHJ1ZSwiaXNzIjoiaHR0cHM6XC9cL3NlY3VyZS5pbmRlZWQuY29tIiwiZXhwIjoxNjQ1NjU0NDU0LCJpYXQiOjE2NDU2NTI2NTQsImxvZ190cyI6MTYyODYyNDE5ODIxMCwiZW1haWwiOiJhbmFzQGthc21pLmRldiJ9.WdjbJFnw70QzwZ0Xk1Ay-gCQX1zhs6GWjgwzJKbVjI3h-dhtQcwo_tyjp5c00Y77TV2hM-2j6gKaYmyX3aLB2g; INDEEDADS_HOME=6de620f32496e51e|draw; ADV=1; _ga=GA1.3.2074404572.1628624164; _gid=GA1.3.973980.1645652662; _clck=1imcv9h|1|ez8|0; mhit=2078510905073534; _uetsid=c2d38c6094f111ecaffbb978dbcd33ec; _uetvid=c2d3a5d094f111ec86d8d199e200fca9; JSESSIONID=node01pyo1xm3k8z4r1f8aks9yv7a2d39554.node0; _clsk=1503hje|1645653273605|6|0|e.clarity.ms/collect; _dd_s=rum=1&id=86e0ace2-aeae-4144-9d40-df6220fa0069&created=1645652657368&expire=1645654183030; _gali=job-status-input-5719373",
+            "cookie": JobsServices.cookie,
             "Referer": `https://employers.indeed.com/em/job-details/${jobId}`,
             "Referrer-Policy": "strict-origin-when-cross-origin"
         },
