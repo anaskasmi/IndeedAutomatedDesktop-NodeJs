@@ -451,6 +451,25 @@ JobsController.fillIn_webSite = async(req, res) => {
         return res.status(500).json({ error: error.message });
     }
 }
+JobsController.review_potential_matches = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        await JobsServices.review_potential_matches();
+        return res.status(200).json({ "msg": "done successfully" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+JobsController.skip_qualifications = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        await JobsServices.skip_qualifications();
+        return res.status(200).json({ "msg": "done successfully" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
 
 
 module.exports = JobsController;

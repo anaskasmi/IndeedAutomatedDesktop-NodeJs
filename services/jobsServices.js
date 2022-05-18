@@ -572,7 +572,23 @@ JobsServices.click_confirm = async() => {
     await confirmButton.click();
 }
 
+JobsServices.review_potential_matches = async() => {
+    for (let index = 0; index < 3; index++) {
+        await BrowserService.page.waitForXPath(`//*[text()='Maybe']/parent::button`);
+        let [maybeButton] = await BrowserService.page.$x(`//*[text()='Maybe']/parent::button`);
+        await maybeButton.click();
+        await BrowserService.page.waitForTimeout(2000);
+    }
+}
+JobsServices.skip_qualifications = async() => {
+    await BrowserService.page.waitForXPath(`//*[text()='skip']/parent::button`);
+    let [skipButton] = await BrowserService.page.$x(`//*[text()='skip']/parent::button`);
+    await skipButton.click();
+}
+
+
 JobsServices.click_advanced = async() => {
+
     await BrowserService.page.waitForXPath(`//*[text()='Advanced']/parent::button`);
     let [budgetAdvancedButton] = await BrowserService.page.$x(`//*[text()='Advanced']/parent::button`);
     await budgetAdvancedButton.click();
