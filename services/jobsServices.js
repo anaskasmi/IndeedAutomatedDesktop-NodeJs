@@ -6,6 +6,8 @@ const axios = require('axios');
 const path = require('path');
 const fetch = require('node-fetch');
 const fs = require('fs');
+const queryString = require('query-string');
+
 //models
 const Job = require('./../models/Job')
 const BrowserService = require('./BrowserService');
@@ -573,22 +575,26 @@ JobsServices.click_confirm = async() => {
 }
 
 JobsServices.review_potential_matches = async() => {
-    for (let index = 0; index < 3; index++) {
-        await BrowserService.page.waitForXPath(`//*[text()='Maybe']/parent::button`);
-        let [maybeButton] = await BrowserService.page.$x(`//*[text()='Maybe']/parent::button`);
-        await maybeButton.click();
-        await BrowserService.page.waitForTimeout(2000);
+    await BrowserService.page.waitForXPath(`//button[@value="MAYBE"]`);
+    for (let index = 1; index <= 4; index++) {
+        const maybeButtons = await BrowserService.page.$x(`//button[@value="MAYBE"]`);
+        await maybeButtons[index].click();
+        await BrowserService.page.waitForTimeout(500);
     }
+    let [submitButton] = await BrowserService.page.$x(`//button[@type="submit"]`);
+    await submitButton.click();
+
+
 }
+
 JobsServices.skip_qualifications = async() => {
-    await BrowserService.page.waitForXPath(`//*[text()='skip']/parent::button`);
-    let [skipButton] = await BrowserService.page.$x(`//*[text()='skip']/parent::button`);
+    await BrowserService.page.waitForXPath(`//*[text()='Skip']/parent::button`);
+    let [skipButton] = await BrowserService.page.$x(`//*[text()='Skip']/parent::button`);
     await skipButton.click();
 }
 
 
 JobsServices.click_advanced = async() => {
-
     await BrowserService.page.waitForXPath(`//*[text()='Advanced']/parent::button`);
     let [budgetAdvancedButton] = await BrowserService.page.$x(`//*[text()='Advanced']/parent::button`);
     await budgetAdvancedButton.click();
@@ -717,6 +723,9 @@ JobsServices.close_questions = async() => {
     for (const xButton of xButtons) {
         await xButton.click();
     }
+    let [submitButton] = await BrowserService.page.$x(`//button[@type="submit"]`);
+    await submitButton.click();
+
 }
 
 JobsServices.click_skip = async() => {
