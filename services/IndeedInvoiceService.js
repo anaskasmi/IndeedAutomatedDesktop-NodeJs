@@ -61,7 +61,7 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
 
     // calculate average of CPA & CPC
     let avgOfCPA = (sumOfCPA / jobsArray.length).toFixed(2);
-    let avgOfCPC = (sumOfCPA / jobsArray.length).toFixed(2);
+    let avgOfCPC = (sumOfCPC / jobsArray.length).toFixed(2);
 
     // style all worksheet
     worksheet.eachRow({ includeEmpty: true }, function(row, rowNumber) {
@@ -149,7 +149,7 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
     };
 
 
-    const avgOfCPACell = worksheet.getCell(`I${jobsArray.length + 2}`);
+    const avgOfCPACell = worksheet.getCell(`K${jobsArray.length + 2}`);
     avgOfCPACell.value = parseFloat(avgOfCPA);
     avgOfCPACell.font = { size: 11, bold: true, };
     avgOfCPACell.fill = {
@@ -162,7 +162,7 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
         vertical: 'middle',
     };
 
-    const avgOfCPCCell = worksheet.getCell(`K${jobsArray.length + 2}`);
+    const avgOfCPCCell = worksheet.getCell(`I${jobsArray.length + 2}`);
     avgOfCPCCell.value = parseFloat(avgOfCPC);
     avgOfCPCCell.font = { size: 11, bold: true, };
     avgOfCPCCell.fill = {
