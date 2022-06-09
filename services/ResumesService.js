@@ -382,7 +382,7 @@ ResumesService.sendEmail = async(jobId, candidateId, jobEmail) => {
 
     //Step 2: Setting up message options
     let messageParams = {
-        from: `IndeedAutomated Email Sender <anas@${ResumesService.MailgunDomain}>`,
+        from: `IndeedAutomated Email Sender <resumes@${ResumesService.MailgunDomain}>`,
         // to: "anaskasmi98@gmail.com",
         to: jobEmail,
         subject: resumeName,
