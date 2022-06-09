@@ -7,11 +7,18 @@ const Job = require('./../models/Job')
 const Moment = require('moment');
 const fetch = require('node-fetch');
 const JobsServices = require('./jobsServices');
+const Mailgun = require('mailgun.js');
+const formData = require('form-data');
 
 
 
 
 let ResumesService = {};
+
+// mail gun config
+const mailgunInstance = new Mailgun(formData);
+ResumesService.mailgunClient = mailgunInstance.client({ username: 'api', key: process.env.MAIL_GUN_API_KEY });
+ResumesService.MailgunDomain = process.env.MAIL_GUN_DOMAIN;
 
 
 ResumesService.getJobEmail = async(jobId) => {
@@ -336,7 +343,7 @@ ResumesService.downloadResumesForOneCandidate = async(jobId, candidateId) => {
         await BrowserService.page.evaluate(() => window.stop());
         await BrowserService.page.goto(`https://employers.indeed.com/c/resume?id=${candidateId}&ctx=&isPDFView=false`, { waitUntil: "networkidle2" });
     } catch (error) {}
-    await BrowserService.page.waitForTimeout(3000);
+    await BrowserService.page.waitForTimeout(4000);
 };
 
 
@@ -349,47 +356,55 @@ ResumesService.verifyIsFileExistAndGetResumeName = async(jobId, candidateId) => 
     let filesInPath = fs.readdirSync(fileToCheckPath);
 
     //if files length = 0 or > 1 retrun false
-    if (filesInPath.length != 1) {
-        console.log('Error : Files Length is different than 1 -- files Length :  ', filesInPath.length);
+    if (filesInPath.length == 0) {
+        console.log('Error : No Resume file found in the job folder:  ');
         return false;
     }
+    for (const fileName of filesInPath) {
+        if (fileName.includes('Resume')) {
+            return fileName;
+        }
+    }
+    console.log('Error : Resume was not found in the job folder, maybe internet is slow and its taking too long to download, number of other files found: ', filesInPath.length);
+    return false;
 
-    //get the first file
-    return filesInPath[0];
 };
 
 
 
 
 ResumesService.sendEmail = async(jobId, candidateId, jobEmail) => {
-
     let resumeName = await ResumesService.verifyIsFileExistAndGetResumeName(jobId, candidateId);
     if (!resumeName) {
         throw Error(`Can't send ${jobId}/${candidateId}, because this File Doesnt exists`);
     }
     let resumePath = path.join(__dirname, '..', 'resumes', jobId, candidateId, resumeName);
-    const transporter = nodemailer.createTransport({
-        service: "Gmail",
-        auth: {
-            user: process.env.EMAILSENDER_EMAIL,
-            pass: process.env.EMAILSENDER_PASS,
-        }
-    });
 
     //Step 2: Setting up message options
-    const messageOptions = {
+    let messageParams = {
+        from: `IndeedAutomated Email Sender <anas@${ResumesService.MailgunDomain}>`,
         // to: "anaskasmi98@gmail.com",
         to: jobEmail,
-        from: process.env.EMAILSENDER_EMAIL,
-        attachments: [{
-            filename: resumeName,
-            path: resumePath,
-        }, ]
+        subject: resumeName,
+        text: `Resume Name: ${resumeName}, Job id : ${jobId} Candidate id : ${candidateId}`,
     };
-    //Step 3: Sending email
-    await transporter.sendMail(messageOptions);
 
-
+    // read the resume file, add it to the attachements then send the email
+    fs.promises.readFile(resumePath)
+        .then(data => {
+            const file = {
+                filename: resumeName,
+                data
+            }
+            messageParams.attachment = file;
+            return ResumesService.mailgunClient.messages.create(ResumesService.MailgunDomain, messageParams);
+        })
+        .then(response => {
+            console.log(`${resumeName} was sent successfully ! `);
+        })
+        .catch(err => {
+            throw new Error(err);
+        });
 };
 
 

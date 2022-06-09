@@ -152,10 +152,9 @@ JobsServices.getJobFullDetails = async(jobId) => {
 
     //delete old job document
     await Job.findOneAndDelete({ job_id: jobId });
-    //insert the new job document
-    const jobToSave = new Job(normalizedJob);
-    jobToSave.benefits = benefits;
-    normalizedJob = await jobToSave.save();
+    //update the job document
+    normalizedJob.benefits = benefits;
+    await Job.findByIdAndUpdate(jobId, normalizedJob);
     return normalizedJob;
 }
 
