@@ -108,7 +108,12 @@ JobsServices.getJobBenefits = async(jobId) => {
     if (response.status != 200) {
         throw Error('cant getJobFullDetails !');
     }
-    let jobUrl = (await response.json()).jobUrl;
+    let responseData = (await response.json());
+    let jobUrl = responseData.jobUrl;
+    if (!jobUrl) {
+        console.log('This job doesn\'t have a url, we couldn\'t get the benefits list');
+        return [];
+    }
     await BrowserService.page.goto(jobUrl, { waitUntil: "networkidle2" });
     let benefits = await BrowserService.page.$x(`//*[text()="Benefits:"]/following-sibling::ul/li`);
     let benefitsTexts = [];
