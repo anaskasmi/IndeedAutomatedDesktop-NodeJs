@@ -7,18 +7,12 @@ const Job = require('./../models/Job')
 const Moment = require('moment');
 const fetch = require('node-fetch');
 const JobsServices = require('./jobsServices');
-const Mailgun = require('mailgun.js');
-const formData = require('form-data');
+var postmark = require("postmark");
 
 
 
 
 let ResumesService = {};
-
-// mail gun config
-const mailgunInstance = new Mailgun(formData);
-ResumesService.mailgunClient = mailgunInstance.client({ username: 'api', key: process.env.MAIL_GUN_API_KEY });
-ResumesService.MailgunDomain = process.env.MAIL_GUN_DOMAIN;
 
 
 ResumesService.getJobEmail = async(jobId) => {
@@ -179,12 +173,11 @@ ResumesService.transferResumeOfOneCandidate = async(jobId, candidateId) => {
 
 ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
     if (!BrowserService.page) {
-        throw Error('Chromuim browser not open, please open it first');
+        await BrowserService.getNewBrowser();
+        // throw Error('Chromuim browser not open, please open it first');
     }
     for (const candidate of candidatesList) {
         try {
-
-
             //find the email
             let jobEmail = await ResumesService.getJobEmail(candidate.jobId);
             if (!jobEmail) {
@@ -205,7 +198,11 @@ ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
             await ResumesService.deleteCandidateFolder(candidate.jobId, candidate.candidateId);
         } catch (error) {
             // print candidate.candidateId
-            console.log(error);
+            console.log('--------------------------------');
+            console.log({ error });
+            console.log({ candidate });
+            console.log("an error happened for one candidate, skipping it... ");
+            console.log('--------------------------------');
         }
     }
 }
@@ -380,24 +377,31 @@ ResumesService.sendEmail = async(jobId, candidateId, jobEmail) => {
     }
     let resumePath = path.join(__dirname, '..', 'resumes', jobId, candidateId, resumeName);
 
+
+    // Send an email:
+    var client = new postmark.ServerClient(process.env.POSTMARK_API_KEY);
+
     //Step 2: Setting up message options
     let messageParams = {
-        from: `IndeedAutomated Email Sender <resumes@${ResumesService.MailgunDomain}>`,
-        // to: "anaskasmi98@gmail.com",
-        to: jobEmail,
-        subject: resumeName,
-        text: `Resume Name: ${resumeName}, Job id : ${jobId} Candidate id : ${candidateId}`,
+        From: `resumes@jeanshorts.careers`,
+        To: "anaskasmi98@gmail.com",
+        // To: jobEmail,
+        Subject: resumeName,
+        TextBody: `Resume Name: ${resumeName}, Job id : ${jobId} Candidate id : ${candidateId}`,
+        MessageStream: "outbound"
     };
 
     // read the resume file, add it to the attachements then send the email
-    fs.promises.readFile(resumePath)
+    fs.promises.readFile(resumePath, { encoding: 'base64' })
         .then(data => {
             const file = {
-                filename: resumeName,
-                data
+                "Name": resumeName,
+                "Content": data,
+                "ContentType": "application/octet-stream"
+
             }
-            messageParams.attachment = file;
-            return ResumesService.mailgunClient.messages.create(ResumesService.MailgunDomain, messageParams);
+            messageParams.Attachments = [file];
+            return client.sendEmail(messageParams);
         })
         .then(response => {
             console.log(`${resumeName} was sent successfully ! `);
