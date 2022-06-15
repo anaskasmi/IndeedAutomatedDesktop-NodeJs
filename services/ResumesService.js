@@ -70,7 +70,8 @@ ResumesService.getCandidatesDetails = async(jobId) => {
         job_id: jobId,
     });
     if (!BrowserService.page) {
-        throw Error('Chromuim browser not open, please open it first');
+        await BrowserService.getNewBrowser();
+        // throw Error('Chromuim browser not open, please open it first');
     }
     // else grab it from indeed
     let candidatesRetrieved = [];
@@ -118,7 +119,8 @@ ResumesService.getCandidatesDetails = async(jobId) => {
 
 ResumesService.transferResumeOfOneCandidate = async(jobId, candidateId) => {
     if (!BrowserService.page) {
-        throw Error('Chromuim browser not open, please open it first');
+        await BrowserService.getNewBrowser();
+        // throw Error('Chromuim browser not open, please open it first');
     }
 
     //find the job
@@ -259,7 +261,8 @@ ResumesService.transferAllResumesForOneJob = async(jobId) => {
 
     //validate : browser is open
     if (!BrowserService.page) {
-        throw Error('Chromuim browser not open, please open it first');
+        await BrowserService.getNewBrowser();
+        // throw Error('Chromuim browser not open, please open it first');
     }
 
     //find the job by id
