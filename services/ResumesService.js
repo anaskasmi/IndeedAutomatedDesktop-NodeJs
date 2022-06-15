@@ -384,8 +384,8 @@ ResumesService.sendEmail = async(jobId, candidateId, jobEmail) => {
     //Step 2: Setting up message options
     let messageParams = {
         From: `resumes@jeanshorts.careers`,
-        To: "anaskasmi98@gmail.com",
-        // To: jobEmail,
+        // To: "anaskasmi98@gmail.com",
+        To: jobEmail,
         Subject: resumeName,
         TextBody: `Resume Name: ${resumeName}, Job id : ${jobId} Candidate id : ${candidateId}`,
         MessageStream: "outbound"

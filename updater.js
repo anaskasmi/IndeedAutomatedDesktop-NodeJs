@@ -12,6 +12,5 @@ const main = () => {
 
     console.log('------- updater done -------');
     shell.exec(`node app`);
-
 };
 main();
