@@ -141,11 +141,11 @@ JobsController.fillIn_industry = async(req, res) => {
     }
 }
 
-JobsController.fillIn_RolesLocation = async(req, res) => {
+JobsController.fillIn_location = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.fillIn_RolesLocation(req.body.location);
-        return res.status(200).json({ "msg": "roles location filled In successfully" });
+        await JobsServices.fillIn_location({ address: req.body.address, location: req.body.location });
+        return res.status(200).json({ "msg": "roles location filled In locationsuccessfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }

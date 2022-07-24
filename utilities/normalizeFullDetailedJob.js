@@ -1,45 +1,39 @@
 const Job = require('../models/Job');
 
-module.exports.normalizeFullDetailedJob = async(unormalizedJobFromJobPage) => {
+module.exports.normalizeFullDetailedJob = async(jobData) => {
     return new Job({
-        job_id: unormalizedJobFromJobPage.job.id,
-        status: unormalizedJobFromJobPage.job.status,
-        jobTitle: unormalizedJobFromJobPage.job.title,
-        companyName: unormalizedJobFromJobPage.job.company,
-
-        //?one city for example
-        advertisingLocationType: unormalizedJobFromJobPage.job.attributes.advertisingLocationType ? unormalizedJobFromJobPage.job.attributes.advertisingLocationType : null,
+        job_id: jobData.job.id,
+        status: jobData.job.status,
+        jobTitle: jobData.job.title,
+        companyName: jobData.job.company,
+        address: jobData.job.address,
+        location: jobData.job.locations[0].location,
         //job details
-        jobDetails_WhatTypeOfJobIsIt: unormalizedJobFromJobPage.job.type ? unormalizedJobFromJobPage.job.type : null,
-        jobDetails_salaryRangeType: unormalizedJobFromJobPage.job.attributes.salaryRangeType ? unormalizedJobFromJobPage.job.attributes.salaryRangeType : null,
-        jobDetails_SalaryFrom: unormalizedJobFromJobPage.job.salary1 ? unormalizedJobFromJobPage.job.salary1 : null,
-        jobDetails_SalaryTo: unormalizedJobFromJobPage.job.salary2 ? unormalizedJobFromJobPage.job.salary2 : null,
-        jobDetails_SalaryPer: unormalizedJobFromJobPage.job.salaryPeriod ? unormalizedJobFromJobPage.job.salaryPeriod : null,
-        jobDetails_hiresNeeded: unormalizedJobFromJobPage.job.attributes.hiresNeeded ? unormalizedJobFromJobPage.job.attributes.hiresNeeded : null,
-        jobDetails_intHiresNeeded: unormalizedJobFromJobPage.job.attributes.intHiresNeeded ? unormalizedJobFromJobPage.job.attributes.intHiresNeeded : null,
-        jobDetails_expectedHireDate: unormalizedJobFromJobPage.job.attributes.expectedHireDate ? unormalizedJobFromJobPage.job.attributes.expectedHireDate : null,
-        jobDetails_roleLocationType: unormalizedJobFromJobPage.job.attributes.roleLocationType ? unormalizedJobFromJobPage.job.attributes.roleLocationType : null,
-        jobDetails_type: unormalizedJobFromJobPage.job.type ? unormalizedJobFromJobPage.job.type : null,
-        primaryJobLocation: unormalizedJobFromJobPage.job.displayLocation ? unormalizedJobFromJobPage.job.displayLocation : null,
+        jobDetails_WhatTypeOfJobIsIt: jobData.job.type ? jobData.job.type : null,
+        jobDetails_salaryRangeType: jobData.job.attributes.salaryRangeType ? jobData.job.attributes.salaryRangeType : null,
+        jobDetails_SalaryFrom: jobData.job.salary1 ? jobData.job.salary1 : null,
+        jobDetails_SalaryTo: jobData.job.salary2 ? jobData.job.salary2 : null,
+        jobDetails_SalaryPer: jobData.job.salaryPeriod ? jobData.job.salaryPeriod : null,
+        jobDetails_hiresNeeded: jobData.job.attributes.hiresNeeded ? jobData.job.attributes.hiresNeeded : null,
+        jobDetails_intHiresNeeded: jobData.job.attributes.intHiresNeeded ? jobData.job.attributes.intHiresNeeded : null,
+        jobDetails_expectedHireDate: jobData.job.attributes.expectedHireDate ? jobData.job.attributes.expectedHireDate : null,
+        jobDetails_type: jobData.job.type ? jobData.job.type : null,
         //budget
-        budget_outOfBudget: unormalizedJobFromJobPage.job.outOfBudget ? unormalizedJobFromJobPage.job.outOfBudget : null,
-        // budget_amount: unormalizedJobFromJobPage.job.budget ? unormalizedJobFromJobPage.job.budget : null,
-        budget_maxCPC: unormalizedJobFromJobPage.job.maxcpc ? unormalizedJobFromJobPage.job.maxcpc : null,
-        budget_plan: unormalizedJobFromJobPage.job.budgetType ? unormalizedJobFromJobPage.job.budgetType : null,
-        // budget_endDate: unormalizedJobFromJobPage.job.displayEndDate ? unormalizedJobFromJobPage.job.displayEndDate : null,
+        budget_outOfBudget: jobData.job.outOfBudget ? jobData.job.outOfBudget : null,
+        budget_maxCPC: jobData.job.maxcpc ? jobData.job.maxcpc : null,
+        budget_plan: jobData.job.budgetType ? jobData.job.budgetType : null,
         //description
-        jobDescription: unormalizedJobFromJobPage.job.description ? unormalizedJobFromJobPage.job.description : null,
-        jobDescriptionHtml: unormalizedJobFromJobPage.job.descriptionHtml,
+        jobDescription: jobData.job.description ? jobData.job.description : null,
+        jobDescriptionHtml: jobData.job.descriptionHtml,
         //home page
-        country: unormalizedJobFromJobPage.job.country || null,
-        budget_displayCost: unormalizedJobFromJobPage.job.displayCost || null,
-        applicationCount: unormalizedJobFromJobPage.job.newCandidateCount,
+        country: jobData.job.country || null,
+        budget_displayCost: jobData.job.displayCost || null,
+        applicationCount: jobData.job.newCandidateCount,
 
-        dateCreated: unormalizedJobFromJobPage.job.dateCreated || null,
-        budget_endDate: unormalizedJobFromJobPage.job.displayEndDate || null,
-        displayLocation: unormalizedJobFromJobPage.job.locations || null,
-        budget_amount: unormalizedJobFromJobPage.job.budget || null,
-        jobDetails_emails: unormalizedJobFromJobPage.job.emails || null,
+        dateCreated: jobData.job.dateCreated || null,
+        budget_endDate: jobData.job.displayEndDate || null,
+        budget_amount: jobData.job.budget || null,
+        jobDetails_emails: jobData.job.emails || null,
     });
 
 

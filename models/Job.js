@@ -34,14 +34,9 @@ const JobSchema = mongoose.Schema({
     reasonForCompanyNameChange: { type: String },
     companyName: { type: String },
     jobTitle: { type: String },
-    ////city,county
-    displayLocation: [],
-    primaryJobLocation: { type: String },
-    advertisingLocationType: { type: String },
-
+    address: { type: String },
+    location: { type: String },
     //gettingStarted end
-
-
 
     // jobDetails start
     jobDetails_WhatTypeOfJobIsIt: { type: String },

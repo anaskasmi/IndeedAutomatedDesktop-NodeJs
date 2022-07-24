@@ -212,14 +212,10 @@ JobsServices.scrapAllJobs = async() => {
     });
 
     const data = await response.json();
-
     console.log('Jobs Found : ' + data.jobs.length);
     let normalizedJobs = await normalizeJobs(data.jobs);
     await Job.deleteMany({});
     await Job.insertMany(normalizedJobs.reverse());
-
-
-
 }
 
 JobsServices.getAllJobsFromDb = async() => {
@@ -287,40 +283,28 @@ JobsServices.fillIn_industry = async() => {
     }
 }
 
-JobsServices.fillIn_RolesLocation = async(location) => {
-    let city = location.city;
-    let state = location.state;
-    //click on one location option
-    await BrowserService.page.waitForXPath(`//*[@value="ONE_LOCATION"]/parent::label`);
-    let [oneLocation] = await BrowserService.page.$x(`//*[@value="ONE_LOCATION"]/parent::label`);
-    await oneLocation.click();
-    await BrowserService.page.waitForTimeout(2 * 1000);
-    [oneLocation] = await BrowserService.page.$x(`//*[@value="ONE_LOCATION"]/parent::label`);
-    await oneLocation.click();
-    //click dont include the address option
-    await BrowserService.page.waitForXPath(`//*[contains(@id,"workLocationType-OneMileRadius")]`);
-    let [hideExactLocation] = await BrowserService.page.$x(`//*[contains(@id,"workLocationType-OneMileRadius")]`);
-    await hideExactLocation.click();
-    //fill in the city 
-    await BrowserService.page.waitForXPath(`//*[@data-testid="precise-address-city"]`);
-    let [cityInput] = await BrowserService.page.$x(`//*[@data-testid="precise-address-city"]`);
-    //type
-    await BrowserService.page.waitForTimeout(2 * 1000);
-    await cityInput.click();
-    await BrowserService.page.waitForTimeout(2 * 1000);
-    await BrowserService.page.select(`[data-testid="precise-address-administrative-area-select"]`, state);
-    for (let index = 0; index < 30; index++) {
-        await cityInput.press("Backspace");
-    }
+JobsServices.fillIn_location = async(data) => {
+    // open the location options
+    await BrowserService.page.waitForXPath(`//*[@id="downshift-0-label"]`);
+    const [locationOption] = await BrowserService.page.$x(`//*[@id="downshift-0-label"]`);
+    await locationOption.click();
+    await BrowserService.page.waitForTimeout(1 * 1000);
+    await locationOption.click();
 
-    await cityInput.type(city + ', ' + state, { delay: 80 });
-    await BrowserService.page.waitForTimeout(12000);
-    await BrowserService.page.keyboard.press('ArrowDown');
-    await BrowserService.page.waitForTimeout(4000);
-    await BrowserService.page.keyboard.press('Enter');
+    // chose In person
+    await BrowserService.page.waitForXPath(`//*[text()='In person']`);
+    const [inPersonOption] = await BrowserService.page.$x(`//*[text()='In person']`);
+    await inPersonOption.click();
 
-    await BrowserService.page.waitForXPath(`//*[@data-testid="precise-map"]`);
-    await BrowserService.page.waitForTimeout(4000);
+    // location input 
+    await BrowserService.page.waitForXPath(`//*[@data-testid="location-input"]`);
+    const [locationInput] = await BrowserService.page.$x(`//*[@data-testid="location-input"]`);
+    await locationInput.type(data.address + ', ' + data.location);
+
+    // turn off show street
+    const [streetShowCheckbox] = await BrowserService.page.$x(`//*[text()='Display the street address on the job post.']`);
+    await streetShowCheckbox.click();
+
 }
 
 JobsServices.clickSaveAndContinue = async() => {
@@ -668,10 +652,17 @@ JobsServices.fillIn_adBudget = async(budget_amount) => {
         await budgetInput.click({ clickCount: 3 });
         await budgetInput.press('Backspace');
         await budgetInput.type(budgetInDollar)
+
+        // add urgent label
+        let [urgentLabel] = await BrowserService.page.$x(`//*[@name="urgentlyHiringCheckbox"]/parent::label`);
+        await urgentLabel.click();
+
         return true;
     } else {
         return false;
     }
+
+
 }
 
 JobsServices.closeJob = async(jobId) => {
