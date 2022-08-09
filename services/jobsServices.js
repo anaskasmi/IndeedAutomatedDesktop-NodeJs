@@ -704,8 +704,8 @@ JobsServices.closeJob = async(jobId) => {
 
 JobsServices.fillIn_email = async(jobDetails_emails) => {
     //fill in the email input
-    await BrowserService.page.waitForXPath(`//*[contains(@name,"applyMethod.emails")]`);
-    let [emailInput] = await BrowserService.page.$x(`//*[contains(@name,"applyMethod.emails")]`);
+    await BrowserService.page.waitForXPath(`//*[@type="email"]`);
+    let [emailInput] = await BrowserService.page.$x(`//*[@type="email"]`);
     await emailInput.click({ clickCount: 3 });
     await emailInput.press('Backspace');
     await Helpers.clearInput();
