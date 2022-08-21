@@ -359,9 +359,16 @@ JobsServices.fillIn_schedule = async() => {
     await BrowserService.page.waitForXPath(`//button[contains(text(),"more")]`);
     let [moreButton] = await BrowserService.page.$x(`//button[contains(text(),"more")]`);
     await moreButton.click();
-    await BrowserService.page.waitForXPath(`//*[@data-testid="job-schedule"]/following-sibling::label/div/div[text()="Other"]`);
+    await BrowserService.page.waitForTimeout(3000);
     let [otherOption] = await BrowserService.page.$x(`//*[@data-testid="job-schedule"]/following-sibling::label/div/div[text()="Other"]`);
-    await otherOption.click();
+    if (otherOption) {
+        await otherOption.click();
+    } else {
+        let [noneOption] = await BrowserService.page.$x(`//*[@data-testid="job-schedule"]/following-sibling::label/div/div[text()="None"]`);
+        if (noneOption) {
+            await noneOption.click();
+        }
+    }
 }
 
 JobsServices.fillIn_hiresNumber = async(jobDetails_intHiresNeeded) => {
@@ -549,7 +556,6 @@ JobsServices.fillIn_description = async(jobDescriptionHtml) => {
 
 }
 
-
 JobsServices.fillIn_isResumeRequired = async() => {
     await BrowserService.page.waitForXPath(`//*[contains(@name,"resumeRequired") and @value="YES"]/parent::label`);
     let [resumeRequiredButton] = await BrowserService.page.$x(`//*[contains(@name,"resumeRequired") and @value="YES"]/parent::label`);
@@ -563,6 +569,22 @@ JobsServices.click_confirm = async() => {
     await confirmButton.click();
 }
 
+JobsServices.click_skip = async() => {
+    await BrowserService.page.waitForTimeout(1000);
+    await BrowserService.page.waitForXPath(`//*[text()='Skip']/parent::button`);
+    let [skipButton] = await BrowserService.page.$x(`//*[text()='Skip']/parent::button`);
+    await skipButton.click();
+}
+JobsServices.skip_preview_page = async() => {
+    await BrowserService.page.waitForXPath(`//*[text()='Confirm']/parent::button`);
+    let [confirmButton] = await BrowserService.page.$x(`//*[text()='Confirm']/parent::button`);
+    await confirmButton.click();
+    await BrowserService.page.waitForTimeout(5000);
+    await BrowserService.page.waitForXPath(`//*[text()='Skip']/parent::button`);
+    let [skipButton] = await BrowserService.page.$x(`//*[text()='Skip']/parent::button`);
+    await skipButton.click();
+
+}
 JobsServices.review_potential_matches = async() => {
     await BrowserService.page.waitForXPath(`//button[@value="MAYBE"]`);
     for (let index = 1; index <= 4; index++) {

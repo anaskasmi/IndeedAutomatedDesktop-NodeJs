@@ -303,6 +303,25 @@ JobsController.click_confirm = async(req, res) => {
         return res.status(500).json({ error: error.message });
     }
 }
+JobsController.skip_preview_page = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        await JobsServices.skip_preview_page();
+        return res.status(200).json({ "msg": "skipped preview page, successfully" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+JobsController.click_skip = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        await JobsServices.click_skip();
+        return res.status(200).json({ "msg": "clicked skip, successfully" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
 
 JobsController.click_advanced = async(req, res) => {
     req.setTimeout(0);

@@ -60,6 +60,7 @@ router.post('/fillIn_salaryFromAndTo', JobsController.fillIn_salaryFromAndTo)
 router.get('/fillIn_industry', JobsController.fillIn_industry)
 router.post('/review_potential_matches', JobsController.review_potential_matches)
 router.post('/skip_qualifications', JobsController.skip_qualifications)
+router.get('/skip_preview_page', JobsController.skip_preview_page)
 
 
 //resume job routes 
