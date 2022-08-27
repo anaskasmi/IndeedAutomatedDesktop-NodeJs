@@ -21,61 +21,14 @@ JobsServices.openPostJobPage = async() => {
     await BrowserService.page.evaluate(() => window.stop());
     await BrowserService.page.goto(`https://employers.indeed.com/o/p`, { waitUntil: "networkidle2" });
 
-    if ((await BrowserService.page.url().includes('o/p/posting/orientation'))) {
-        let [submitButton] = await BrowserService.page.$x(`//*[@type="submit"]`)
-        if (submitButton) {
-            await submitButton.click();
-            await BrowserService.page.waitForNavigation({ waitUntil: "networkidle2" });
-        }
-    }
-    // handle survey page 
-    let [surveyPageIndicator] = await BrowserService.page.$x(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'Before We Start')]`);
-    if (surveyPageIndicator) {
-        let [IDidntHireChoice] = await BrowserService.page.$x(`//*[@name="did-you-hire-radio"]/parent::label`);
-        if (IDidntHireChoice) {
-            await IDidntHireChoice.click();
+    // chose new job posting
+    await BrowserService.page.waitForXPath(`//*[@data-testid="JOBPOSTING_STARTNEW"]/parent::label`);
+    let [newJobPostingOption] = await BrowserService.page.$x(`//*[@data-testid="JOBPOSTING_STARTNEW"]/parent::label`);
+    await newJobPostingOption.click();
 
-            //click other
-            await BrowserService.page.waitForXPath(`//*[@name="other"]/parent::label`);
-            let [otherButton] = await BrowserService.page.$x(`//*[@name="other"]/parent::label`);
-            if (otherButton) {
-                await otherButton.click();
-            }
+    let [continueButton] = await BrowserService.page.$x(`//*[@type="submit"]`);
+    await continueButton.click();
 
-            // click submit
-            await BrowserService.page.waitForXPath(`//*[@type="submit"]`);
-            let [submitButton] = await BrowserService.page.$x(`//*[@type="submit"]`)
-            if (submitButton) {
-                await submitButton.click();
-                await BrowserService.page.waitForNavigation({ waitUntil: "networkidle2" });
-            }
-
-        }
-    }
-
-    // handle introduction page 
-    let [introPageIndicator] = await BrowserService.page.$x(`//*[@for="StartFromScratch-radio"]`);
-    if (introPageIndicator) {
-        await introPageIndicator.click();
-        await BrowserService.page.waitForXPath(`//*[@type="submit"]`);
-        let [submitButton] = await BrowserService.page.$x(`//*[@id="sheet-next-button"]`)
-        if (submitButton) {
-            await submitButton.click();
-            await BrowserService.page.waitForNavigation({ waitUntil: "networkidle2" });
-        }
-    }
-
-    // handle orientation page 
-    let [orientationPageIndicator] = await BrowserService.page.$x(`//*[@data-testid="orientation-radio-selector"]`);
-    if (orientationPageIndicator) {
-        // click submit
-        await BrowserService.page.waitForXPath(`//*[@type="submit"]`);
-        let [submitButton] = await BrowserService.page.$x(`//*[@type="submit"]`)
-        if (submitButton) {
-            await submitButton.click();
-            await BrowserService.page.waitForNavigation({ waitUntil: "networkidle2" });
-        }
-    }
 
 }
 
@@ -231,6 +184,13 @@ JobsServices.getJobDataFromDb = async(jobId) => {
 
 }
 
+JobsServices.skipDuplicateJobPage = async() => {
+    let [createNewJobOption] = await BrowserService.page.$x(`//*[@data-testid="create-new-job"]/parent::label`)
+    if (createNewJobOption) {
+        await createNewJobOption.click();
+        await JobsServices.clickSaveAndContinue();
+    }
+}
 JobsServices.unlockCompanyNameInput = async() => {
     //click pencil Icon
     await BrowserService.page.waitForXPath(`//*[@data-testid="display-field-edit" and contains(@title,'Company')]`);
@@ -285,8 +245,8 @@ JobsServices.fillIn_industry = async() => {
 
 JobsServices.fillIn_location = async(data) => {
     // open the location options
-    await BrowserService.page.waitForXPath(`//*[@id="downshift-0-label"]`);
-    const [locationOption] = await BrowserService.page.$x(`//*[@id="downshift-0-label"]`);
+    await BrowserService.page.waitForXPath(`//*[@data-testid="role-location-input"]`);
+    const [locationOption] = await BrowserService.page.$x(`//*[@data-testid="role-location-input"]`);
     await locationOption.click();
     await BrowserService.page.waitForTimeout(1 * 1000);
     await locationOption.click();
@@ -329,6 +289,7 @@ JobsServices.clickSaveAndContinue = async() => {
     }
     await BrowserService.page.waitForTimeout(3000);
 
+    await JobsServices.skipDuplicateJobPage();
 }
 
 JobsServices.fillIn_isJobFullTimeOrPartTime = async(jobDetails_WhatTypeOfJobIsIt) => {
@@ -355,18 +316,29 @@ JobsServices.fillIn_isJobFullTimeOrPartTime = async(jobDetails_WhatTypeOfJobIsIt
     }
 }
 
-JobsServices.fillIn_schedule = async() => {
+
+JobsServices.expandAllSections = async() => {
+    // click all more buttons
     await BrowserService.page.waitForXPath(`//button[contains(text(),"more")]`);
-    let [moreButton] = await BrowserService.page.$x(`//button[contains(text(),"more")]`);
-    await moreButton.click();
+    let moreButtons = await BrowserService.page.$x(`//button[contains(text(),"more")]`);
+    for (const moreButton of moreButtons) {
+        await moreButton.click();
+    }
+}
+JobsServices.fillIn_schedule = async() => {
+    await JobsServices.expandAllSections();
     await BrowserService.page.waitForTimeout(3000);
-    let [otherOption] = await BrowserService.page.$x(`//*[@data-testid="job-schedule"]/following-sibling::label/div/div[text()="Other"]`);
-    if (otherOption) {
-        await otherOption.click();
+    let otherOptions = await BrowserService.page.$x(`//*[@data-testid="job-schedule"]/following-sibling::label/div/div[text()="Other"]`);
+    if (otherOptions.length > 0) {
+        for (const otherOption of otherOptions) {
+            await otherOption.click();
+        }
     } else {
-        let [noneOption] = await BrowserService.page.$x(`//*[@data-testid="job-schedule"]/following-sibling::label/div/div[text()="None"]`);
-        if (noneOption) {
-            await noneOption.click();
+        let noneOptions = await BrowserService.page.$x(`//*[@data-testid="job-schedule"]/following-sibling::label/div/div[text()="None"]`);
+        if (noneOptions.length) {
+            for (const noneOption of noneOptions) {
+                await noneOption.click();
+            }
         }
     }
 }
@@ -500,10 +472,8 @@ JobsServices.fillIn_paymentFrom = async(jobDetails_SalaryFrom) => {
 JobsServices.fillIn_benefits = async(benefits) => {
     if (!benefits)
         return;
-    await BrowserService.page.waitForXPath(`//button[contains(text(),"more")]`);
-    let [moreButton] = await BrowserService.page.$x(`//button[contains(text(),"more")]`);
-    if (moreButton)
-        await moreButton.click();
+
+    await JobsServices.expandAllSections();
 
     for (const benefit of benefits) {
         let [benefitButton] = await BrowserService.page.$x(`//*[text()='${benefit}']`);
