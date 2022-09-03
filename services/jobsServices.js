@@ -30,6 +30,12 @@ JobsServices.openPostJobPage = async() => {
     await continueButton.click();
 
 
+    //reset filled values
+    await BrowserService.page.waitForTimeout(2 * 1000);
+    let [resetButton] = await BrowserService.page.$x(`//*[text()='Reset']/parent::button`);
+    await resetButton.click();
+
+
 }
 
 
@@ -64,7 +70,7 @@ JobsServices.getJobBenefits = async(jobId) => {
     let responseData = (await response.json());
     let jobUrl = responseData.jobUrl;
     if (!jobUrl) {
-        console.log('This job doesn\'t have a url, we couldn\'t get the benefits list');
+        console.log('This job is newly posted and doesn\'t have a url, so we couldn\'t get the benefits list');
         return [];
     }
     await BrowserService.page.goto(jobUrl, { waitUntil: "networkidle2" });
@@ -257,13 +263,15 @@ JobsServices.fillIn_location = async(data) => {
     await inPersonOption.click();
 
     // location input 
-    await BrowserService.page.waitForXPath(`//*[@data-testid="location-input"]`);
-    const [locationInput] = await BrowserService.page.$x(`//*[@data-testid="location-input"]`);
-    await locationInput.type(data.address + ', ' + data.location);
-
-    // turn off show street
-    const [streetShowCheckbox] = await BrowserService.page.$x(`//*[text()='Display the street address on the job post.']`);
-    await streetShowCheckbox.click();
+    await BrowserService.page.waitForXPath(`//*[@data-testid="city-autocomplete"]`);
+    const [locationInput] = await BrowserService.page.$x(`//*[@data-testid="city-autocomplete"]`);
+    await locationInput.type(data.location);
+    await BrowserService.page.waitForTimeout(500);
+    await locationInput.type(' ');
+    await BrowserService.page.waitForTimeout(1000);
+    await BrowserService.page.keyboard.press('ArrowDown');
+    await BrowserService.page.waitForTimeout(500);
+    await BrowserService.page.keyboard.press('Enter');
 
 }
 
