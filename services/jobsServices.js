@@ -266,12 +266,12 @@ JobsServices.fillIn_location = async(data) => {
     await BrowserService.page.waitForXPath(`//*[@data-testid="city-autocomplete"]`);
     const [locationInput] = await BrowserService.page.$x(`//*[@data-testid="city-autocomplete"]`);
     await locationInput.type(data.location);
-    await BrowserService.page.waitForTimeout(500);
     await locationInput.type(' ');
     await BrowserService.page.waitForTimeout(1000);
     await BrowserService.page.keyboard.press('ArrowDown');
-    await BrowserService.page.waitForTimeout(500);
+    await BrowserService.page.waitForTimeout(1000);
     await BrowserService.page.keyboard.press('Enter');
+    await BrowserService.page.waitForTimeout(5 * 1000);
 
 }
 
@@ -554,6 +554,14 @@ JobsServices.click_skip = async() => {
     await skipButton.click();
 }
 JobsServices.skip_preview_page = async() => {
+
+    // check if location input populated
+    // const [locationMissingIndicator] = await BrowserService.page.$x(`//*[text()='Add a location.']`);
+    // if (locationMissingIndicator) {
+    //     const [editLocationButton] = await BrowserService.page.$x(`//*[@title='Edit Job location']`);
+    //     await editLocationButton.click();
+    //     await this.fillIn_location({ location: 'broklayn, NY' })
+    // }
     await BrowserService.page.waitForXPath(`//*[text()='Confirm']/parent::button`);
     let [confirmButton] = await BrowserService.page.$x(`//*[text()='Confirm']/parent::button`);
     await confirmButton.click();
