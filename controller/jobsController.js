@@ -278,7 +278,7 @@ JobsController.fillIn_paymentPer = async(req, res) => {
 JobsController.fillIn_description = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.fillIn_description(req.body.jobDescriptionHtml);
+        await JobsServices.fillIn_description(req.body.jobDescription);
         return res.status(200).json({ "msg": "description filled in successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });

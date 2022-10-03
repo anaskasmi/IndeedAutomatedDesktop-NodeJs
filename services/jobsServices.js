@@ -73,6 +73,11 @@ JobsServices.getJobBenefits = async(jobId) => {
         console.log('This job is newly posted and doesn\'t have a url, so we couldn\'t get the benefits list');
         return [];
     }
+
+    if (!jobUrl.includes('https') && jobUrl.includes('http')) {
+        jobUrl = jobUrl.replace('http://', 'https://');
+    }
+
     await BrowserService.page.goto(jobUrl, { waitUntil: "networkidle2" });
     let benefits = await BrowserService.page.$x(`//*[text()="Benefits:"]/following-sibling::ul/li`);
     let benefitsTexts = [];
@@ -272,7 +277,6 @@ JobsServices.fillIn_location = async(data) => {
     await BrowserService.page.waitForTimeout(1000);
     await BrowserService.page.keyboard.press('Enter');
     await BrowserService.page.waitForTimeout(5 * 1000);
-
 }
 
 JobsServices.clickSaveAndContinue = async() => {
@@ -327,7 +331,7 @@ JobsServices.fillIn_isJobFullTimeOrPartTime = async(jobDetails_WhatTypeOfJobIsIt
 
 JobsServices.expandAllSections = async() => {
     // click all more buttons
-    await BrowserService.page.waitForXPath(`//button[contains(text(),"more")]`);
+    await BrowserService.page.waitForTimeout(1000);
     let moreButtons = await BrowserService.page.$x(`//button[contains(text(),"more")]`);
     for (const moreButton of moreButtons) {
         await moreButton.click();
@@ -342,7 +346,7 @@ JobsServices.fillIn_schedule = async() => {
             await otherOption.click();
         }
     } else {
-        let noneOptions = await BrowserService.page.$x(`//*[@data-testid="job-schedule"]/following-sibling::label/div/div[text()="None"]`);
+        let noneOptions = await BrowserService.page.$x(`//*[@data-testid="job-schedule"]/following-sibling::label/div/div[text()="None"]/parent::div`);
         if (noneOptions.length) {
             for (const noneOption of noneOptions) {
                 await noneOption.click();
@@ -401,7 +405,6 @@ JobsServices.fillIn_salaryFromAndTo = async(jobDetails_SalaryFrom, jobDetails_Sa
                 await jobSalary1.press('Backspace');
                 return true;
             }
-            break;
         case 'STARTING_AT':
             //fill in salary 1 with jobDetails_SalaryFrom
             [jobSalary1] = await BrowserService.page.$x(`//*[@id="local.temp-salary.minimum"]`);
@@ -415,7 +418,6 @@ JobsServices.fillIn_salaryFromAndTo = async(jobDetails_SalaryFrom, jobDetails_Sa
                 await jobSalary1.press('Backspace');
                 return true;
             }
-            break;
 
         case 'EXACT_RATE':
             //fill in salary 1 with jobDetails_SalaryFrom
@@ -524,14 +526,38 @@ JobsServices.fillIn_paymentPer = async(jobDetails_SalaryPer) => {
     }
 }
 
-JobsServices.fillIn_description = async(jobDescriptionHtml) => {
-    //start filling the descritpion
-    await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'job description')]`);
-    await BrowserService.page.$eval('#JobDescription-editor-editor-content', (el, jobDescriptionHtml) => { el.innerHTML = jobDescriptionHtml }, jobDescriptionHtml);
-    //type space to apply changements
-    let [descriptionInput] = await BrowserService.page.$x(`//*[@id="JobDescription-editor-editor-content"]`);
-    await descriptionInput.click({ clickCount: 2 });
+JobsServices.fillIn_description = async(jobDescription) => {
+    await JobsServices.getCSRFToken();
+    const jobId = (await BrowserService.page.url()).split('jobId=')[1];
+    const jobBody = `{\"operationName\":\"SaveDraftJobPost\",\"variables\":{\"input\":{\"id\":\"${jobId}\",\"patch\":{\"description\":'${jobDescription}',\"taxonomyAttributesPatchByCustomClass\":[{\"value\":{\"customClassUuid\":\"2b08da1b-fe62-43ee-adbe-7f48c9061d39\",\"attributes\":[{\"type\":\"OFFICIAL\",\"uuid\":\"e66b58bb-5596-41c0-ad78-c7450cdfcfee\",\"label\":\"Full-time\"}]},\"operation\":\"ADD\"},{\"value\":{\"customClassUuid\":\"f9dde7ac-b536-493d-ac13-2914188757f3\",\"attributes\":[{\"type\":\"OTHER\",\"uuid\":\"11111111-1111-1111-1111-111111111111\",\"label\":\"Other\"}]},\"operation\":\"ADD\"},{\"value\":{\"customClassUuid\":\"35828bc2-d934-48c2-a22d-0c8356cd07cc\",\"attributes\":[{\"uuid\":\"e6767209-18df-4b24-8c12-6d25e1c9abc2\",\"label\":\"Paid time off\",\"type\":\"OFFICIAL\"},{\"uuid\":\"ddff7271-575d-49ac-b52a-66e88d277b28\",\"label\":\"Commuter assistance\",\"type\":\"OFFICIAL\"}]},\"operation\":\"ADD\"}],\"attributesPatch\":[{\"value\":{\"key\":\"covid19consideration\",\"value\":\"\"},\"operation\":\"ADD\"}]}}},\"query\":\"fragment DraftJobPostFields on DraftJobPost {\\n  id\\n  origin\\n  claimedApplyUrl\\n  advertisingLocations {\\n    location\\n    __typename\\n  }\\n  applyMethod {\\n    method\\n    ... on JobPostEmailApplyMethod {\\n      emails\\n      __typename\\n    }\\n    ... on JobPostInPersonApplyMethod {\\n      address\\n      instructions\\n      latitude\\n      longitude\\n      __typename\\n    }\\n    ... on JobPostWebsiteApplyMethod {\\n      url\\n      __typename\\n    }\\n    __typename\\n  }\\n  company\\n  country\\n  coverLetterRequired\\n  description\\n  language\\n  jobAddress\\n  jobTypes\\n  occupationUuid\\n  phoneRequired\\n  resumeRequired\\n  salary {\\n    maximumMinor\\n    minimumMinor\\n    period\\n    __typename\\n  }\\n  title\\n  attributes {\\n    key\\n    value\\n    __typename\\n  }\\n  taxonomyAttributes {\\n    customClassUuid\\n    attributes {\\n      type\\n      uuid\\n      label\\n      __typename\\n    }\\n    __typename\\n  }\\n  fieldEditRules {\\n    applyUrl {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    company {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    country {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    description {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    jobTypes {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    language {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    advertisingLocations {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    salary {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    jobAddress {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    title {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    __typename\\n  }\\n  __typename\\n}\\n\\nmutation SaveDraftJobPost($input: PatchDraftJobPostInput!) {\\n  patchDraftJobPost(input: $input) {\\n    result {\\n      draftJobPost {\\n        ...DraftJobPostFields\\n        __typename\\n      }\\n      __typename\\n    }\\n    __typename\\n  }\\n}\\n\"}`;
 
+    const response = await fetch("https://apis.indeed.com/graphql?locale=en-US&co=US", {
+        "headers": {
+            "accept": "*/*",
+            "accept-language": "en-US,en;q=0.9",
+            "content-type": "application/json",
+            "indeed-api-key": "0f2b0de1b8ff96890172eeeba0816aaab662605e3efebbc0450745798c4b35ae",
+            "indeed-client-sub-app": "job-posting",
+            "indeed-client-sub-app-component": "./JobDescriptionSheet",
+            "sec-ch-ua": "\"Google Chrome\";v=\"105\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"105\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Mac OS X\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site",
+            "x-datadog-origin": "rum",
+            "x-datadog-parent-id": "8923979220855812101",
+            "x-datadog-sampling-priority": "1",
+            "x-datadog-trace-id": "544488856865798606",
+            "cookie": JobsServices.cookie,
+            "Referer": "https://employers.indeed.com/",
+            "Referrer-Policy": "strict-origin-when-cross-origin"
+        },
+        "body": jobBody,
+        "method": "POST"
+    });
+    // console.log(response);
+    // await BrowserService.page.reload()
 }
 
 JobsServices.fillIn_isResumeRequired = async() => {
