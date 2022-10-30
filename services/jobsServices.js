@@ -2,17 +2,15 @@ const { normalizeJobs } = require('../utilities/normalizeJobs');
 const { normalizeFullDetailedJob } = require('../utilities/normalizeFullDetailedJob');
 const { findRangeType } = require('../utilities/findRangeType');
 const Moment = require('moment');
-const axios = require('axios');
 const path = require('path');
 const fetch = require('node-fetch');
 const fs = require('fs');
-const queryString = require('query-string');
-
+const { GraphQLClient, gql } = require('graphql-request')
+const draftJobPostFieldsFragment = require('./graphQl-fragments/draftJobPostFieldsFragment');
 //models
 const Job = require('./../models/Job')
 const BrowserService = require('./BrowserService');
 const Helpers = require('../utilities/Helpers');
-const { saveCookies } = require('../utilities/saveCookies');
 let JobsServices = {};
 
 JobsServices.cookie = "CTK=1g6m99ugd210u001; _ga=GA1.3.262740312.1656457859; PPID=eyJraWQiOiJhNGRhMzNjZC00NWYyLTRkMzYtYjM2My02ZWZmYTc1OGUzYjMiLCJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJhY2QzZmJiYWU1ZmFiNjE2IiwiYXVkIjoiYzFhYjhmMDRmIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImxhc3RfMmZhIjoxNjU2NDU3OTAyMDAwLCJjcmVhdGVkIjoxNjAwMTA2NDQzMDAwLCJyZW1fbWUiOnRydWUsImlzcyI6Imh0dHBzOlwvXC9zZWN1cmUuaW5kZWVkLmNvbSIsImV4cCI6MTY1NjQ2NDAyMCwiaWF0IjoxNjU2NDYyMjIwLCJsb2dfdHMiOjE2NTY0NTc5MDIzMTAsImVtYWlsIjoiYW5hc0BrYXNtaS5kZXYifQ.7QU4OkAsWuivTSJ28BChlravmB5PJQLkaC8CILguBmB2IEB4iOXvLu81h2jGeky2TUO_g22ZrvI-UVyPf6MRCw; DRAWSTK=5e9bc1fe85d3e90d; _gid=GA1.3.237866782.1656457859; ADV=1; indeed_rcc=CTK; CSRF=aae1f9d1b889953f28294df60f165c1a; SURF=5kxiKmg7oUZmjsRaAIWgeWbUGvExZ44f; _gcl_au=1.1.1510833163.1656457856; PCA=d71582ec4597e44c; _gid=GA1.2.237866782.1656457859; INDEEDADS_HOME=6de620f32496e51e|anlyts; ADOC=2078510905073534; ENC_CSRF=R8tQa35AQWTazaOUgTkSYMVWLpcZKYMB; _ga=GA1.2.262740312.1656457859; __ssid=29f242d95edaecd045fe4b368e2511c; SOCK=\"B4vLkfdr95xKMb2hukcw_ZebO78=\"; SHOE=\"WI019BQQDrnphQNH16z5amnqmdYgPK6kZNa58PKrxL6I7qZ6aALVoJYPkKEHB4MT9te2WCOx4RjSpNK-v7ATFP8Xru2QX7eWupT5Xz3OKRpMzh5MRJvYHNWU3ALMdv9bNYmW5KfpEgAk\"; _gat_ga_tracker=1; _gat_UA-90780-1=1; mhit=2078510905073534; JSESSIONID=node014yn6x9ruvcvbcpjlxtwmkec67511.node0; _dd_s=rum=1&id=c1258bc5-eea1-4f00-b613-8b12f9beb210&created=1656462220311&expire=1656463722549; OptanonAlertBoxClosed=2022-06-29T00:33:42.554Z; OptanonConsent=isGpcEnabled=0&datestamp=Wed+Jun+29+2022+01%3A33%3A42+GMT%2B0100+(GMT%2B02%3A00)&version=6.30.0&isIABGlobal=false&hosts=&consentId=87509a77-bce8-4f93-b237-c15a9c39be11&interactionCount=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A0%2CC0003%3A0%2CC0004%3A0%2CC0007%3A0&AwaitingReconsent=false; _gali=onetrust-reject-all-handler";
@@ -527,37 +525,109 @@ JobsServices.fillIn_paymentPer = async(jobDetails_SalaryPer) => {
 }
 
 JobsServices.fillIn_description = async(jobDescription) => {
+
     await JobsServices.getCSRFToken();
     const jobId = (await BrowserService.page.url()).split('jobId=')[1];
-    const jobBody = `{\"operationName\":\"SaveDraftJobPost\",\"variables\":{\"input\":{\"id\":\"${jobId}\",\"patch\":{\"description\":'${jobDescription}',\"taxonomyAttributesPatchByCustomClass\":[{\"value\":{\"customClassUuid\":\"2b08da1b-fe62-43ee-adbe-7f48c9061d39\",\"attributes\":[{\"type\":\"OFFICIAL\",\"uuid\":\"e66b58bb-5596-41c0-ad78-c7450cdfcfee\",\"label\":\"Full-time\"}]},\"operation\":\"ADD\"},{\"value\":{\"customClassUuid\":\"f9dde7ac-b536-493d-ac13-2914188757f3\",\"attributes\":[{\"type\":\"OTHER\",\"uuid\":\"11111111-1111-1111-1111-111111111111\",\"label\":\"Other\"}]},\"operation\":\"ADD\"},{\"value\":{\"customClassUuid\":\"35828bc2-d934-48c2-a22d-0c8356cd07cc\",\"attributes\":[{\"uuid\":\"e6767209-18df-4b24-8c12-6d25e1c9abc2\",\"label\":\"Paid time off\",\"type\":\"OFFICIAL\"},{\"uuid\":\"ddff7271-575d-49ac-b52a-66e88d277b28\",\"label\":\"Commuter assistance\",\"type\":\"OFFICIAL\"}]},\"operation\":\"ADD\"}],\"attributesPatch\":[{\"value\":{\"key\":\"covid19consideration\",\"value\":\"\"},\"operation\":\"ADD\"}]}}},\"query\":\"fragment DraftJobPostFields on DraftJobPost {\\n  id\\n  origin\\n  claimedApplyUrl\\n  advertisingLocations {\\n    location\\n    __typename\\n  }\\n  applyMethod {\\n    method\\n    ... on JobPostEmailApplyMethod {\\n      emails\\n      __typename\\n    }\\n    ... on JobPostInPersonApplyMethod {\\n      address\\n      instructions\\n      latitude\\n      longitude\\n      __typename\\n    }\\n    ... on JobPostWebsiteApplyMethod {\\n      url\\n      __typename\\n    }\\n    __typename\\n  }\\n  company\\n  country\\n  coverLetterRequired\\n  description\\n  language\\n  jobAddress\\n  jobTypes\\n  occupationUuid\\n  phoneRequired\\n  resumeRequired\\n  salary {\\n    maximumMinor\\n    minimumMinor\\n    period\\n    __typename\\n  }\\n  title\\n  attributes {\\n    key\\n    value\\n    __typename\\n  }\\n  taxonomyAttributes {\\n    customClassUuid\\n    attributes {\\n      type\\n      uuid\\n      label\\n      __typename\\n    }\\n    __typename\\n  }\\n  fieldEditRules {\\n    applyUrl {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    company {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    country {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    description {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    jobTypes {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    language {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    advertisingLocations {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    salary {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    jobAddress {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    title {\\n      fieldSource\\n      isEditable\\n      __typename\\n    }\\n    __typename\\n  }\\n  __typename\\n}\\n\\nmutation SaveDraftJobPost($input: PatchDraftJobPostInput!) {\\n  patchDraftJobPost(input: $input) {\\n    result {\\n      draftJobPost {\\n        ...DraftJobPostFields\\n        __typename\\n      }\\n      __typename\\n    }\\n    __typename\\n  }\\n}\\n\"}`;
 
-    const response = await fetch("https://apis.indeed.com/graphql?locale=en-US&co=US", {
-        "headers": {
-            "accept": "*/*",
-            "accept-language": "en-US,en;q=0.9",
-            "content-type": "application/json",
-            "indeed-api-key": "0f2b0de1b8ff96890172eeeba0816aaab662605e3efebbc0450745798c4b35ae",
-            "indeed-client-sub-app": "job-posting",
-            "indeed-client-sub-app-component": "./JobDescriptionSheet",
-            "sec-ch-ua": "\"Google Chrome\";v=\"105\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"105\"",
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": "\"Mac OS X\"",
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "same-site",
-            "x-datadog-origin": "rum",
-            "x-datadog-parent-id": "8923979220855812101",
-            "x-datadog-sampling-priority": "1",
-            "x-datadog-trace-id": "544488856865798606",
-            "cookie": JobsServices.cookie,
-            "Referer": "https://employers.indeed.com/",
-            "Referrer-Policy": "strict-origin-when-cross-origin"
-        },
-        "body": jobBody,
-        "method": "POST"
-    });
-    // console.log(response);
-    // await BrowserService.page.reload()
+    const mutation = gql `
+      ${draftJobPostFieldsFragment}
+      mutation SaveDraftJobPost($input: PatchDraftJobPostInput!) {
+        patchDraftJobPost(input: $input) {
+          result {
+            draftJobPost {
+              ...DraftJobPostFields
+              __typename
+            }
+            __typename
+          }
+          __typename
+        }
+      }      
+      `;
+    const headers = {
+        "accept": "*/*",
+        "accept-language": "en-US,en;q=0.9",
+        "indeed-api-key": "0f2b0de1b8ff96890172eeeba0816aaab662605e3efebbc0450745798c4b35ae",
+        "indeed-client-sub-app": "job-posting",
+        "indeed-client-sub-app-component": "./JobDescriptionSheet",
+        "sec-ch-ua": "\"Google Chrome\";v=\"105\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"105\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Mac OS X\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-site",
+        "x-datadog-origin": "rum",
+        "x-datadog-parent-id": "8923979220855812101",
+        "x-datadog-sampling-priority": "1",
+        "x-datadog-trace-id": "544488856865798606",
+        "cookie": JobsServices.cookie,
+        "Referer": "https://employers.indeed.com/",
+        "Referrer-Policy": "strict-origin-when-cross-origin"
+    };
+
+    const variables = {
+        "input": {
+            "id": jobId,
+            "patch": {
+                "description": jobDescription.toString(),
+                "taxonomyAttributesPatchByCustomClass": [
+
+                    {
+                        "value": {
+                            "customClassUuid": "2b08da1b-fe62-43ee-adbe-7f48c9061d39",
+                            "attributes": [{
+                                "type": "OFFICIAL",
+                                "uuid": "e66b58bb-5596-41c0-ad78-c7450cdfcfee",
+                                "label": "Full-time"
+                            }]
+                        },
+                        "operation": "ADD"
+                    },
+                    {
+                        "value": {
+                            "customClassUuid": "f9dde7ac-b536-493d-ac13-2914188757f3",
+                            "attributes": [{
+                                "type": "OTHER",
+                                "uuid": "11111111-1111-1111-1111-111111111111",
+                                "label": "Other"
+                            }]
+                        },
+                        "operation": "ADD"
+                    },
+                    {
+                        "value": {
+                            "customClassUuid": "35828bc2-d934-48c2-a22d-0c8356cd07cc",
+                            "attributes": [{
+                                    "uuid": "e6767209-18df-4b24-8c12-6d25e1c9abc2",
+                                    "label": "Paid time off",
+                                    "type": "OFFICIAL"
+                                },
+                                {
+                                    "uuid": "ddff7271-575d-49ac-b52a-66e88d277b28",
+                                    "label": "Commuter assistance",
+                                    "type": "OFFICIAL"
+                                }
+                            ]
+                        },
+                        "operation": "ADD"
+                    }
+                ],
+                "attributesPatch": [{
+                    "value": {
+                        "key": "covid19consideration",
+                        "value": ""
+                    },
+                    "operation": "ADD"
+                }]
+            }
+        }
+    }
+
+    const client = new GraphQLClient("https://apis.indeed.com/graphql?locale=en-US&co=US", { headers })
+    await client.request(mutation, variables);
+    await BrowserService.page.reload()
+    await BrowserService.page.waitForTimeout(2000);
+
 }
 
 JobsServices.fillIn_isResumeRequired = async() => {
