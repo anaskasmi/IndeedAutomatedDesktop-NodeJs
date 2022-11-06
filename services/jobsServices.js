@@ -77,14 +77,12 @@ JobsServices.getJobBenefits = async(jobId) => {
     }
 
     await BrowserService.page.goto(jobUrl, { waitUntil: "networkidle2" });
-    let benefits = await BrowserService.page.$x(`//*[text()="Benefits:"]/following-sibling::ul/li`);
+    let benefits = await BrowserService.page.$x(`//*[@id="benefits"]/div/div/div/div/div`);
     let benefitsTexts = [];
     for (const benefitElemHandler of benefits) {
         benefitsTexts.push(await BrowserService.page.evaluate(benefitElemHandler => benefitElemHandler.innerText, benefitElemHandler));
     }
     return benefitsTexts;
-
-
 }
 JobsServices.getJobFullDetails = async(jobId) => {
     let benefits = await JobsServices.getJobBenefits(jobId);
@@ -278,28 +276,18 @@ JobsServices.fillIn_location = async(data) => {
 }
 
 JobsServices.clickSaveAndContinue = async() => {
-    [saveAndContinue1] = await BrowserService.page.$x(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'save and continue')]`);
-    [saveAndContinue2] = await BrowserService.page.$x(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'continue')]`);
+    const [saveAndContinue] = await BrowserService.page.$x(`//*[@type="submit"]/parent::div`);
+    if (saveAndContinue) {
+        await saveAndContinue.click({ clickCount: 3 });
+        await BrowserService.page.waitForTimeout(3000);
+        // skip duplicate job page
+        await JobsServices.skipDuplicateJobPage();
 
-    if (saveAndContinue1) {
-        await saveAndContinue1.click({ clickCount: 3 });
-    } else if (saveAndContinue2) {
-        await saveAndContinue2.click({ clickCount: 3 });
+    } else {
+        console.log('Error : cant find save button...');
     }
-    await BrowserService.page.waitForTimeout(100);
-    //second retry
-    try {
-        if (saveAndContinue1) {
-            await saveAndContinue1.click({ clickCount: 3 });
-        } else if (saveAndContinue2) {
-            await saveAndContinue2.click({ clickCount: 3 });
-        }
-    } catch (error) {
 
-    }
-    await BrowserService.page.waitForTimeout(3000);
-
-    await JobsServices.skipDuplicateJobPage();
+   
 }
 
 JobsServices.fillIn_isJobFullTimeOrPartTime = async(jobDetails_WhatTypeOfJobIsIt) => {
