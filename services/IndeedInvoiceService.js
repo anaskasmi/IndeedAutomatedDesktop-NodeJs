@@ -1,6 +1,7 @@
 const BrowserService = require("./BrowserService");
 const ExcelJS = require('exceljs');
-const path = require('path');
+const JobsServices = require("./jobsServices");
+const { GraphQLClient, gql } = require('graphql-request')
 
 let IndeedInvoiceService = {};
 
@@ -219,6 +220,8 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
 
 IndeedInvoiceService.generateInvoice = async(data) => {
 
+    // await IndeedInvoiceService.getJobsFromAPI();
+
     if (data.dates.length != 2) {
         throw Error('dates must have start date and end date')
     }
@@ -255,6 +258,111 @@ IndeedInvoiceService.generateInvoice = async(data) => {
     return filePath;
 };
 
+IndeedInvoiceService.getJobsFromAPI = async(jobNumbers = ["1184", "1187"]) => {
+    await JobsServices.getJobDetailsByIdFromAPI();
+    const query = gql `
+        query JobsData( $tableDetailsQueryOptions: JobCampaignDetailsInput!) {
+            details: jobsCampaignsAnalyticsByJob(input: $tableDetailsQueryOptions) {
+            result {
+                aggJobID
+                title
+                city
+                admin1
+                sumImpressions
+                sumClicks
+                sumApplyStarts
+                sumApplies
+                avgCostPerClickLocal
+                avgCostPerApplyStartLocal
+                avgCostPerApplyLocal
+                avgCTR
+                avgACR
+                avgASR
+                sumCostLocal
+                __typename
+            }
+            __typename
+            }
+        }
+      `;
+    const headers = {
+        "accept": "*/*",
+        "accept-language": "en-US,en;q=0.9",
+        "indeed-api-key": "0f2b0de1b8ff96890172eeeba0816aaab662605e3efebbc0450745798c4b35ae",
+        "indeed-client-sub-app": "job-posting",
+        "indeed-client-sub-app-component": "./JobDescriptionSheet",
+        "sec-ch-ua": "\"Google Chrome\";v=\"105\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"105\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Mac OS X\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-site",
+        "x-datadog-origin": "rum",
+        "x-datadog-parent-id": "8923979220855812101",
+        "x-datadog-sampling-priority": "1",
+        "x-datadog-trace-id": "544488856865798606",
+        "cookie": JobsServices.cookie,
+        "Referer": "https://employers.indeed.com/",
+        "Referrer-Policy": "strict-origin-when-cross-origin"
+    };
+
+    const variables = {
+        "tableDetailsQueryOptions": {
+            "advertiserSet": [],
+            "dateRanges": [{
+                // todo : change to start date 
+                "from": "2022-11-01",
+                // todo : change to end date 
+                "to": "2022-11-13"
+            }],
+            "jobCompanyID": [],
+            "jobType": "SPONSORED",
+            "advertisementID": [],
+            "aggJobID": [],
+            "normTitle": [],
+            "jobLocationID": [],
+            "excludeNoCampaignRows": false,
+            "measureFilters": [],
+            "extraDimensionFilters": [],
+            "limit": 1500,
+            "orderBy": [{
+                "field": "TITLE",
+                "direction": "ASC"
+            }]
+        }
+    }
+
+    const client = new GraphQLClient("https://apis.indeed.com/graphql?locale=en-US&co=US", { headers })
+    let response = await client.request(query, variables);
+    const allJobs = response.details.result;
+    const filteredJobs = [];
+    const promises = [];
+    // loop through jobs 
+    for (const job of allJobs) {
+        // loop through filter job numbers
+        for (const jobNumber of jobNumbers) {
+            if (job.title.includes(jobNumber)) {
+                promises.push(new Promise((resolve, _) => {
+                    JobsServices.fetchJobDataByIDFromAPI()
+                        .then((jobAPIDetails) => {
+                            filteredJobs.push({
+                                jobTitle: job.title,
+                                jobLocation: `${job.city}, ${job.admin1}`,
+                                jobTotalCost: job.sumCostLocal,
+                                averageCPC: job.avgCostPerClickLocal,
+                                averageCPA: job.avgCostPerApplyLocal,
+                                company: jobAPIDetails.company,
+                            });
+                            resolve();
+                        });
+                }))
+            }
+        }
+    }
+    await Promise.all(promises);
+    return filteredJobs;
+}
+
 IndeedInvoiceService.parseJobsTable = async(jobsNumbers, headersIndexes) => {
 
     let jobsArray = [];
@@ -279,7 +387,6 @@ IndeedInvoiceService.parseJobsTable = async(jobsNumbers, headersIndexes) => {
 
         for (let currentRowNumber = 1; currentRowNumber <= rowsNumber; currentRowNumber++) {
             let job = {};
-
             // Job title
             let jobTitleIndex = headersIndexes.find(({ name }) => name === 'Job title').index;
             let [jobTitleHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${jobTitleIndex}]`);
@@ -312,8 +419,7 @@ IndeedInvoiceService.parseJobsTable = async(jobsNumbers, headersIndexes) => {
             if (!parseFloat(job.averageCPC)) {
                 job.averageCPC = 0;
             }
-
-            // Average CPA
+            // avgCostPerApplyLocal
             let AVGCPAIndex = headersIndexes.find(({ name }) => name === 'AVG CPA').index;
             let [averageCPAHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${AVGCPAIndex}]`);
             job.averageCPA = await BrowserService.page.evaluate(cell => cell.innerText, averageCPAHandler);

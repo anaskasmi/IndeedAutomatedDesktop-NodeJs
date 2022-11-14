@@ -36,53 +36,34 @@ JobsServices.openPostJobPage = async() => {
 
 }
 
-JobsServices.getJobDetailsByIdFromAPI = async() => {
-    const query = gql `
-        ${draftJobPostFieldsFragment}
-        query getdraftJobPosts($jobIds: [ID!]!) {
-            draftJobPosts(ids: $jobIds) {
-            results {
-                draftJobPost {
-                ...DraftJobPostFields
-                __typename
-                }
-                __typename
-            }
-            __typename
-            }
-        }
-  `;
-    const headers = {
-        "accept": "*/*",
-        "accept-language": "en-US,en;q=0.9",
-        "indeed-api-key": "0f2b0de1b8ff96890172eeeba0816aaab662605e3efebbc0450745798c4b35ae",
-        "indeed-client-sub-app": "job-posting",
-        "indeed-client-sub-app-component": "./JobDescriptionSheet",
-        "sec-ch-ua": "\"Google Chrome\";v=\"105\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"105\"",
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"Mac OS X\"",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-site",
-        "x-datadog-origin": "rum",
-        "x-datadog-parent-id": "8923979220855812101",
-        "x-datadog-sampling-priority": "1",
-        "x-datadog-trace-id": "544488856865798606",
-        "cookie": JobsServices.cookie,
-        "Referer": "https://employers.indeed.com/",
-        "Referrer-Policy": "strict-origin-when-cross-origin"
-    };
+JobsServices.fetchJobDataByIDFromAPI = async(jobId) => {
 
-    const variables = {
-        "jobIds": [
-            // todo : change to real id 
-            "636e7fbc0ff6d3727186ed34"
-        ]
-    }
+    let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${JobsServices.csrfToken}`, {
+        "headers": {
+            "accept": "application/json",
+            "accept-language": "en-US,en;q=0.9",
+            "indeed-client-application": "ic-jobs-management",
+            "sec-ch-ua": "\"Google Chrome\";v=\"101\", \"Chromium\";v=\"101\", \";Not A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "x-datadog-origin": "rum",
+            "x-datadog-parent-id": "8745621754032032889",
+            "x-datadog-sampled": "1",
+            "x-datadog-sampling-priority": "1",
+            "x-datadog-trace-id": "4918356813273448204",
+            "x-indeed-rpc": "1",
+            "cookie": JobsServices.cookie,
+            "Referer": `https://employers.indeed.com/em/job-details/${jobId}`,
+            "Referrer-Policy": "strict-origin-when-cross-origin"
+        },
+        "body": null,
+        "method": "GET"
+    });
 
-    const client = new GraphQLClient("https://apis.indeed.com/graphql?locale=en-US&co=US", { headers })
-    let response = await client.request(query, variables);
-    console.log(response);
+    return response.json();
 }
 
 JobsServices.getJobBenefits = async(jobId) => {
@@ -133,36 +114,12 @@ JobsServices.getJobBenefits = async(jobId) => {
     return benefitsTexts;
 }
 JobsServices.getJobFullDetails = async(jobId) => {
+    // get the benefits from the public job page
     let benefits = await JobsServices.getJobBenefits(jobId);
-
-    let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${JobsServices.csrfToken}`, {
-        "headers": {
-            "accept": "application/json",
-            "accept-language": "en-US,en;q=0.9",
-            "indeed-client-application": "ic-jobs-management",
-            "sec-ch-ua": "\"Google Chrome\";v=\"101\", \"Chromium\";v=\"101\", \";Not A Brand\";v=\"99\"",
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": "\"Windows\"",
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "same-origin",
-            "x-datadog-origin": "rum",
-            "x-datadog-parent-id": "8745621754032032889",
-            "x-datadog-sampled": "1",
-            "x-datadog-sampling-priority": "1",
-            "x-datadog-trace-id": "4918356813273448204",
-            "x-indeed-rpc": "1",
-            "cookie": JobsServices.cookie,
-            "Referer": `https://employers.indeed.com/em/job-details/${jobId}`,
-            "Referrer-Policy": "strict-origin-when-cross-origin"
-        },
-        "body": null,
-        "method": "GET"
-    });
-
-    const data = await response.json();
-    let normalizedJob = await normalizeFullDetailedJob(data);
-
+    // get the job data from indeed  api
+    const job = await JobsServices.fetchJobDataByIDFromAPI(jobId);
+    // normalize the job to fit the Mongo db model
+    let normalizedJob = await normalizeFullDetailedJob(job);
     //delete old job document
     await Job.findOneAndDelete({ job_id: jobId });
     //update the job document
