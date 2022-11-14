@@ -36,6 +36,54 @@ JobsServices.openPostJobPage = async() => {
 
 }
 
+JobsServices.getJobDetailsByIdFromAPI = async() => {
+    const query = gql `
+        ${draftJobPostFieldsFragment}
+        query getdraftJobPosts($jobIds: [ID!]!) {
+            draftJobPosts(ids: $jobIds) {
+            results {
+                draftJobPost {
+                ...DraftJobPostFields
+                __typename
+                }
+                __typename
+            }
+            __typename
+            }
+        }
+  `;
+    const headers = {
+        "accept": "*/*",
+        "accept-language": "en-US,en;q=0.9",
+        "indeed-api-key": "0f2b0de1b8ff96890172eeeba0816aaab662605e3efebbc0450745798c4b35ae",
+        "indeed-client-sub-app": "job-posting",
+        "indeed-client-sub-app-component": "./JobDescriptionSheet",
+        "sec-ch-ua": "\"Google Chrome\";v=\"105\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"105\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Mac OS X\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-site",
+        "x-datadog-origin": "rum",
+        "x-datadog-parent-id": "8923979220855812101",
+        "x-datadog-sampling-priority": "1",
+        "x-datadog-trace-id": "544488856865798606",
+        "cookie": JobsServices.cookie,
+        "Referer": "https://employers.indeed.com/",
+        "Referrer-Policy": "strict-origin-when-cross-origin"
+    };
+
+    const variables = {
+        "jobIds": [
+            // todo : change to real id 
+            "636e7fbc0ff6d3727186ed34"
+        ]
+    }
+
+    const client = new GraphQLClient("https://apis.indeed.com/graphql?locale=en-US&co=US", { headers })
+    let response = await client.request(query, variables);
+    console.log(response);
+}
 
 JobsServices.getJobBenefits = async(jobId) => {
     let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${JobsServices.csrfToken}`, {
@@ -287,7 +335,7 @@ JobsServices.clickSaveAndContinue = async() => {
         console.log('Error : cant find save button...');
     }
 
-   
+
 }
 
 JobsServices.fillIn_isJobFullTimeOrPartTime = async(jobDetails_WhatTypeOfJobIsIt) => {
@@ -558,55 +606,6 @@ JobsServices.fillIn_description = async(jobDescription) => {
             "id": jobId,
             "patch": {
                 "description": jobDescription.toString(),
-                "taxonomyAttributesPatchByCustomClass": [
-
-                    {
-                        "value": {
-                            "customClassUuid": "2b08da1b-fe62-43ee-adbe-7f48c9061d39",
-                            "attributes": [{
-                                "type": "OFFICIAL",
-                                "uuid": "e66b58bb-5596-41c0-ad78-c7450cdfcfee",
-                                "label": "Full-time"
-                            }]
-                        },
-                        "operation": "ADD"
-                    },
-                    {
-                        "value": {
-                            "customClassUuid": "f9dde7ac-b536-493d-ac13-2914188757f3",
-                            "attributes": [{
-                                "type": "OTHER",
-                                "uuid": "11111111-1111-1111-1111-111111111111",
-                                "label": "Other"
-                            }]
-                        },
-                        "operation": "ADD"
-                    },
-                    {
-                        "value": {
-                            "customClassUuid": "35828bc2-d934-48c2-a22d-0c8356cd07cc",
-                            "attributes": [{
-                                    "uuid": "e6767209-18df-4b24-8c12-6d25e1c9abc2",
-                                    "label": "Paid time off",
-                                    "type": "OFFICIAL"
-                                },
-                                {
-                                    "uuid": "ddff7271-575d-49ac-b52a-66e88d277b28",
-                                    "label": "Commuter assistance",
-                                    "type": "OFFICIAL"
-                                }
-                            ]
-                        },
-                        "operation": "ADD"
-                    }
-                ],
-                "attributesPatch": [{
-                    "value": {
-                        "key": "covid19consideration",
-                        "value": ""
-                    },
-                    "operation": "ADD"
-                }]
             }
         }
     }
@@ -639,13 +638,6 @@ JobsServices.click_skip = async() => {
 }
 JobsServices.skip_preview_page = async() => {
 
-    // check if location input populated
-    // const [locationMissingIndicator] = await BrowserService.page.$x(`//*[text()='Add a location.']`);
-    // if (locationMissingIndicator) {
-    //     const [editLocationButton] = await BrowserService.page.$x(`//*[@title='Edit Job location']`);
-    //     await editLocationButton.click();
-    //     await this.fillIn_location({ location: 'broklayn, NY' })
-    // }
     await BrowserService.page.waitForXPath(`//*[text()='Confirm']/parent::button`);
     let [confirmButton] = await BrowserService.page.$x(`//*[text()='Confirm']/parent::button`);
     await confirmButton.click();
@@ -695,24 +687,15 @@ JobsServices.fillIn_adDurationDate = async(endDateIncreaseNumber) => {
     newEndDate = newEndDate.format('MM/DD/YYYY');
 
     //fill in the input
-    let [endDateInput] = await BrowserService.page.$x(`//*[@id="input"]`);
+    let [endDateInput] = await BrowserService.page.$x(`//*[@data-shield="end-date-picker"]/div/div/div/span/input`);
     await endDateInput.click({ clickCount: 3 });
     await BrowserService.page.keyboard.type(newEndDate)
-        //second time
-    for (let index = 0; index < 30; index++) {
-        await endDateInput.press('Backspace');
-    }
-    await BrowserService.page.keyboard.type(newEndDate)
-        //third time
-    for (let index = 0; index < 30; index++) {
-        await endDateInput.press('Backspace');
-    }
-    await BrowserService.page.keyboard.type(newEndDate)
 
-    //fourth time
-    await BrowserService.page.evaluate((newEndDate) => {
-        document.querySelector(`#input`).value = newEndDate;
-    }, newEndDate);
+    //second time
+    for (let index = 0; index < 30; index++) {
+        await endDateInput.press('Backspace');
+    }
+    await BrowserService.page.keyboard.type(newEndDate)
 
 }
 
