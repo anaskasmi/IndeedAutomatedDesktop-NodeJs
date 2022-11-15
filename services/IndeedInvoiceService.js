@@ -18,8 +18,6 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
         { header: '', width: 1 },
         { header: 'Location' },
         { header: '', width: 1 },
-        { header: 'Company' },
-        { header: '', width: 1 },
         { header: 'Total Cost' },
         { header: '', width: 1 },
         { header: 'Average CPC' },
@@ -53,10 +51,9 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
         var rowValues = [];
         rowValues[1] = job.jobTitle;
         rowValues[3] = job.jobLocation;
-        rowValues[5] = job.jobCompany;
-        rowValues[7] = parseFloat(job.jobTotalCost);
-        rowValues[9] = parseFloat(job.averageCPC);
-        rowValues[11] = parseFloat(job.averageCPA);
+        rowValues[5] = parseFloat(job.jobTotalCost);
+        rowValues[7] = parseFloat(job.averageCPC);
+        rowValues[9] = parseFloat(job.averageCPA);
         worksheet.insertRow(2 + index, rowValues);
     }
 
@@ -104,7 +101,7 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
     worksheet.getRow(1).font = { size: 11, bold: true, color: { argb: '33ff66 ' }, };
 
     // add average & total cells
-    const totalCostCell = worksheet.getCell(`G${jobsArray.length + 2}`);
+    const totalCostCell = worksheet.getCell(`E${jobsArray.length + 2}`);
     totalCostCell.value = parseFloat(sumOfTotalCost);
     totalCostCell.font = { size: 11, bold: true, };
     totalCostCell.fill = {
@@ -118,7 +115,7 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
     };
 
     // add percentage
-    const totalCostPercentage = worksheet.getCell(`G${jobsArray.length + 3}`);
+    const totalCostPercentage = worksheet.getCell(`E${jobsArray.length + 3}`);
     totalCostPercentage.value = 0.06;
     totalCostPercentage.numFmt = '0.00%';
     totalCostPercentage.font = { size: 11, bold: true, };
@@ -127,7 +124,7 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
     };
 
     // add percentage result
-    const totalCostPercentageResult = worksheet.getCell(`G${jobsArray.length + 4}`);
+    const totalCostPercentageResult = worksheet.getCell(`E${jobsArray.length + 4}`);
     totalCostPercentageResult.value = parseFloat((sumOfTotalCost * .06).toFixed(2));
     totalCostPercentageResult.font = { size: 11, bold: true, };
     totalCostPercentageResult.alignment = {
@@ -135,7 +132,7 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
     };
 
     // add percentage + result sum
-    const totalCostPercentageResultSum = worksheet.getCell(`G${jobsArray.length + 5}`);
+    const totalCostPercentageResultSum = worksheet.getCell(`E${jobsArray.length + 5}`);
     totalCostPercentageResultSum.value = parseFloat((sumOfTotalCost * .06 + sumOfTotalCost).toFixed(2));
     totalCostPercentageResultSum.font = { size: 11, bold: true, };
     totalCostPercentageResultSum.fill = {
@@ -150,7 +147,7 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
     };
 
 
-    const avgOfCPACell = worksheet.getCell(`K${jobsArray.length + 2}`);
+    const avgOfCPACell = worksheet.getCell(`I${jobsArray.length + 2}`);
     avgOfCPACell.value = parseFloat(avgOfCPA);
     avgOfCPACell.font = { size: 11, bold: true, };
     avgOfCPACell.fill = {
@@ -163,7 +160,7 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
         vertical: 'middle',
     };
 
-    const avgOfCPCCell = worksheet.getCell(`I${jobsArray.length + 2}`);
+    const avgOfCPCCell = worksheet.getCell(`G${jobsArray.length + 2}`);
     avgOfCPCCell.value = parseFloat(avgOfCPC);
     avgOfCPCCell.font = { size: 11, bold: true, };
     avgOfCPCCell.fill = {
@@ -178,9 +175,9 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
 
 
     // format money cols
+    worksheet.getColumn(5).numFmt = "$#,##0.00";
     worksheet.getColumn(7).numFmt = "$#,##0.00";
     worksheet.getColumn(9).numFmt = "$#,##0.00";
-    worksheet.getColumn(11).numFmt = "$#,##0.00";
     // format percentage
     totalCostPercentage.numFmt = '0.00%';
 
@@ -220,8 +217,6 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
 
 IndeedInvoiceService.generateInvoice = async(data) => {
 
-    // await IndeedInvoiceService.getJobsFromAPI();
-
     if (data.dates.length != 2) {
         throw Error('dates must have start date and end date')
     }
@@ -230,36 +225,16 @@ IndeedInvoiceService.generateInvoice = async(data) => {
         throw Error('a minimum of one job number is required')
     }
 
-    await BrowserService.page.goto(`https://analytics.indeed.com/analytics/performance/jobs?startDate=${data.dates[0]}&endDate=${data.dates[1]}`, { waitUntil: "load" });
-
-
-    // make sure all headers exists
-    await IndeedInvoiceService.checkNeededColumns();
-
-    // get headers indexes
-    let headersIndexes = await IndeedInvoiceService.getHeadersIndexes();
-
-    // open numbers list
-    await BrowserService.page.waitForXPath(`//*[@id="page-size-options-button"]`);
-    let [numbersList] = await BrowserService.page.$x(`//*[@id="page-size-options-button"]`);
-    await numbersList.click();
-
-    // click last button
-    await BrowserService.page.waitForXPath(`//*[@id="page-size-options-item-5"]`);
-    let [lastButton] = await BrowserService.page.$x(`//*[@id="page-size-options-item-5"]`);
-    await lastButton.click();
-
-    // parse Jobs Table
-    let jobsArray = await IndeedInvoiceService.parseJobsTable(data.jobsNumbers, headersIndexes);
+    // get jobs from API
+    let jobsArray = await IndeedInvoiceService.getJobsFromAPI(data.jobsNumbers, data.dates);
+    
     // generate excel file
     let filePath = await IndeedInvoiceService.generateExcel(jobsArray, data.jobsNumbers);
 
-    console.log(filePath);
     return filePath;
 };
 
-IndeedInvoiceService.getJobsFromAPI = async(jobNumbers = ["1184", "1187"]) => {
-    await JobsServices.getJobDetailsByIdFromAPI();
+IndeedInvoiceService.getJobsFromAPI = async(jobNumbers = [], dates) => {
     const query = gql `
         query JobsData( $tableDetailsQueryOptions: JobCampaignDetailsInput!) {
             details: jobsCampaignsAnalyticsByJob(input: $tableDetailsQueryOptions) {
@@ -311,9 +286,9 @@ IndeedInvoiceService.getJobsFromAPI = async(jobNumbers = ["1184", "1187"]) => {
             "advertiserSet": [],
             "dateRanges": [{
                 // todo : change to start date 
-                "from": "2022-11-01",
+                "from": dates[0].toString(),
                 // todo : change to end date 
-                "to": "2022-11-13"
+                "to": dates[1].toString()
             }],
             "jobCompanyID": [],
             "jobType": "SPONSORED",
@@ -336,168 +311,23 @@ IndeedInvoiceService.getJobsFromAPI = async(jobNumbers = ["1184", "1187"]) => {
     let response = await client.request(query, variables);
     const allJobs = response.details.result;
     const filteredJobs = [];
-    const promises = [];
     // loop through jobs 
     for (const job of allJobs) {
         // loop through filter job numbers
         for (const jobNumber of jobNumbers) {
             if (job.title.includes(jobNumber)) {
-                promises.push(new Promise((resolve, _) => {
-                    JobsServices.fetchJobDataByIDFromAPI()
-                        .then((jobAPIDetails) => {
-                            filteredJobs.push({
-                                jobTitle: job.title,
-                                jobLocation: `${job.city}, ${job.admin1}`,
-                                jobTotalCost: job.sumCostLocal,
-                                averageCPC: job.avgCostPerClickLocal,
-                                averageCPA: job.avgCostPerApplyLocal,
-                                company: jobAPIDetails.company,
-                            });
-                            resolve();
-                        });
-                }))
+                filteredJobs.push({
+                    jobTitle: job.title,
+                    jobLocation: `${job.city}, ${job.admin1}`,
+                    jobTotalCost: job.sumCostLocal.toFixed(2),
+                    averageCPC: job.avgCostPerClickLocal.toFixed(2),
+                    averageCPA: job.avgCostPerApplyLocal.toFixed(2),
+                });
             }
         }
     }
-    await Promise.all(promises);
     return filteredJobs;
 }
-
-IndeedInvoiceService.parseJobsTable = async(jobsNumbers, headersIndexes) => {
-
-    let jobsArray = [];
-
-    for (const jobNumber of jobsNumbers) {
-        // click search bar
-        await BrowserService.page.waitForXPath(`//*[@id="input-searchInput"]`);
-        let [searchBar] = await BrowserService.page.$x(`//*[@id="input-searchInput"]`);
-        await searchBar.click({ clickCount: 3 });
-
-        // type in the job number 
-        await BrowserService.page.keyboard.type(jobNumber);
-
-        //wait for table to filter results
-        await BrowserService.page.waitForTimeout(4000);
-        let [resultsExists] = await BrowserService.page.$x(`//*[@class="perf-JobTitleCell-content"]/div/a`);
-        let rowsNumber = 0;
-        if (resultsExists) {
-            // get the number of rows
-            rowsNumber = (await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div`)).length;
-        }
-
-        for (let currentRowNumber = 1; currentRowNumber <= rowsNumber; currentRowNumber++) {
-            let job = {};
-            // Job title
-            let jobTitleIndex = headersIndexes.find(({ name }) => name === 'Job title').index;
-            let [jobTitleHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${jobTitleIndex}]`);
-            job.jobTitle = await BrowserService.page.evaluate(cell => cell.innerText, jobTitleHandler);
-
-            // Location
-            let locationIndex = headersIndexes.find(({ name }) => name === 'Location').index;
-            let [jobLocationHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${locationIndex}]`);
-            job.jobLocation = await BrowserService.page.evaluate(cell => cell.innerText, jobLocationHandler);
-
-            // Company
-            let companyIndex = headersIndexes.find(({ name }) => name === 'Company').index;
-            let [jobCompanyHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${companyIndex}]`);
-            job.jobCompany = await BrowserService.page.evaluate(cell => cell.innerText, jobCompanyHandler);
-
-            // Total cost
-            let totalCostIndex = headersIndexes.find(({ name }) => name === 'Total cost').index;
-            let [jobTotalCostHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${totalCostIndex}]`);
-            job.jobTotalCost = await BrowserService.page.evaluate(cell => cell.innerText, jobTotalCostHandler);
-            job.jobTotalCost = job.jobTotalCost.replace('$', '');
-            if (!parseFloat(job.jobTotalCost)) {
-                job.jobTotalCost = 0;
-            }
-
-            // Average CPC
-            let AVGCPCIndex = headersIndexes.find(({ name }) => name === 'AVG CPC').index;
-            let [averageCPCHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${AVGCPCIndex}]`);
-            job.averageCPC = await BrowserService.page.evaluate(cell => cell.innerText, averageCPCHandler);
-            job.averageCPC = job.averageCPC.replace('$', '');
-            if (!parseFloat(job.averageCPC)) {
-                job.averageCPC = 0;
-            }
-            // avgCostPerApplyLocal
-            let AVGCPAIndex = headersIndexes.find(({ name }) => name === 'AVG CPA').index;
-            let [averageCPAHandler] = await BrowserService.page.$x(`//*[@id="plugin_container_ReportPage"]/div/div/div/div/div/div/div[5]/div[1]/div/div[2]/div/div[1]/div[${currentRowNumber}]/div/div[${AVGCPAIndex}]`);
-            job.averageCPA = await BrowserService.page.evaluate(cell => cell.innerText, averageCPAHandler);
-            job.averageCPA = job.averageCPA.replace('$', '');
-            if (!parseFloat(job.averageCPA)) {
-                job.averageCPA = 0;
-            }
-            jobsArray.push(job);
-        }
-    }
-    return jobsArray;
-}
-IndeedInvoiceService.getHeadersIndexes = async() => {
-    // wait for page to load 
-    await BrowserService.page.waitForXPath(`//*[text()='Job title']/parent::button/parent::div/parent::div/div`);
-    let titlesIndexes = [{
-            'name': 'Job title',
-            'index': null
-        },
-        {
-            'name': 'Location',
-            'index': null
-        },
-        {
-            'name': 'Company',
-            'index': null
-        },
-        {
-            'name': 'AVG CPA',
-            'index': null
-        }, {
-            'name': 'AVG CPC',
-            'index': null
-        }, {
-            'name': 'Total cost',
-            'index': null
-        }
-    ];
-    // get the list of headers 
-    let headersList = await BrowserService.page.$x(`//*[text()='Job title']/parent::button/parent::div/parent::div/div`);
-
-    for (const titleObj of titlesIndexes) {
-        for (const [index, headerItem] of headersList.entries()) {
-            let headertitleText = await BrowserService.page.evaluate(headerItem => headerItem.innerText, headerItem);
-            if (titleObj.name == headertitleText) {
-                titleObj.index = index + 1;
-            }
-        }
-    }
-    return titlesIndexes;
-
-};
-IndeedInvoiceService.checkNeededColumns = async() => {
-    // wait for the columns edit button to load
-    await BrowserService.page.waitForXPath(`//*[text()='Edit columns']`);
-    await BrowserService.page.waitForTimeout(4000);
-
-    // open it 
-    let [editColumnsButton] = await BrowserService.page.$x(`//*[text()='Edit columns']/parent::button`);
-    await editColumnsButton.click();
-
-    // TODO : change to select all 
-    let requiredCheckBoxes = ['jobCompany', 'location', 'localCosts', 'averageCpc', 'averageCpa']
-    for (const requiredCheckBoxe of requiredCheckBoxes) {
-        // wait for the checkboxes to show 
-        await BrowserService.page.waitForXPath(`//*[@value="${requiredCheckBoxe}"]/parent::label`);
-        let isCurrentCheckBoxActive = await BrowserService.page.$x(`//*[@value="${requiredCheckBoxe}" and @checked]`);
-        if (isCurrentCheckBoxActive.length == 0) {
-            let [currentCheckBoxHandler] = await BrowserService.page.$x(`//*[@value="${requiredCheckBoxe}"]/parent::label`);
-            await currentCheckBoxHandler.click();
-        }
-    }
-
-    // click on Done 
-    let [doneButton] = await BrowserService.page.$x(`//*[text()='Done']`)
-    await doneButton.click();
-
-};
 
 
 module.exports = IndeedInvoiceService;
