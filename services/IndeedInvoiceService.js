@@ -1,7 +1,7 @@
-const BrowserService = require("./BrowserService");
 const ExcelJS = require('exceljs');
-const JobsServices = require("./jobsServices");
-const { GraphQLClient, gql } = require('graphql-request')
+const { GraphQLClient, gql } = require('graphql-request');
+const headers = require('./graphQl/headers/headers');
+const JobsData = require('./graphQl/queries/JobsData');
 
 let IndeedInvoiceService = {};
 
@@ -48,7 +48,7 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
         }
 
         // inserting
-        var rowValues = [];
+        let rowValues = [];
         rowValues[1] = job.jobTitle;
         rowValues[3] = job.jobLocation;
         rowValues[5] = parseFloat(job.jobTotalCost);
@@ -183,9 +183,9 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
 
 
     worksheet.columns.forEach(function(column, i) {
-        var maxLength = 0;
+        let maxLength = 0;
         column["eachCell"]({ includeEmpty: true }, function(cell) {
-            var columnLength = cell.value ? cell.value.toString().length + 5 : 10;
+            let columnLength = cell.value ? cell.value.toString().length + 5 : 10;
             if (columnLength > maxLength) {
                 maxLength = columnLength;
             }
@@ -207,7 +207,6 @@ IndeedInvoiceService.generateExcel = async(jobsArray, jobsNumbers) => {
     } catch (error) {
         const desktopDir = `${homeDir}/Desktop/invoice.xlsx`;
         await workbook.xlsx.writeFile(desktopDir);
-
     }
     return true;
 
@@ -227,67 +226,20 @@ IndeedInvoiceService.generateInvoice = async(data) => {
 
     // get jobs from API
     let jobsArray = await IndeedInvoiceService.getJobsFromAPI(data.jobsNumbers, data.dates);
-    
+
     // generate excel file
     let filePath = await IndeedInvoiceService.generateExcel(jobsArray, data.jobsNumbers);
 
     return filePath;
 };
 
-IndeedInvoiceService.getJobsFromAPI = async(jobNumbers = [], dates) => {
-    const query = gql `
-        query JobsData( $tableDetailsQueryOptions: JobCampaignDetailsInput!) {
-            details: jobsCampaignsAnalyticsByJob(input: $tableDetailsQueryOptions) {
-            result {
-                aggJobID
-                title
-                city
-                admin1
-                sumImpressions
-                sumClicks
-                sumApplyStarts
-                sumApplies
-                avgCostPerClickLocal
-                avgCostPerApplyStartLocal
-                avgCostPerApplyLocal
-                avgCTR
-                avgACR
-                avgASR
-                sumCostLocal
-                __typename
-            }
-            __typename
-            }
-        }
-      `;
-    const headers = {
-        "accept": "*/*",
-        "accept-language": "en-US,en;q=0.9",
-        "indeed-api-key": "0f2b0de1b8ff96890172eeeba0816aaab662605e3efebbc0450745798c4b35ae",
-        "indeed-client-sub-app": "job-posting",
-        "indeed-client-sub-app-component": "./JobDescriptionSheet",
-        "sec-ch-ua": "\"Google Chrome\";v=\"105\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"105\"",
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"Mac OS X\"",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-site",
-        "x-datadog-origin": "rum",
-        "x-datadog-parent-id": "8923979220855812101",
-        "x-datadog-sampling-priority": "1",
-        "x-datadog-trace-id": "544488856865798606",
-        "cookie": JobsServices.cookie,
-        "Referer": "https://employers.indeed.com/",
-        "Referrer-Policy": "strict-origin-when-cross-origin"
-    };
-
+IndeedInvoiceService.getJobsFromAPI = async(jobNumbers, dates) => {
+    const query = gql `${JobsData}`;
     const variables = {
         "tableDetailsQueryOptions": {
             "advertiserSet": [],
             "dateRanges": [{
-                // todo : change to start date 
                 "from": dates[0].toString(),
-                // todo : change to end date 
                 "to": dates[1].toString()
             }],
             "jobCompanyID": [],
