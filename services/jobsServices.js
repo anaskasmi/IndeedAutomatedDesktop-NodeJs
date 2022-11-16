@@ -279,13 +279,13 @@ JobsServices.expandAllSections = async() => {
 JobsServices.fillIn_schedule = async() => {
     await JobsServices.expandAllSections();
     await BrowserService.page.waitForTimeout(3000);
-    let otherOptions = await BrowserService.page.$x(`//*[@data-testid="job-schedule"]/following-sibling::label/div/div[text()="Other"]`);
+    let otherOptions = await BrowserService.page.$x(`//*[text()="Other"]`);
     if (otherOptions.length > 0) {
         for (const otherOption of otherOptions) {
             await otherOption.click();
         }
     } else {
-        let noneOptions = await BrowserService.page.$x(`//*[@data-testid="job-schedule"]/following-sibling::label/div/div[text()="None"]/parent::div`);
+        let noneOptions = await BrowserService.page.$x(`//*[text()="None"]`);
         if (noneOptions.length) {
             for (const noneOption of noneOptions) {
                 await noneOption.click();
