@@ -6,8 +6,8 @@ const nodemailer = require('nodemailer');
 const Job = require('./../models/Job')
 const Moment = require('moment');
 const fetch = require('node-fetch');
-const JobsServices = require('./jobsServices');
 var postmark = require("postmark");
+const headers = require('./graphQl/headers/headers');
 
 
 
@@ -24,25 +24,13 @@ ResumesService.getJobEmail = async(jobId) => {
 
         if (!job || !job.jobDetails_emails || job.jobDetails_emails.length == 0) {
             let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx`, {
-                "headers": {
+                headers: {
+                    ...headers,
                     "accept": "application/json",
                     "accept-language": "en-US,en;q=0.9",
                     "indeed-client-application": "ic-jobs-management",
-                    "sec-ch-ua": "\"Chromium\";v=\"98\", \" Not A;Brand\";v=\"99\", \"Google Chrome\";v=\"98\"",
-                    "sec-ch-ua-mobile": "?0",
-                    "sec-ch-ua-platform": "\"Windows\"",
-                    "sec-fetch-dest": "empty",
-                    "sec-fetch-mode": "cors",
-                    "sec-fetch-site": "same-origin",
-                    "x-datadog-origin": "rum",
-                    "x-datadog-parent-id": "4916848497291186240",
-                    "x-datadog-sampled": "1",
-                    "x-datadog-sampling-priority": "1",
-                    "x-datadog-trace-id": "5631816418804730996",
                     "x-indeed-rpc": "1",
-                    "cookie": JobsServices.cookie,
-                    "Referer": `https://employers.indeed.com/em/job-details/${jobId}`,
-                    "Referrer-Policy": "strict-origin-when-cross-origin"
+
                 },
                 "body": null,
                 "method": "GET"
@@ -211,29 +199,13 @@ ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
 ResumesService.getCandidatesBetweenTwoDates = async(startDate, endDate) => {
 
     let response = await fetch("https://employers.indeed.com/api/ctws/preview/candidates?offset=0&encryptedJobId=0", {
-        "headers": {
+        headers: {
+            ...headers,
             "accept": "application/json",
             "accept-language": "en-US,en;q=0.9",
-            "indeed-client-application": "entcand",
-            "sec-ch-ua": "\"Chromium\";v=\"98\", \" Not A;Brand\";v=\"99\", \"Google Chrome\";v=\"98\"",
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": "\"Windows\"",
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "same-origin",
-            "x-datadog-origin": "rum",
-            "x-datadog-parent-id": "8433130470897912863",
-            "x-datadog-sampled": "1",
-            "x-datadog-sampling-priority": "1",
-            "x-datadog-trace-id": "1961136418978072551",
-            "x-indeed-api": "1",
-            "x-indeed-appname": "entcand",
-            "x-indeed-apptype": "desktop",
+            "indeed-client-application": "ic-jobs-management",
             "x-indeed-rpc": "1",
-            "x-indeed-tk": "1fsn0p1kt36a0000",
-            "cookie": JobsServices.cookie,
-            "Referer": "https://employers.indeed.com/c",
-            "Referrer-Policy": "strict-origin-when-cross-origin"
+
         },
         "body": null,
         "method": "GET"
