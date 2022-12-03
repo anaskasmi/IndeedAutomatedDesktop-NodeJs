@@ -546,7 +546,7 @@ JobsServices.fillIn_adDurationDate = async(endDateIncreaseNumber) => {
     newEndDate = newEndDate.format('MM/DD/YYYY');
 
     //fill in the input
-    let [endDateInput] = await BrowserService.page.$x(`//*[@data-shield="end-date-picker"]/div/div/div/span/input`);
+    let [endDateInput] = await BrowserService.page.$x(`//*[@data-at="end-date-picker"]/div/div/div/span/input`);
     await endDateInput.click({ clickCount: 3 });
     await BrowserService.page.keyboard.type(newEndDate)
 
