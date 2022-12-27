@@ -8,7 +8,9 @@ const { normalizeFullDetailedJob } = require('../utilities/normalizeFullDetailed
 const { findRangeType } = require('../utilities/findRangeType');
 const headers = require('./graphQl/headers/headers');
 const saveDraftJobPost = require('./graphQl/mutations/saveDraftJobPost');
+const SetBudgetMutation = require('./graphQl/mutations/SetBudget.js');
 const draftJobPostFields = require('./graphQl/fragments/draftJobPostFields');
+
 //models
 const Job = require('./../models/Job')
 const BrowserService = require('./BrowserService');
@@ -210,11 +212,13 @@ JobsServices.fillIn_location = async(data) => {
     await locationOption.click();
     await BrowserService.page.waitForTimeout(1 * 1000);
     await locationOption.click();
-
-    // chose In person
-    await BrowserService.page.waitForXPath(`//*[text()='In person']`);
-    const [inPersonOption] = await BrowserService.page.$x(`//*[text()='In person']`);
-    await inPersonOption.click();
+    await BrowserService.page.waitForTimeout(1 * 1000);
+    // choose In person
+    const [generalLocation] = await BrowserService.page.$x(`//*[contains(text(),'general location')]`);
+    if (generalLocation) {
+        await generalLocation.click();
+    }
+  
 
     // location input 
     await BrowserService.page.waitForXPath(`//*[@data-testid="city-autocomplete"]`);
@@ -537,11 +541,10 @@ JobsServices.fillIn_adDurationType = async() => {
     await BrowserService.page.select(`#adEndDateSelect`, "CUSTOM");
 }
 
-JobsServices.fillIn_adDurationDate = async(endDateIncreaseNumber) => {
+JobsServices.fillIn_adDurationDate = async() => {
 
-    //generate new date after 4 days
-    let newEndDate = Moment(Moment()).add(endDateIncreaseNumber, 'days');
-
+    //generate new date after X given days
+    let newEndDate = Moment(Moment()).add(1, 'days');
     // change its Format
     newEndDate = newEndDate.format('MM/DD/YYYY');
 
@@ -578,17 +581,30 @@ JobsServices.fillIn_webSite = async() => {
     }
 }
 
-JobsServices.fillIn_adBudget = async(budget_amount) => {
-    let [budgetInput] = await BrowserService.page.$x(`//*[@id="advanced-budget"]`);
-    if (budgetInput && budget_amount) {
-        let budgetInDollar = Math.ceil(budget_amount).toString();
-        await budgetInput.click({ clickCount: 3 });
-        await budgetInput.press('Backspace');
-        await budgetInput.type(budgetInDollar);
+JobsServices.fillIn_adBudget = async(budget) => {
+
+    await BrowserService.page.select(`select#adEndDateSelect`, 'CUSTOM')
+
+    let [budgetValueInput] = await BrowserService.page.$x(`//*[@id="budget"]`);
+    if (budgetValueInput && budget) {
+
+        // add budget value
+        let budgetInDollar = Math.ceil(budget).toString();
+        await budgetValueInput.click({ clickCount: 3 });
+        await budgetValueInput.press('Backspace');
+        await budgetValueInput.type(budgetInDollar);
+        // second time : add budget value
+        await BrowserService.page.waitForTimeout(1 * 1000);
+        await budgetValueInput.click({ clickCount: 3 });
+        await budgetValueInput.press('Backspace');
+        await budgetValueInput.type(budgetInDollar);
+
+        // add budget Period
+        await BrowserService.page.select(`select#budgetPeriod`, "DAILY")
+
         // add urgent label
         let [urgentLabel] = await BrowserService.page.$x(`//*[@name="urgentlyHiringCheckbox"]/parent::label`);
         await urgentLabel.click();
-
         return true;
     } else {
         return false;

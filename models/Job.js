@@ -10,18 +10,18 @@ const JobSchema = mongoose.Schema({
 
     jobDescription: { type: String },
     jobDescriptionHtml: { type: String },
-    //sgeneral info end
+    //general info end
 
     //budget start
-    budget_plan: { type: String },
+    //?value 
+    budget: { type: String },
+    //? Daily, Monthly..
+    budget_period: { type: String },    
+    //? RECURRING,...
+    budget_type: { type: String },
     budget_outOfBudget: { type: String },
     budget_endDate: { type: String },
-    //?Job Budget
-    budget_amount: { type: String },
-    //?Cost
     budget_displayCost: { type: String },
-    //?Max CPC
-    budget_maxCPC: { type: String },
     //budget end
 
 

@@ -19,9 +19,10 @@ module.exports.normalizeFullDetailedJob = async(jobData) => {
         jobDetails_expectedHireDate: jobData.job.attributes.expectedHireDate ? jobData.job.attributes.expectedHireDate : null,
         jobDetails_type: jobData.job.type ? jobData.job.type : null,
         //budget
-        budget_outOfBudget: jobData.job.outOfBudget ? jobData.job.outOfBudget : null,
-        budget_maxCPC: jobData.job.maxcpc ? jobData.job.maxcpc : null,
-        budget_plan: jobData.job.budgetType ? jobData.job.budgetType : null,
+        budget_outOfBudget: jobData?.job?.outOfBudget ?? null,
+        budget: jobData?.job?.budget ?? null,
+        budget_period: jobData?.job?.budgetPeriod ?? null,
+        budget_type: jobData?.job?.budgetType ?? null,
         //description
         jobDescription: jobData.job.description ? jobData.job.description : null,
         jobDescriptionHtml: jobData.job.descriptionHtml,
