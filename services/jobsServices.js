@@ -21,17 +21,37 @@ JobsServices.openPostJobPage = async() => {
     await BrowserService.page.evaluate(() => window.stop());
     await BrowserService.page.goto(`https://employers.indeed.com/o/p`, { waitUntil: "networkidle2" });
 
+    // skip hire survey
+    if ((await BrowserService.page.url()).includes('hire-survey')) {
+        await BrowserService.page.waitForTimeout(2 * 1000);
+        let [noOption] = await BrowserService.page.$x(`//*[@value="no"]/parent::label`);
+        if (noOption) {
+            await noOption.click();
+            await BrowserService.page.waitForTimeout(1000);
+            let [otherOption] = await BrowserService.page.$x(`//*[@name="other"]/parent::label`);
+            if (otherOption) {
+                await otherOption.click();
+                let [continueButton] = await BrowserService.page.$x(`//*[@type="submit"]`);
+                await continueButton.click();
+            }
+        }
+    }
+
     // chose new job posting
-    await BrowserService.page.waitForXPath(`//*[@data-testid="JOBPOSTING_STARTNEW"]/parent::label`);
+    await BrowserService.page.waitForTimeout(2 * 1000);
     let [newJobPostingOption] = await BrowserService.page.$x(`//*[@data-testid="JOBPOSTING_STARTNEW"]/parent::label`);
-    await newJobPostingOption.click();
-    let [continueButton] = await BrowserService.page.$x(`//*[@type="submit"]`);
-    await continueButton.click();
+    if (newJobPostingOption) {
+        await newJobPostingOption.click();
+        let [continueButton] = await BrowserService.page.$x(`//*[@type="submit"]`);
+        await continueButton.click();
+    }
 
     //reset filled values
     await BrowserService.page.waitForTimeout(2 * 1000);
     let [resetButton] = await BrowserService.page.$x(`//*[text()='Reset']/parent::button`);
-    await resetButton.click();
+    if (resetButton) {
+        await resetButton.click();
+    }
 
 
 }
@@ -75,7 +95,7 @@ JobsServices.getJobBenefits = async(jobId) => {
 
     await BrowserService.page.goto(jobUrl, { waitUntil: "networkidle2" });
     let benefits = await BrowserService.page.$x(`//*[@id="benefits"]/div/div/div/div/div`);
-    let benefitsTexts = [];
+    let benefitsTexts = ['Other'];
     for (const benefitElemHandler of benefits) {
         benefitsTexts.push(await BrowserService.page.evaluate(benefitElemHandler => benefitElemHandler.innerText, benefitElemHandler));
     }
@@ -218,7 +238,7 @@ JobsServices.fillIn_location = async(data) => {
     if (generalLocation) {
         await generalLocation.click();
     }
-  
+
 
     // location input 
     await BrowserService.page.waitForXPath(`//*[@data-testid="city-autocomplete"]`);
@@ -593,6 +613,7 @@ JobsServices.fillIn_adBudget = async(budget) => {
         await budgetValueInput.click({ clickCount: 3 });
         await budgetValueInput.press('Backspace');
         await budgetValueInput.type(budgetInDollar);
+
         // second time : add budget value
         await BrowserService.page.waitForTimeout(1 * 1000);
         await budgetValueInput.click({ clickCount: 3 });
