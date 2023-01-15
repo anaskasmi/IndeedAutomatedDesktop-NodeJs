@@ -6,7 +6,7 @@ const path = require('path');
 let CrelateReportsService = {};
 
 CrelateReportsService.generateReport = async(jobsNumbers = []) => {
-    const durationOfRecentJobsInMinutes = 60 * 24 * 30;
+    const durationOfRecentJobsInMinutes = 60 * 24 * 10;
     let jobs = [];
     let response = await axios.get("https://app.crelate.com/api/pub/v1/jobs/recent", { params: { "api_key": process.env.CRELATE_API_KEY, take: 500, modified: durationOfRecentJobsInMinutes } });
     if (response.status != 200) {
