@@ -236,6 +236,37 @@ IndeedInvoiceService.generateInvoice = async(data) => {
 IndeedInvoiceService.getJobsFromAPI = async(jobNumbers, dates) => {
     const query = gql `${JobsData}`;
     const variables = {
+        "tableTotalQueryOptions": {
+            "advertiserSet": [],
+            "dateRanges": [{
+                "from": dates[0].toString(),
+                "to": dates[1].toString()
+            }],
+            "jobCompanyID": [],
+            "jobType": "SPONSORED",
+            "advertisementID": [],
+            "aggJobID": [],
+            "normTitle": [],
+            "jobCountryRegionCityID": [],
+            "measureFilters": [],
+            "extraDimensionFilters": []
+        },
+        "tableSummaryQueryOptions": {
+            "advertiserSet": [],
+            "dateRanges": [{
+                "from": dates[0].toString(),
+                "to": dates[1].toString()
+            }],
+            "jobCompanyID": [],
+            "jobType": "SPONSORED",
+            "advertisementID": [],
+            "aggJobID": [],
+            "normTitle": [],
+            "jobCountryRegionCityID": [],
+            "measureFilters": [],
+            "extraDimensionFilters": [],
+            "summarize": true
+        },
         "tableDetailsQueryOptions": {
             "advertiserSet": [],
             "dateRanges": [{
@@ -247,8 +278,7 @@ IndeedInvoiceService.getJobsFromAPI = async(jobNumbers, dates) => {
             "advertisementID": [],
             "aggJobID": [],
             "normTitle": [],
-            "jobLocationID": [],
-            "excludeNoCampaignRows": false,
+            "jobCountryRegionCityID": [],
             "measureFilters": [],
             "extraDimensionFilters": [],
             "limit": 1500,
@@ -270,7 +300,7 @@ IndeedInvoiceService.getJobsFromAPI = async(jobNumbers, dates) => {
             if (job.title.includes(jobNumber)) {
                 filteredJobs.push({
                     jobTitle: job.title,
-                    jobLocation: `${job.city}, ${job.admin1}`,
+                    jobLocation: `${job.city}, ${job.regionFullName}`,
                     jobTotalCost: job.sumCostLocal.toFixed(2),
                     averageCPC: job.avgCostPerClickLocal.toFixed(2),
                     averageCPA: job.avgCostPerApplyLocal.toFixed(2),
