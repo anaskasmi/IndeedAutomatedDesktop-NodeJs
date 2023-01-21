@@ -8,6 +8,7 @@ const Moment = require('moment');
 const fetch = require('node-fetch');
 var postmark = require("postmark");
 const headers = require('./graphQl/headers/headers');
+const { getCSRFToken } = require('../utilities/getCSRFToken');
 
 
 
@@ -23,7 +24,7 @@ ResumesService.getJobEmail = async(jobId) => {
         });
 
         if (!job || !job.jobDetails_emails || job.jobDetails_emails.length == 0) {
-            let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=YKGiLse8FqgRtGzotYeVVrLOXKBH0EXx`, {
+            let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${getCSRFToken()}`, {
                 headers: {
                     ...headers,
                     "accept": "application/json",

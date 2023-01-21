@@ -6,15 +6,16 @@ const { GraphQLClient, gql } = require('graphql-request')
 const { normalizeJobs } = require('../utilities/normalizeJobs');
 const { normalizeFullDetailedJob } = require('../utilities/normalizeFullDetailedJob');
 const { findRangeType } = require('../utilities/findRangeType');
-const headers = require('./graphQl/headers/headers');
 const saveDraftJobPost = require('./graphQl/mutations/saveDraftJobPost');
-const SetBudgetMutation = require('./graphQl/mutations/SetBudget.js');
 const draftJobPostFields = require('./graphQl/fragments/draftJobPostFields');
 
 //models
 const Job = require('./../models/Job')
 const BrowserService = require('./BrowserService');
 const Helpers = require('../utilities/Helpers');
+const { getHeaders } = require('../utilities/getHeaders');
+const { getCSRFToken } = require('../utilities/getCSRFToken');
+const { getCookiesAsText } = require('../utilities/getCookiesAsText');
 let JobsServices = {};
 
 JobsServices.openPostJobPage = async() => {
@@ -58,9 +59,9 @@ JobsServices.openPostJobPage = async() => {
 
 JobsServices.fetchJobDataByIDFromAPI = async(jobId) => {
 
-    let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${JobsServices.csrfToken}`, {
+    let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${getCSRFToken()}`, {
         headers: {
-            ...headers,
+            ...getHeaders(),
             "x-indeed-rpc": "1",
         }
     });
@@ -69,9 +70,9 @@ JobsServices.fetchJobDataByIDFromAPI = async(jobId) => {
 }
 
 JobsServices.getJobBenefits = async(jobId) => {
-    let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${JobsServices.csrfToken}`, {
+    let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${getCSRFToken()}`, {
         "headers": {
-            ...headers,
+            ...getHeaders(),
             "accept": "application/json",
             "indeed-client-application": "ic-jobs-management",
             "x-indeed-rpc": "1",
@@ -126,25 +127,15 @@ JobsServices.downloadCookies = async() => {
 }
 
 
-JobsServices.csrfToken = "aae1f9d1b889953f28294df60f165c1a";
-JobsServices.getCSRFToken = async() => {
-    if (!JobsServices.csrfToken) {
-        await BrowserService.page.evaluate(() => window.stop());
-        await BrowserService.page.goto(`https://employers.indeed.com/j?from=gnav-empcenter#jobs`);
-        await BrowserService.page.waitForXPath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'open')]`);
-        const html = await BrowserService.page.evaluate(() => document.querySelector('*').outerHTML);
-        JobsServices.csrfToken = html.split(`csrf":"`)[1];
-        JobsServices.csrfToken = JobsServices.csrfToken.split(`"`)[0];
-        console.log(JobsServices.csrfToken);
-    }
-}
 JobsServices.scrapAllJobs = async() => {
-    await JobsServices.getCSRFToken();
-    let response = await fetch(`https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=200&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&indeedcsrftoken=${JobsServices.csrfToken}`, {
-        headers,
+    let response = await fetch(`https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=50&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&hostedCampaigns=1&indeedcsrftoken=${getCSRFToken()}`, {
+        "headers": {
+            ...getHeaders(),
+        },
         "body": null,
         "method": "GET"
     });
+
 
     const data = await response.json();
     console.log('Jobs Found : ' + data.jobs.length);
@@ -231,8 +222,6 @@ JobsServices.fillIn_location = async(data) => {
     const [locationOption] = await BrowserService.page.$x(`//*[@data-testid="role-location-input"]`);
     await locationOption.click();
     await BrowserService.page.waitForTimeout(1 * 1000);
-    await locationOption.click();
-    await BrowserService.page.waitForTimeout(1 * 1000);
     // choose In person
     const [generalLocation] = await BrowserService.page.$x(`//*[contains(text(),'general location')]`);
     if (generalLocation) {
@@ -241,8 +230,8 @@ JobsServices.fillIn_location = async(data) => {
 
 
     // location input 
-    await BrowserService.page.waitForXPath(`//*[@data-testid="city-autocomplete"]`);
-    const [locationInput] = await BrowserService.page.$x(`//*[@data-testid="city-autocomplete"]`);
+    await BrowserService.page.waitForXPath(`//*[@name="local.location.autocomplete-on-the-road"]`);
+    const [locationInput] = await BrowserService.page.$x(`//*[@name="local.location.autocomplete-on-the-road"]`);
     await locationInput.type(data.location);
     await locationInput.type(' ');
     await BrowserService.page.waitForTimeout(1000);
@@ -473,7 +462,6 @@ JobsServices.fillIn_paymentPer = async(jobDetails_SalaryPer) => {
 
 JobsServices.fillIn_description = async(jobDescription) => {
 
-    await JobsServices.getCSRFToken();
     const jobId = (await BrowserService.page.url()).split('jobId=')[1];
 
     const mutation = gql `
@@ -492,7 +480,7 @@ JobsServices.fillIn_description = async(jobDescription) => {
 
     const client = new GraphQLClient("https://apis.indeed.com/graphql?locale=en-US&co=US", {
         headers: {
-            ...headers,
+            ...getHeaders(),
             "indeed-client-sub-app": "job-posting",
             "indeed-client-sub-app-component": "./JobDescriptionSheet",
         }
@@ -633,10 +621,9 @@ JobsServices.fillIn_adBudget = async(budget) => {
 }
 
 JobsServices.closeJob = async(jobId) => {
-    await JobsServices.getCSRFToken();
     let response = await fetch(`https://employers.indeed.com/graphql?indeedcsrftoken=${JobsServices.csrfToken}`, {
         headers: {
-            ...headers,
+            ...getHeaders(),
             "content-type": "application/json",
             "x-indeed-rpc": "1",
             "indeed-client-application": "ic-jobs-management",
