@@ -1,7 +1,7 @@
 const { getCookiesAsText } = require("./getCookiesAsText");
 
-function getHeaders() {
-
+const getHeaders = async() => {
+    const cookies = await getCookiesAsText();
     return {
         "accept": "*/*",
         "accept-language": "en-US,en;q=0.9",
@@ -18,7 +18,7 @@ function getHeaders() {
         "x-datadog-parent-id": "8923979220855812101",
         "x-datadog-sampling-priority": "1",
         "x-datadog-trace-id": "544488856865798606",
-        "cookie": getCookiesAsText(),
+        "cookie": cookies,
         "Referer": "https://employers.indeed.com/",
         "Referrer-Policy": "strict-origin-when-cross-origin"
     };

@@ -15,7 +15,7 @@ const BrowserService = require('./BrowserService');
 const Helpers = require('../utilities/Helpers');
 const { getHeaders } = require('../utilities/getHeaders');
 const { getCSRFToken } = require('../utilities/getCSRFToken');
-const { getCookiesAsText } = require('../utilities/getCookiesAsText');
+const closeJobMutation = require('./graphQl/mutations/closeJobMutation');
 let JobsServices = {};
 
 JobsServices.openPostJobPage = async() => {
@@ -58,10 +58,11 @@ JobsServices.openPostJobPage = async() => {
 }
 
 JobsServices.fetchJobDataByIDFromAPI = async(jobId) => {
-
-    let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${getCSRFToken()}`, {
+    const headers = await getHeaders();
+    const CSRFToken = await getCSRFToken();
+    let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${CSRFToken}`, {
         headers: {
-            ...getHeaders(),
+            ...headers,
             "x-indeed-rpc": "1",
         }
     });
@@ -70,9 +71,12 @@ JobsServices.fetchJobDataByIDFromAPI = async(jobId) => {
 }
 
 JobsServices.getJobBenefits = async(jobId) => {
-    let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${getCSRFToken()}`, {
+    const headers = await getHeaders();
+    const CSRFToken = await getCSRFToken();
+
+    let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${CSRFToken}`, {
         "headers": {
-            ...getHeaders(),
+            ...headers,
             "accept": "application/json",
             "indeed-client-application": "ic-jobs-management",
             "x-indeed-rpc": "1",
@@ -128,9 +132,11 @@ JobsServices.downloadCookies = async() => {
 
 
 JobsServices.scrapAllJobs = async() => {
-    let response = await fetch(`https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=50&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&hostedCampaigns=1&indeedcsrftoken=${getCSRFToken()}`, {
+    const headers = await getHeaders();
+    const CSRFToken = await getCSRFToken();
+    let response = await fetch(`https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=50&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&hostedCampaigns=1&indeedcsrftoken=${CSRFToken}`, {
         "headers": {
-            ...getHeaders(),
+            ...headers,
         },
         "body": null,
         "method": "GET"
@@ -158,10 +164,17 @@ JobsServices.getJobDataFromDb = async(jobId) => {
 }
 
 JobsServices.skipDuplicateJobPage = async() => {
-    let [createNewJobOption] = await BrowserService.page.$x(`//*[@data-testid="create-new-job"]/parent::label`)
-    if (createNewJobOption) {
-        await createNewJobOption.click();
-        await JobsServices.clickSaveAndContinue();
+    const url = await BrowserService.page.url();
+    if (url.includes('duplicate-title-warning')) {
+        let [createNewJobOption] = await BrowserService.page.$x(`//*[@data-testid="create-new-job"]/parent::label`)
+        if (createNewJobOption) {
+            await createNewJobOption.click();
+            const [submit] = await BrowserService.page.$x(`//*[@type="submit"]/parent::div`);
+            if (submit) {
+                await submit.click({ clickCount: 3 });
+                await BrowserService.page.waitForTimeout(3000);
+            }
+        }
     }
 }
 JobsServices.unlockCompanyNameInput = async() => {
@@ -243,12 +256,12 @@ JobsServices.fillIn_location = async(data) => {
 
 JobsServices.clickSaveAndContinue = async() => {
     const [saveAndContinue] = await BrowserService.page.$x(`//*[@type="submit"]/parent::div`);
+
     if (saveAndContinue) {
         await saveAndContinue.click({ clickCount: 3 });
         await BrowserService.page.waitForTimeout(3000);
         // skip duplicate job page
         await JobsServices.skipDuplicateJobPage();
-
     } else {
         console.log('Error : cant find save button...');
     }
@@ -317,6 +330,12 @@ JobsServices.fillIn_hiresNumber = async(jobDetails_intHiresNeeded) => {
 
 JobsServices.fillIn_deadline = async(jobDetails_expectedHireDate) => {
     await BrowserService.page.select('[data-testid="job-expected-hire-date"]', jobDetails_expectedHireDate)
+    let [noCallsOption] = await BrowserService.page.$x(`//*[@data-testid="opt-out-option"]/parent::div`)
+    if (noCallsOption) {
+        await noCallsOption.click();
+    }
+
+
 }
 
 JobsServices.fillIn_paymentType = async(jobDetails_salaryRangeType, jobDetails_SalaryFrom, jobDetails_SalaryTo) => {
@@ -477,10 +496,10 @@ JobsServices.fillIn_description = async(jobDescription) => {
             }
         }
     }
-
+    const headers = await getHeaders();
     const client = new GraphQLClient("https://apis.indeed.com/graphql?locale=en-US&co=US", {
         headers: {
-            ...getHeaders(),
+            ...headers,
             "indeed-client-sub-app": "job-posting",
             "indeed-client-sub-app-component": "./JobDescriptionSheet",
         }
@@ -489,6 +508,7 @@ JobsServices.fillIn_description = async(jobDescription) => {
     await BrowserService.page.reload()
     await BrowserService.page.waitForTimeout(2000);
 }
+
 
 JobsServices.fillIn_isResumeRequired = async() => {
     await BrowserService.page.waitForXPath(`//*[contains(@name,"resumeRequired") and @value="YES"]/parent::label`);
@@ -620,25 +640,25 @@ JobsServices.fillIn_adBudget = async(budget) => {
     }
 }
 
-JobsServices.closeJob = async(jobId) => {
-    let response = await fetch(`https://employers.indeed.com/graphql?indeedcsrftoken=${JobsServices.csrfToken}`, {
+JobsServices.closeJob = async(job) => {
+    throw Error('');
+    const variables = {
+        "id": job._id,
+        "status": "DELETED",
+    }
+    const headers = await getHeaders();
+    const client = new GraphQLClient("https://apis.indeed.com/graphql?locale=en-US&co=US", {
         headers: {
-            ...getHeaders(),
-            "content-type": "application/json",
-            "x-indeed-rpc": "1",
-            "indeed-client-application": "ic-jobs-management",
-            "Referer": `https://employers.indeed.com/em/job-details/${jobId}`,
-            "Referrer-Policy": "strict-origin-when-cross-origin"
-        },
-        "body": `{\"query\":\"\\nmutation batchUpdateJobStatus {\\n_${jobId}: updateJob(id: \\\"${jobId}\\\", jobInput: { status: DELETED }) {\\n    status\\n}\\n}\"}`,
-        "method": "POST"
-    });
+            ...headers,
+        }
+    })
+    const response = await client.request(closeJobMutation, variables);
     if (response.status == 200) {
-        console.log("Job closed Successfully :" + `https://employers.indeed.com/em/job-details/${jobId}`);
+        console.log("Job closed Successfully, check at :" + `https://employers.indeed.com/em/job-details/${job.jobId}`);
     } else {
         console.log("Job closing failed !");
-        await BrowserService.page.goto(`https://employers.indeed.com/em/job-details/${jobId}`, { waitUntil: 'load' });
     }
+    await BrowserService.page.goto(`https://employers.indeed.com/em/job-details/${job.jobId}`, { waitUntil: 'load' });
 }
 
 JobsServices.fillIn_email = async(jobDetails_emails) => {

@@ -396,7 +396,7 @@ JobsController.click_notIntersted = async(req, res) => {
 JobsController.closeJob = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.closeJob(req.body.jobId);
+        await JobsServices.closeJob(req.body);
         return res.status(200).json({ "msg": "Job Closed successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });

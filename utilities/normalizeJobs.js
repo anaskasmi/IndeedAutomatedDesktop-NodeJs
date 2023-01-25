@@ -5,6 +5,7 @@ module.exports.normalizeJobs = async(jobsArray) => {
     for (const unormalizedJob of jobsArray) {
         const normalizedJob = new Job({
             job_id: unormalizedJob.id ? unormalizedJob.id : null,
+            job_uuid: unormalizedJob.jobUuid ? unormalizedJob.jobUuid : null,
             status: unormalizedJob.status ? unormalizedJob.status : null,
             dateCreated: unormalizedJob.dateCreated ? unormalizedJob.dateCreated : null,
             jobDescription: unormalizedJob.description ? unormalizedJob.description : null,

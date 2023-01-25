@@ -1,12 +1,13 @@
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 
-function getCookiesAsText() {
+const getCookiesAsText = async() => {
     let cookieData = ""
     let cookies;
     try {
-        const file = fs.readFileSync("cookies/cookies.json", 'utf8');
-        cookies = JSON.parse(file);
+        const COOKIES_URI = path.join('cookies', 'cookies.json');
+        const cookiesString = await fs.readFile(COOKIES_URI);
+        cookies = JSON.parse(cookiesString);
     } catch (err) {
         console.error(err);
         return;

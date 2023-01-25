@@ -49,18 +49,7 @@ BrowserService.getNewBrowser = async function() {
     this.browser.on('targetcreated', async target => {
         if (target.type() === 'page') {
             const page = await target.page();
-            if (process.env.PROXY_ACTIVATED == 'true') {
-                console.log('Enabling USA proxy..')
-                await page.authenticate({
-                    username: process.env.PROXY_USERNAME,
-                    password: process.env.PROXY_PASSWORD,
-                });
-            }
-            try {
-                await loadCookies(page);
-            } catch (error) {
-                console.log('couldnt load cookies');
-            }
+            await loadCookies(page);
         }
     });
     await BrowserService.getNewPage();

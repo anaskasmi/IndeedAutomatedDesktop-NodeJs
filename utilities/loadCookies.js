@@ -10,8 +10,6 @@ const loadCookies = async(page) => {
     } catch (error) {
         console.log(error)
     }
-
-
 }
 
 exports.loadCookies = loadCookies;

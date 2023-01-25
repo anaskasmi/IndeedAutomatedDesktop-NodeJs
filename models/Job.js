@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const JobSchema = mongoose.Schema({
     //general info start
     job_id: { type: String },
+    job_uuid: { type: String },
     status: { type: String },
     country: { type: String },
     dateCreated: { type: String },
@@ -16,7 +17,7 @@ const JobSchema = mongoose.Schema({
     //?value 
     budget: { type: String },
     //? Daily, Monthly..
-    budget_period: { type: String },    
+    budget_period: { type: String },
     //? RECURRING,...
     budget_type: { type: String },
     budget_outOfBudget: { type: String },
