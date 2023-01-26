@@ -1,7 +1,7 @@
 const ExcelJS = require('exceljs');
 const { GraphQLClient, gql } = require('graphql-request');
-const headers = require('./graphQl/headers/headers');
 const JobsData = require('./graphQl/queries/JobsData');
+const { getHeaders } = require('../utilities/getHeaders');
 
 let IndeedInvoiceService = {};
 
@@ -288,6 +288,7 @@ IndeedInvoiceService.getJobsFromAPI = async(jobNumbers, dates) => {
             }]
         }
     }
+    const headers = await getHeaders();
 
     const client = new GraphQLClient("https://apis.indeed.com/graphql?locale=en-US&co=US", { headers })
     let response = await client.request(query, variables);
