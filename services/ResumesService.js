@@ -1,23 +1,19 @@
 const BrowserService = require('./BrowserService');
 const path = require('path');
 const fs = require('fs');
-const { resolve, join } = require('path');
-const nodemailer = require('nodemailer');
 const Job = require('./../models/Job')
 const Moment = require('moment');
 const fetch = require('node-fetch');
-var postmark = require("postmark");
-const headers = require('./graphQl/headers/headers');
+const postmark = require("postmark");
 const { getCSRFToken } = require('../utilities/getCSRFToken');
-
-
-
+const { getHeaders } = require('../utilities/getHeaders');
 
 let ResumesService = {};
 
-
 ResumesService.getJobEmail = async(jobId) => {
     try {
+        const headers = await getHeaders();
+
         //if job has email return it 
         let job = await Job.findOne({
             job_id: jobId,
@@ -109,7 +105,6 @@ ResumesService.getCandidatesDetails = async(jobId) => {
 ResumesService.transferResumeOfOneCandidate = async(jobId, candidateId) => {
     if (!BrowserService.page) {
         await BrowserService.getNewBrowser();
-        // throw Error('Chromuim browser not open, please open it first');
     }
 
     //find the job
@@ -198,15 +193,18 @@ ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
     }
 }
 ResumesService.getCandidatesBetweenTwoDates = async(startDate, endDate) => {
-
+    const headers = await getHeaders();
+    let csrf = await getCSRFToken();
     let response = await fetch("https://employers.indeed.com/api/ctws/preview/candidates?offset=0&encryptedJobId=0", {
         headers: {
             ...headers,
             "accept": "application/json",
             "accept-language": "en-US,en;q=0.9",
-            "indeed-client-application": "ic-jobs-management",
-            "x-indeed-rpc": "1",
-
+            "cache-control": "no-cache",
+            "expires": "0",
+            "indeed-client-application": "candidate-list",
+            "pragma": "no-cache",
+            "csrf": csrf
         },
         "body": null,
         "method": "GET"
