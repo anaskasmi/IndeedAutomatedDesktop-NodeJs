@@ -71,7 +71,6 @@ JobsServices.fetchJobDataByIDFromAPI = async(jobId) => {
 }
 
 JobsServices.saveCookies = async() => {
-    console.log("saveCookies called");
     if (!BrowserService.page) {
         await BrowserService.getNewBrowser();
     }
@@ -81,7 +80,6 @@ JobsServices.saveCookies = async() => {
     const COOKIES_URI = path.join('cookies', 'cookies.json');
     const cookies = await BrowserService.page.cookies();
     fs.writeFileSync(COOKIES_URI, JSON.stringify(cookies, null, 2));
-    console.log('cookies saved')
 }
 
 JobsServices.getJobBenefits = async(jobId) => {
