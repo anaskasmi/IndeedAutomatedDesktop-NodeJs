@@ -24,6 +24,7 @@ router.post('/updateJob', UpdateJobController.updateJob)
 router.get('/getJobDataFromDb/:id', JobsController.getJobDataFromDb)
 
 //reposting routes
+router.get('/saveCookies', JobsController.saveCookies)
 router.get('/openPostJobPage', JobsController.openPostJobPage)
 router.get('/unlockCompanyNameInput', JobsController.unlockCompanyNameInput)
 router.post('/fillIn_CompanyName', JobsController.fillIn_CompanyName)

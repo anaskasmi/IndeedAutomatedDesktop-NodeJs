@@ -70,6 +70,20 @@ JobsServices.fetchJobDataByIDFromAPI = async(jobId) => {
     return response.json();
 }
 
+JobsServices.saveCookies = async() => {
+    console.log("saveCookies called");
+    if (!BrowserService.page) {
+        await BrowserService.getNewBrowser();
+    }
+    if (!fs.existsSync('cookies')) {
+        fs.mkdirSync('cookies');
+    }
+    const COOKIES_URI = path.join('cookies', 'cookies.json');
+    const cookies = await BrowserService.page.cookies();
+    fs.writeFileSync(COOKIES_URI, JSON.stringify(cookies, null, 2));
+    console.log('cookies saved')
+}
+
 JobsServices.getJobBenefits = async(jobId) => {
     const headers = await getHeaders();
     const CSRFToken = await getCSRFToken();

@@ -82,6 +82,16 @@ JobsController.getJobFullDetails = async(req, res) => {
 }
 
 
+JobsController.saveCookies = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        await JobsServices.saveCookies();
+        return res.status(200).json({ "msg": "saved successfully" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
+
 JobsController.openPostJobPage = async(req, res) => {
     req.setTimeout(0);
     try {
