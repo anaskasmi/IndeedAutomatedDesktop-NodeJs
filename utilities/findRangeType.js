@@ -1,4 +1,4 @@
-module.exports.findRangeType = async(jobDetails_SalaryFrom, jobDetails_SalaryTo) => {
+module.exports.findRangeType = (jobDetails_SalaryFrom, jobDetails_SalaryTo) => {
     let salaryRangeType = null;
     if (jobDetails_SalaryFrom && jobDetails_SalaryTo) {
         salaryRangeType = "RANGE";
@@ -7,6 +7,8 @@ module.exports.findRangeType = async(jobDetails_SalaryFrom, jobDetails_SalaryTo)
     } else if (jobDetails_SalaryTo) {
         salaryRangeType = "UP_TO";
     }
-
+    if (!salaryRangeType) {
+        throw Error('Cant find range Type')
+    }
     return salaryRangeType;
 }

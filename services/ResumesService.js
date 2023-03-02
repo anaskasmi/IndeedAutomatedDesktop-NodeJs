@@ -5,22 +5,21 @@ const Job = require('./../models/Job')
 const Moment = require('moment');
 const fetch = require('node-fetch');
 const postmark = require("postmark");
-const { getCSRFToken } = require('../utilities/getCSRFToken');
-const { getHeaders } = require('../utilities/getHeaders');
+const CookiesService = require('./cookiesService');
 
 let ResumesService = {};
 
 ResumesService.getJobEmail = async(jobId) => {
     try {
-        const headers = await getHeaders();
+        const headers = await CookiesService.getHeaders();
 
         //if job has email return it 
         let job = await Job.findOne({
             job_id: jobId,
         });
-
+        const CSRFToken = await CookiesService.getCSRFToken();
         if (!job || !job.jobDetails_emails || job.jobDetails_emails.length == 0) {
-            let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${getCSRFToken()}`, {
+            let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${CSRFToken}`, {
                 headers: {
                     ...headers,
                     "accept": "application/json",
@@ -193,8 +192,8 @@ ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
     }
 }
 ResumesService.getCandidatesBetweenTwoDates = async(startDate, endDate) => {
-    const headers = await getHeaders();
-    let csrf = await getCSRFToken();
+    const headers = await CookiesService.getHeaders();
+    const CSRFToken = await CookiesService.getCSRFToken();
     let response = await fetch("https://employers.indeed.com/api/ctws/preview/candidates?offset=0&encryptedJobId=0", {
         headers: {
             ...headers,
@@ -204,7 +203,7 @@ ResumesService.getCandidatesBetweenTwoDates = async(startDate, endDate) => {
             "expires": "0",
             "indeed-client-application": "candidate-list",
             "pragma": "no-cache",
-            "csrf": csrf
+            "csrf": CSRFToken
         },
         "body": null,
         "method": "GET"

@@ -442,15 +442,6 @@ JobsController.close_questions = async(req, res) => {
         return res.status(500).json({ error: error.message });
     }
 }
-JobsController.click_skip = async(req, res) => {
-    req.setTimeout(0);
-    try {
-        await JobsServices.click_skip();
-        return res.status(200).json({ "msg": "Skip clicked successfully" });
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
-}
 
 JobsController.fillIn_isJobRemote = async(req, res) => {
     req.setTimeout(0);

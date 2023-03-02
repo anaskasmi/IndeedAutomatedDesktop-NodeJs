@@ -13,9 +13,8 @@ const draftJobPostFields = require('./graphQl/fragments/draftJobPostFields');
 const Job = require('./../models/Job')
 const BrowserService = require('./BrowserService');
 const Helpers = require('../utilities/Helpers');
-const { getHeaders } = require('../utilities/getHeaders');
-const { getCSRFToken } = require('../utilities/getCSRFToken');
 const closeJobMutation = require('./graphQl/mutations/closeJobMutation');
+const CookiesService = require('./cookiesService');
 let JobsServices = {};
 
 JobsServices.openPostJobPage = async() => {
@@ -58,8 +57,8 @@ JobsServices.openPostJobPage = async() => {
 }
 
 JobsServices.fetchJobDataByIDFromAPI = async(jobId) => {
-    const headers = await getHeaders();
-    const CSRFToken = await getCSRFToken();
+    const headers = await CookiesService.getHeaders();
+    const CSRFToken = await CookiesService.getCSRFToken();
     let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${CSRFToken}`, {
         headers: {
             ...headers,
@@ -83,8 +82,8 @@ JobsServices.saveCookies = async() => {
 }
 
 JobsServices.getJobBenefits = async(jobId) => {
-    const headers = await getHeaders();
-    const CSRFToken = await getCSRFToken();
+    const headers = await CookiesService.getHeaders();
+    const CSRFToken = await CookiesService.getCSRFToken();
 
     let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${CSRFToken}`, {
         "headers": {
@@ -135,7 +134,6 @@ JobsServices.getJobFullDetails = async(jobId) => {
 
 
 JobsServices.downloadCookies = async() => {
-
     const cookies = await BrowserService.page.cookies();
     await fs.writeFile(path.join('cookies', 'cookies.json'), JSON.stringify(cookies, null, 2), function(err, result) {
         if (err) console.log('error in saving cookies', err);
@@ -144,8 +142,8 @@ JobsServices.downloadCookies = async() => {
 
 
 JobsServices.scrapAllJobs = async() => {
-    const headers = await getHeaders();
-    const CSRFToken = await getCSRFToken();
+    const headers = await CookiesService.getHeaders();
+    const CSRFToken = await CookiesService.getCSRFToken();
     let response = await fetch(`https://employers.indeed.com/plugin/icjobsmanagement/api/jobs?page=1&pageSize=50&sort=DATECREATED&order=DESC&status=ACTIVE%2CPAUSED&draftJobs=true&hostedCampaigns=1&indeedcsrftoken=${CSRFToken}`, {
         "headers": {
             ...headers,
@@ -362,7 +360,11 @@ JobsServices.fillIn_paymentType = async(jobDetails_salaryRangeType, jobDetails_S
         jobDetails_salaryRangeType = findRangeType(jobDetails_SalaryFrom, jobDetails_SalaryTo)
         let jobSalaryRangeType = await BrowserService.page.$(`[name*='salaryRangeType']`);
         if (jobSalaryRangeType) {
-            await BrowserService.page.select(`[name*='salaryRangeType']`, jobDetails_salaryRangeType)
+            try {
+                await BrowserService.page.select(`[name*='salaryRangeType']`, jobDetails_salaryRangeType)
+            } catch (error) {
+                console.log(error);
+            }
             return true;
         }
     } else {
@@ -396,12 +398,12 @@ JobsServices.fillIn_salaryFromAndTo = async(jobDetails_SalaryFrom, jobDetails_Sa
                 await jobSalary1.click({ clickCount: 3 });
                 await jobSalary1.press('Backspace');
                 await jobSalary1.type(jobDetails_SalaryFrom)
-                break
             } else {
                 await jobSalary1.click({ clickCount: 3 });
                 await jobSalary1.press('Backspace');
-                break
             }
+            break
+
         case 'RANGE':
             //fill in salary 1 with jobDetails_SalaryFrom and fill in salary 2 with jobDetails_SalaryTo
             [jobSalary1] = await BrowserService.page.$x(`//*[@id="local.temp-salary.minimum"]`);
@@ -508,7 +510,7 @@ JobsServices.fillIn_description = async(jobDescription) => {
             }
         }
     }
-    const headers = await getHeaders();
+    const headers = await CookiesService.getHeaders();
     const client = new GraphQLClient("https://apis.indeed.com/graphql?locale=en-US&co=US", {
         headers: {
             ...headers,
@@ -530,27 +532,35 @@ JobsServices.fillIn_isResumeRequired = async() => {
 }
 
 JobsServices.click_confirm = async() => {
-    await BrowserService.page.waitForXPath(`//*[text()='Confirm']/parent::button`);
+    await BrowserService.page.waitForTimeout(3000);
     let [confirmButton] = await BrowserService.page.$x(`//*[text()='Confirm']/parent::button`);
-    await confirmButton.click();
+    if (confirmButton) {
+        await confirmButton.click();
+    } else {
+        await BrowserService.page.waitForTimeout(3000);
+        [confirmButton] = await BrowserService.page.$x(`//*[text()='Confirm']/parent::button`);
+        if (confirmButton) {
+            await confirmButton.click();
+        }
+    }
 }
 
 JobsServices.click_skip = async() => {
-    await BrowserService.page.waitForTimeout(1000);
-    await BrowserService.page.waitForXPath(`//*[text()='Skip']/parent::button`);
+    await BrowserService.page.waitForTimeout(3000);
     let [skipButton] = await BrowserService.page.$x(`//*[text()='Skip']/parent::button`);
-    await skipButton.click();
+    if (skipButton) {
+        await skipButton.click();
+    } else {
+        await BrowserService.page.waitForTimeout(5000);
+        [skipButton] = await BrowserService.page.$x(`//*[text()='Skip']/parent::button`);
+        if (skipButton) {
+            await skipButton.click();
+        }
+    }
 }
 JobsServices.skip_preview_page = async() => {
-
-    await BrowserService.page.waitForXPath(`//*[text()='Confirm']/parent::button`);
-    let [confirmButton] = await BrowserService.page.$x(`//*[text()='Confirm']/parent::button`);
-    await confirmButton.click();
-    await BrowserService.page.waitForTimeout(5000);
-    await BrowserService.page.waitForXPath(`//*[text()='Skip']/parent::button`);
-    let [skipButton] = await BrowserService.page.$x(`//*[text()='Skip']/parent::button`);
-    await skipButton.click();
-
+    await JobsServices.click_confirm();
+    await JobsServices.click_skip();
 }
 JobsServices.review_potential_matches = async() => {
     await BrowserService.page.waitForXPath(`//button[@value="MAYBE"]`);
@@ -658,7 +668,7 @@ JobsServices.closeJob = async(job) => {
         "id": job._id,
         "status": "DELETED",
     }
-    const headers = await getHeaders();
+    const headers = await CookiesService.getHeaders();
     const client = new GraphQLClient("https://apis.indeed.com/graphql?locale=en-US&co=US", {
         headers: {
             ...headers,
@@ -690,18 +700,15 @@ JobsServices.close_questions = async() => {
     for (const xButton of xButtons) {
         await xButton.click();
     }
+    // unselect phone screen
+    let [phoneScreenCheckBox] = await BrowserService.page.$x(`//*[@data-testid="custom-phone-screen"]//label`);
+    await phoneScreenCheckBox.click();
+
     let [submitButton] = await BrowserService.page.$x(`//button[@type="submit"]`);
     await submitButton.click();
 
 }
 
-JobsServices.click_skip = async() => {
-    await BrowserService.page.waitForTimeout(1000);
-    let skipButton = await BrowserService.page.$x(`//span[contains(text(),'Skip')]`);
-
-    if (skipButton && skipButton[1])
-        await skipButton[1].click();
-}
 
 JobsServices.fillIn_isJobRemote = async() => {
     await BrowserService.page.waitForXPath(`//*[@for="radio-work_remotely-NO"]`);
