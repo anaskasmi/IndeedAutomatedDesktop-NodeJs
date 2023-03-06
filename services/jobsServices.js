@@ -174,16 +174,14 @@ JobsServices.getJobDataFromDb = async(jobId) => {
 }
 
 JobsServices.skipDuplicateJobPage = async() => {
-    const url = await BrowserService.page.url();
-    if (url.includes('duplicate-title-warning')) {
-        let [createNewJobOption] = await BrowserService.page.$x(`//*[@data-testid="create-new-job"]/parent::label`)
-        if (createNewJobOption) {
-            await createNewJobOption.click();
-            const [submit] = await BrowserService.page.$x(`//*[@type="submit"]/parent::div`);
-            if (submit) {
-                await submit.click({ clickCount: 3 });
-                await BrowserService.page.waitForTimeout(3000);
-            }
+    await BrowserService.page.waitForTimeout(2000);
+    let [createNewJobOption] = await BrowserService.page.$x(`//*[@data-testid="create-new-job"]/parent::label`)
+    if (createNewJobOption) {
+        await createNewJobOption.click();
+        const [submit] = await BrowserService.page.$x(`//*[@type="submit"]/parent::div`);
+        if (submit) {
+            await submit.click({ clickCount: 3 });
+            await BrowserService.page.waitForTimeout(3000);
         }
     }
 }
@@ -447,7 +445,7 @@ JobsServices.fillIn_paymentFrom = async(jobDetails_SalaryFrom) => {
 }
 
 JobsServices.fillIn_benefits = async(benefits) => {
-    if (!benefits)
+    if (!benefits || benefits.length == 0)
         return;
 
     await JobsServices.expandAllSections();
