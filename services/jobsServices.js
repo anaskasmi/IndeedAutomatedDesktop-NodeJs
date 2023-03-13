@@ -690,6 +690,12 @@ JobsServices.fillIn_email = async(jobDetails_emails) => {
     await Helpers.clearInput();
     await emailInput.type(jobDetails_emails);
     await BrowserService.page.waitForTimeout(2000);
+    let [optOutInput] = await BrowserService.page.$x(`//*[@data-testid="opt-out-option"]`);
+    if (optOutInput) {
+        await optOutInput.click({ clickCount: 3 });
+    }
+
+
 }
 
 JobsServices.close_questions = async() => {
