@@ -244,7 +244,7 @@ JobsServices.fillIn_location = async(data) => {
     await locationOption.click();
     await BrowserService.page.waitForTimeout(1 * 1000);
     // choose In person
-    const [generalLocation] = await BrowserService.page.$x(`//*[contains(text(),'general location')]`);
+    const [generalLocation] = await BrowserService.page.$x(`//*[contains(text(),'General location')]`);
     if (generalLocation) {
         await generalLocation.click();
     }
