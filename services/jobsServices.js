@@ -673,9 +673,6 @@ JobsServices.fillIn_adBudget = async(budget) => {
         // add budget Period
         await BrowserService.page.select(`select#budgetPeriod`, "DAILY")
 
-        // add urgent label
-        let [urgentLabel] = await BrowserService.page.$x(`//*[@name="urgentlyHiringCheckbox"]/parent::label`);
-        await urgentLabel.click();
         return true;
     } else {
         return false;
