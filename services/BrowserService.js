@@ -31,16 +31,16 @@ BrowserService.getNewBrowser = async function() {
     }
 
     // get new browser
-    const browserFetcher = puppeteer.createBrowserFetcher();
+    // const browserFetcher = puppeteer.createBrowserFetcher();
 
-    const revisionInfo = await browserFetcher.download('809590.');
+    // const revisionInfo = await browserFetcher.download('639839');
 
     this.browser = await puppeteer.launch({
         headless: false,
-        executablePath: revisionInfo.executablePath,
-        // args,
+        // executablePath: revisionInfo.executablePath,
+        args,
         // defaultViewport: null,
-        // executablePath: process.platform == "win32" ? process.env.CHROME_EXECUTABLE_PATH_WINDOWS : process.env.CHROME_EXECUTABLE_PATH_MAC,
+        executablePath: process.platform == "win32" ? process.env.CHROME_EXECUTABLE_PATH_WINDOWS : process.env.CHROME_EXECUTABLE_PATH_MAC,
         dumpio: true
     });
 
