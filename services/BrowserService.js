@@ -40,7 +40,7 @@ BrowserService.getNewBrowser = async function() {
         // executablePath: revisionInfo.executablePath,
         args,
         // defaultViewport: null,
-        // executablePath: process.platform == "win32" ? process.env.CHROME_EXECUTABLE_PATH_WINDOWS : process.env.CHROME_EXECUTABLE_PATH_MAC,
+        executablePath: process.platform == "win32" ? process.env.CHROME_EXECUTABLE_PATH_WINDOWS : process.env.CHROME_EXECUTABLE_PATH_MAC,
         dumpio: true
     });
 
