@@ -37,7 +37,6 @@ BrowserService.getNewBrowser = async function() {
 
     this.browser = await puppeteer.launch({
         headless: false,
-        product: 'firefox',
         executablePath: revisionInfo.executablePath,
         // args,
         // defaultViewport: null,
