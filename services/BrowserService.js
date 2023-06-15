@@ -2,7 +2,6 @@ const puppeteer = require('puppeteer-extra')
 const StealthPlugin = require('puppeteer-extra-plugin-stealth')
 puppeteer.use(StealthPlugin());
 const CookiesService = require('./cookiesService');
-
 let args = [
     '--no-sandbox',
     '--disable-setuid-sandbox',
@@ -26,20 +25,23 @@ BrowserService.closeBrowser = async function() {
 
 //get new browser and set up its params
 BrowserService.getNewBrowser = async function() {
-    if (process.env.PROXY_ACTIVATED == 'true') {
-        args.push('--proxy-server=' + process.env.PROXY_SERVER);
-    }
     //allow only one browser and one page to be opened
     if (this.browser && (await this.browser.pages()).length > 0) {
         return;
     }
 
     // get new browser
+    const browserFetcher = puppeteer.createBrowserFetcher();
+
+    const revisionInfo = await browserFetcher.download('809590.');
+
     this.browser = await puppeteer.launch({
         headless: false,
-        args,
+        product: 'firefox',
+        executablePath: revisionInfo.executablePath,
+        // args,
         // defaultViewport: null,
-        executablePath: process.platform == "win32" ? process.env.CHROME_EXECUTABLE_PATH_WINDOWS : process.env.CHROME_EXECUTABLE_PATH_MAC,
+        // executablePath: process.platform == "win32" ? process.env.CHROME_EXECUTABLE_PATH_WINDOWS : process.env.CHROME_EXECUTABLE_PATH_MAC,
         dumpio: true
     });
 
@@ -59,53 +61,6 @@ BrowserService.getNewPage = async function() {
     //get new page 
     BrowserService.page = await BrowserService.browser.newPage();
     BrowserService.page.setDefaultTimeout(1 * 60 * 1000);
-    // BrowserService.page.on('response', async(response) => {
-    //     try {
-
-
-    //         if (response.url().includes('orientation-sheet')) {
-    //             try {
-    //                 await this.page.waitForTimeout(2000);
-    //                 let [startFromScratchButton] = await this.page.$x(`//*[@id="StartFromScratch-radio"]/parent::label`);
-    //                 if (startFromScratchButton) {
-    //                     await startFromScratchButton.click()
-    //                 }
-    //             } catch (error) {
-    //                 console.log('couldnt click :  startFromScratchButton ')
-    //             }
-
-    //             try {
-    //                 await this.page.waitForTimeout(2000);
-    //                 let [startOverButton] = await this.page.$x(`//*[text()='Start over']/parent::button`)
-    //                 if (startOverButton) {
-    //                     await startOverButton.click()
-    //                 }
-    //             } catch (error) {
-    //                 console.log('couldnt click :  startOverButton ')
-    //             }
-
-    //             try {
-    //                 await this.page.waitForTimeout(4000);
-    //                 let [isIntroPage] = await this.page.$x(`//*[text()='How would you like to build your post?']`)
-    //                 let [continueButton] = await this.page.$x(`//*[text()='Continue']/parent::span/parent::span`)
-    //                 if (continueButton && isIntroPage) {
-    //                     await continueButton.click()
-    //                 }
-    //             } catch (error) {
-    //                 console.log('couldnt click :  continueButton in Intro page ')
-    //             }
-
-
-
-    //         }
-
-
-
-    //     } catch (error) {
-    //         console.log('error catched on  event listener : ' + error)
-    //     }
-
-    // });
 }
 
 
