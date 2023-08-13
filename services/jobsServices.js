@@ -280,25 +280,29 @@ JobsServices.clickSaveAndContinue = async() => {
 JobsServices.fillIn_isJobFullTimeOrPartTime = async(jobDetails_WhatTypeOfJobIsIt) => {
 
     //full time
-    if (jobDetails_WhatTypeOfJobIsIt == 'FULLTIME') {
-        await BrowserService.page.waitForXPath(`//*[text()='Full-time']`);
-        let [fullTimeRadioButton] = await BrowserService.page.$x(`//*[text()='Full-time']`);
-        await fullTimeRadioButton.click();
-    }
+    // if (jobDetails_WhatTypeOfJobIsIt == 'FULLTIME') {
+    //     await BrowserService.page.waitForXPath(`//*[text()='Full-time']`);
+    //     let [fullTimeRadioButton] = await BrowserService.page.$x(`//*[text()='Full-time']`);
+    //     await fullTimeRadioButton.click();
+    // }
 
     //part time    
-    else if (jobDetails_WhatTypeOfJobIsIt == 'PARTTIME') {
+    if (jobDetails_WhatTypeOfJobIsIt == 'PARTTIME') {
         await BrowserService.page.waitForXPath(`//*[text()='Part-time']`);
         let [PartTimeRadioButton] = await BrowserService.page.$x(`//*[text()='Part-time']`);
         await PartTimeRadioButton.click();
-    }
-    // else full time
-    else {
-        console.log('we didnt know the type of employment :' + jobDetails_WhatTypeOfJobIsIt, 'now choosing full time...')
+        // disabling full time
         await BrowserService.page.waitForXPath(`//*[text()='Full-time']`);
         let [fullTimeRadioButton] = await BrowserService.page.$x(`//*[text()='Full-time']`);
         await fullTimeRadioButton.click();
     }
+    // // else full time
+    // else {
+    //     console.log('we didnt know the type of employment :' + jobDetails_WhatTypeOfJobIsIt, 'now choosing full time...')
+    //     await BrowserService.page.waitForXPath(`//*[text()='Full-time']`);
+    //     let [fullTimeRadioButton] = await BrowserService.page.$x(`//*[text()='Full-time']`);
+    //     await fullTimeRadioButton.click();
+    // }
 }
 
 
@@ -545,8 +549,11 @@ JobsServices.fillIn_description = async(jobDescription) => {
 
 
 JobsServices.fillIn_isResumeRequired = async() => {
-    await BrowserService.page.waitForXPath(`//*[contains(@name,"resumeRequired") and @value="YES"]/parent::label`);
-    let [resumeRequiredButton] = await BrowserService.page.$x(`//*[contains(@name,"resumeRequired") and @value="YES"]/parent::label`);
+    let [resumeRequiredMenu] = await BrowserService.page.$x(`//*[text()='Ask potential candidates for a resume?']/following-sibling::button`)
+    await resumeRequiredMenu.click();
+
+    await BrowserService.page.waitForXPath(`//*[text()='Yes, require a resume']`);
+    let [resumeRequiredButton] = await BrowserService.page.$x(`//*[text()='Yes, require a resume']`);
     await resumeRequiredButton.click();
     return true;
 }
