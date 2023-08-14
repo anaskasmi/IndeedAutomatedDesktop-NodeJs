@@ -289,6 +289,10 @@ IndeedInvoiceService.getJobsFromAPI = async(jobNumbers, dates) => {
         }
     }
     const headers = await CookiesService.getHeaders();
+    headers["indeed-client-sub-app"] = "curios";
+    headers["indeed-client-sub-app-component"] = "./IndexPage";
+    headers["x-datadog-sampling-priority"] = "0";
+
     const client = new GraphQLClient("https://apis.indeed.com/graphql?locale=en-US&co=US", { headers })
     let response = await client.request(query, variables);
     const allJobs = response.details.result;
