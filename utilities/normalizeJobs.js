@@ -22,8 +22,12 @@ module.exports.normalizeJobs = async (jobsArray) => {
       hiresNeeded:
         unormalizedJob.ujlCandidatesPipelineHostedIndeedApplyAttributes?.[0]
           ?.value,
-      minSalary: unormalizedJob.salary?.minimumMinor,
-      maxSalary: unormalizedJob.salary?.maximumMinor,
+      minSalary: unormalizedJob.salary?.minimumMinor
+        ? unormalizedJob.salary?.minimumMinor / 100
+        : null,
+      maxSalary: unormalizedJob.salary?.maximumMinor
+        ? unormalizedJob.salary?.maximumMinor / 100
+        : null,
       salaryPeriod: unormalizedJob.salary?.period,
       descriptionHtml: unormalizedJob.formattedDescription.htmlDescription,
       description: unormalizedJob.description,

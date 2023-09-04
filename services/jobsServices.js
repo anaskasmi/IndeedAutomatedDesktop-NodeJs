@@ -496,6 +496,15 @@ JobsServices.fillIn_benefits = async (benefits) => {
 
   await JobsServices.expandAllSections();
 
+  //   deselect suggestions
+  let suggestions = await BrowserService.page.$x(
+    `(//*[starts-with(@id, 'taxonomyAttributes.35828bc2-d934-48c2-a22d-0c8356cd07cc-content-')])[1]//li/div`
+  );
+  for (const suggestion of suggestions) {
+    await BrowserService.page.waitForTimeout(100);
+    await suggestion.click();
+  }
+
   for (const benefit of benefits) {
     if (benefit === "Other") {
       let [benefitButton] = await BrowserService.page.$x(
@@ -506,9 +515,21 @@ JobsServices.fillIn_benefits = async (benefits) => {
       }
       continue;
     }
-    let [benefitButton] = await BrowserService.page.$x(
-      `//*[contains(text(), '${benefit}')]`
+    let benefitButton;
+
+    // Try to click the chip that exactly matches the benefit
+    [benefitButton] = await BrowserService.page.$x(
+      `//*[@data-testid="taxonomyAttributes.35828bc2-d934-48c2-a22d-0c8356cd07cc-content"]//*[text() =  '${benefit}']`
     );
+
+    // If the exact match doesn't exist, click the chip containing the benefit word
+    if (!benefitButton) {
+      [benefitButton] = await BrowserService.page.$x(
+        `//*[@data-testid="taxonomyAttributes.35828bc2-d934-48c2-a22d-0c8356cd07cc-content"]//*[contains(text(), '${benefit}')]`
+      );
+    }
+
+    // If a matching chip is found, click it
     if (benefitButton) {
       await benefitButton.click();
     }
@@ -797,10 +818,13 @@ JobsServices.closeJob = async (jobId) => {
   );
   try {
     await client.request(closeJobMutation, variables);
+    await BrowserService.page.waitForTimeout(2000);
+    await BrowserService.page.goto("https://employers.indeed.com/jobs");
+    await BrowserService.page.waitForTimeout(2000);
+    await BrowserService.page.goto("https://employers.indeed.com/jobs");
   } catch (error) {
-    console.log(error)
+    console.log(error);
     console.log("Job closing failed !");
-
   }
 };
 
