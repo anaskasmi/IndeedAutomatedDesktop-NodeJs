@@ -1,71 +1,29 @@
-const mongoose = require('mongoose');
-
+const mongoose = require("mongoose");
 
 const JobSchema = mongoose.Schema({
-    //general info start
-    job_id: { type: String },
-    job_uuid: { type: String },
-    status: { type: String },
-    country: { type: String },
-    dateCreated: { type: String },
-
-    jobDescription: { type: String },
-    jobDescriptionHtml: { type: String },
-    //general info end
-
-    //budget start
-    //?value 
-    budget: { type: String },
-    //? Daily, Monthly..
-    budget_period: { type: String },
-    //? RECURRING,...
-    budget_type: { type: String },
-    budget_outOfBudget: { type: String },
-    budget_endDate: { type: String },
-    budget_displayCost: { type: String },
-    //budget end
-
-
-    //application count start
-    //?candidates
-    applicationCount: {},
-    //application count end
-
-    //gettingStarted start
-    reasonForCompanyNameChange: { type: String },
-    companyName: { type: String },
-    jobTitle: { type: String },
-    address: { type: String },
-    location: { type: String },
-    //gettingStarted end
-
-    // jobDetails start
-    jobDetails_WhatTypeOfJobIsIt: { type: String },
-    jobDetails_salaryRangeType: { type: String },
-    jobDetails_SalaryFrom: {},
-    jobDetails_SalaryTo: {},
-    jobDetails_SalaryPer: {},
-    jobDetails_hiresNeeded: { type: String },
-    jobDetails_intHiresNeeded: { type: String },
-    jobDetails_expectedHireDate: { type: String },
-    ////MULTIPLE_LOCATIONS
-    jobDetails_roleLocationType: { type: String },
-    jobDetails_type: { type: String },
-    jobDetails_emails: [],
-    // jobDetails end
-
-
-
-    //Application Setting Start
-    applicationSetting_howOftenWouldYouLikeToBeInformedOfNewApplicantsForThisJob: { type: String },
-    applicationSetting_doYouWantApplicantsToSubmitAResume: { type: String },
-    //Application Setting end
-
-
-    //candidates
-    candidates: [],
-    benefits: []
-
+  job_id: { type: String },
+  legacyId: { type: String },
+  location: { type: String },
+  email: { type: String },
+  company: { type: String },
+  status: { type: String },
+  budget_amount: { type: String },
+  budget_cost: { type: String },
+  budget_plan: { type: String },
+  budget_endDate: { type: String },
+  jobTitle: { type: String },
+  country: { type: String },
+  dateCreated: { type: String },
+  hiresNeeded: { type: String },
+  minSalary: { type: String },
+  maxSalary: { type: String },
+  salaryPeriod: { type: String },
+  salaryRange: { type: String },
+  description: { type: String },
+  descriptionHtml: { type: String },
+  expectedHireDate: { type: String },
+  type: { type: String },
+  benefits: [],
 });
 
-module.exports = mongoose.model('Job', JobSchema);
+module.exports = mongoose.model("Job", JobSchema);

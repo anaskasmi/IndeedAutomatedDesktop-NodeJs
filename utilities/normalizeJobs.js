@@ -1,25 +1,60 @@
-const Job = require('../models/Job');
+const Job = require("../models/Job");
 
-module.exports.normalizeJobs = async(jobsArray) => {
-    let normalizedJobs = [];
-    for (const unormalizedJob of jobsArray) {
-        const normalizedJob = new Job({
-            job_id: unormalizedJob.id ? unormalizedJob.id : null,
-            job_uuid: unormalizedJob.jobUuid ? unormalizedJob.jobUuid : null,
-            status: unormalizedJob.status ? unormalizedJob.status : null,
-            dateCreated: unormalizedJob.dateCreated ? unormalizedJob.dateCreated : null,
-            jobDescription: unormalizedJob.description ? unormalizedJob.description : null,
-            jobTitle: unormalizedJob.title ? unormalizedJob.title : null,
-            budget_amount: (unormalizedJob.budget && unormalizedJob.budget.amount) ? unormalizedJob.budget.amount : null,
-            budget_displayCost: (unormalizedJob.budget && unormalizedJob.budget.displayCost) ? unormalizedJob.budget.displayCost : null,
-            budget_plan: (unormalizedJob.budget && unormalizedJob.budget.plan) ? unormalizedJob.budget.plan : null,
-            budget_endDate: (unormalizedJob.budget && unormalizedJob.budget.endDate) ? unormalizedJob.budget.endDate : null,
-            address: unormalizedJob.jobLocations[0].address,
-            location: unormalizedJob.jobLocations[0].location,
-            country: unormalizedJob.country ? unormalizedJob.country : null,
-            applicationCount: (unormalizedJob.applicationCount) ? unormalizedJob.applicationCount : null,
-        });
-        normalizedJobs.push(normalizedJob);
+module.exports.normalizeJobs = async (jobsArray) => {
+  let normalizedJobs = [];
+  for (let unormalizedJob of jobsArray) {
+    unormalizedJob = unormalizedJob.employerJob.jobData;
+    const normalizedJob = new Job({
+      job_id: unormalizedJob.id,
+      legacyId: unormalizedJob.legacyId,
+      location: unormalizedJob.location?.formatted?.long,
+      email: unormalizedJob.applyMethod?.emails?.[0],
+      company: unormalizedJob.company,
+      status: unormalizedJob.status,
+      budget_amount: unormalizedJob.hostedJobBudget?.amount,
+      budget_cost: unormalizedJob.hostedJobBudget?.cost,
+      budget_plan: unormalizedJob.hostedJobBudget?.plan,
+      budget_endDate: unormalizedJob.hostedJobBudget?.endDate,
+      resumeRequired: unormalizedJob.resumeRequired,
+      jobTitle: unormalizedJob.title,
+      country: unormalizedJob.country,
+      dateCreated: unormalizedJob.dateCreated,
+      hiresNeeded:
+        unormalizedJob.ujlCandidatesPipelineHostedIndeedApplyAttributes?.[0]
+          ?.value,
+      minSalary: unormalizedJob.salary?.minimumMinor,
+      maxSalary: unormalizedJob.salary?.maximumMinor,
+      salaryPeriod: unormalizedJob.salary?.period,
+      descriptionHtml: unormalizedJob.formattedDescription.htmlDescription,
+      description: unormalizedJob.description,
+    });
+    normalizedJob.expectedHireDate = unormalizedJob.attributes.find(
+      (item) => item.key === "expectedHireDate"
+    ).value;
+    // benefits
+    normalizedJob.benefits = unormalizedJob.taxonomyAttributes.find(
+      (item) => item.customClassUuid === "35828bc2-d934-48c2-a22d-0c8356cd07cc"
+    );
+    normalizedJob.benefits =
+      normalizedJob.benefits?.[0]?.attributes?.map((item) => item.label) || [];
+
+    // job type
+    const type = unormalizedJob.taxonomyAttributes.find((item) => {
+      return item.customClassUuid == "2b08da1b-fe62-43ee-adbe-7f48c9061d39";
+    });
+
+    normalizedJob.type = type?.attributes?.[0]?.label;
+
+    // salary range
+    if (normalizedJob.minSalary && normalizedJob.maxSalary) {
+      normalizedJob.salaryRange = "RANGE";
+    } else if (normalizedJob.minSalary && !normalizedJob.maxSalary) {
+      normalizedJob.salaryRange = "STARTING_AT";
+    } else if (!normalizedJob.minSalary && normalizedJob.maxSalary) {
+      normalizedJob.salaryRange = "UP_TO";
     }
-    return normalizedJobs;
-}
+
+    normalizedJobs.push(normalizedJob);
+  }
+  return normalizedJobs;
+};

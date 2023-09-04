@@ -15,7 +15,6 @@ router.get('/getNewBrowserForUpdate', UpdateJobController.getNewBrowser)
 //scrap data routes
 router.get('/scrapAllJobs', JobsController.scrapAllJobs)
 router.get('/getAllJobsFromDb', JobsController.getAllJobsFromDb)
-router.post('/getJobFullDetails', JobsController.getJobFullDetails)
 
 //update job routes 
 router.post('/updateJob', UpdateJobController.updateJob)

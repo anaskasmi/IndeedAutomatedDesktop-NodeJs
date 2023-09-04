@@ -70,18 +70,6 @@ JobsController.getAllJobsFromDb = async(req, res) => {
 }
 
 
-JobsController.getJobFullDetails = async(req, res) => {
-    req.setTimeout(0);
-    try {
-        let job = await JobsServices.getJobFullDetails(req.body.job_id);
-        return res.status(200).json({ "msg": "job full details scraped successfully", "job": job });
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({ error: error.message });
-    }
-}
-
-
 JobsController.saveCookies = async(req, res) => {
     req.setTimeout(0);
     try {
@@ -185,7 +173,7 @@ JobsController.clickSaveAndContinue = async(req, res) => {
 JobsController.fillIn_isJobFullTimeOrPartTime = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.fillIn_isJobFullTimeOrPartTime(req.body.jobDetails_WhatTypeOfJobIsIt);
+        await JobsServices.fillIn_isJobFullTimeOrPartTime(req.body.type);
         return res.status(200).json({ "msg": "button save and contiue clicked successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -215,7 +203,7 @@ JobsController.fillIn_schedule = async(req, res) => {
 JobsController.fillIn_hiresNumber = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.fillIn_hiresNumber(req.body.jobDetails_intHiresNeeded);
+        await JobsServices.fillIn_hiresNumber(req.body.hiresNeeded);
         return res.status(200).json({ "msg": "Hires Number filled in successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -225,7 +213,7 @@ JobsController.fillIn_hiresNumber = async(req, res) => {
 JobsController.fillIn_deadline = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.fillIn_deadline(req.body.jobDetails_expectedHireDate);
+        await JobsServices.fillIn_deadline(req.body.expectedHireDate);
         return res.status(200).json({ "msg": "deadline filled in successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -236,7 +224,7 @@ JobsController.fillIn_deadline = async(req, res) => {
 JobsController.fillIn_paymentType = async(req, res) => {
     req.setTimeout(0);
     try {
-        if (await JobsServices.fillIn_paymentType(req.body.jobDetails_salaryRangeType, req.body.jobDetails_SalaryFrom, req.body.jobDetails_SalaryTo))
+        if (await JobsServices.fillIn_paymentType(req.body.salaryRange, req.body.minSalary, req.body.maxSalary))
             return res.status(200).json({ "msg": "payment type filled in successfully", 'paymentTypeFound': true });
         else {
             return res.status(200).json({ "msg": "payment type not filled !", 'paymentTypeFound': false });
@@ -249,7 +237,7 @@ JobsController.fillIn_paymentType = async(req, res) => {
 JobsController.fillIn_paymentFrom = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.fillIn_paymentFrom(req.body.jobDetails_SalaryFrom);
+        await JobsServices.fillIn_paymentFrom(req.body.minSalary);
         return res.status(200).json({ "msg": "payment FROM, filled in successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -259,7 +247,7 @@ JobsController.fillIn_paymentFrom = async(req, res) => {
 JobsController.fillIn_paymentTo = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.fillIn_paymentTo(req.body.jobDetails_SalaryTo, req.body.jobDetails_salaryRangeType);
+        await JobsServices.fillIn_paymentTo(req.body.maxSalary, req.body.salaryRange);
         return res.status(200).json({ "msg": "payment To, filled in successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -268,7 +256,7 @@ JobsController.fillIn_paymentTo = async(req, res) => {
 JobsController.fillIn_salaryFromAndTo = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.fillIn_salaryFromAndTo(req.body.jobDetails_SalaryFrom, req.body.jobDetails_SalaryTo, req.body.jobDetails_salaryRangeType);
+        await JobsServices.fillIn_salaryFromAndTo(req.body.minSalary, req.body.maxSalary, req.body.salaryRange);
         return res.status(200).json({ "msg": "payment salary, filled in successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -278,7 +266,7 @@ JobsController.fillIn_salaryFromAndTo = async(req, res) => {
 JobsController.fillIn_paymentPer = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.fillIn_paymentPer(req.body.jobDetails_SalaryPer);
+        await JobsServices.fillIn_paymentPer(req.body.salaryPeriod);
         return res.status(200).json({ "msg": "payment Per, filled in successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -288,7 +276,7 @@ JobsController.fillIn_paymentPer = async(req, res) => {
 JobsController.fillIn_description = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.fillIn_description(req.body.jobDescription);
+        await JobsServices.fillIn_description(req.body.description);
         return res.status(200).json({ "msg": "description filled in successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -376,7 +364,7 @@ JobsController.fillIn_CPC = async(req, res) => {
 JobsController.fillIn_adBudget = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.fillIn_adBudget(req.body.budget);
+        await JobsServices.fillIn_adBudget(req.body.budget_amount);
         return res.status(200).json({ "msg": "ad Budget filled in successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -406,7 +394,7 @@ JobsController.click_notIntersted = async(req, res) => {
 JobsController.closeJob = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.closeJob(req.body);
+        await JobsServices.closeJob(req.body.jobId);
         return res.status(200).json({ "msg": "Job Closed successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -416,7 +404,7 @@ JobsController.closeJob = async(req, res) => {
 JobsController.fillIn_email = async(req, res) => {
     req.setTimeout(0);
     try {
-        await JobsServices.fillIn_email(req.body.jobDetails_emails);
+        await JobsServices.fillIn_email(req.body.email);
         return res.status(200).json({ "msg": "Email Filled In successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
