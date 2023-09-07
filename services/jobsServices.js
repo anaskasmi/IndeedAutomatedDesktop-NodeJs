@@ -39,7 +39,7 @@ JobsServices.openPostJobPage = async () => {
         let [continueButton] = await BrowserService.page.$x(
           `//*[@type="submit"]`
         );
-        await continueButton.click();
+        if (continueButton) await continueButton.click();
       }
     }
   }
@@ -52,7 +52,7 @@ JobsServices.openPostJobPage = async () => {
   if (newJobPostingOption) {
     await newJobPostingOption.click();
     let [continueButton] = await BrowserService.page.$x(`//*[@type="submit"]`);
-    await continueButton.click();
+    if (continueButton) await continueButton.click();
   }
 
   //reset filled values
@@ -151,39 +151,6 @@ JobsServices.skipDuplicateJobPage = async () => {
     }
   }
 };
-JobsServices.unlockCompanyNameInput = async () => {
-  //click pencil Icon
-  await BrowserService.page.waitForXPath(
-    `//*[@data-testid="display-field-edit" and contains(@title,'Company')]`
-  );
-  let [companyNamePencil] = await BrowserService.page.$x(
-    `//*[@data-testid="display-field-edit" and contains(@title,'Company')]`
-  );
-  if (companyNamePencil) {
-    await companyNamePencil.click();
-  }
-
-  //chose company name change reason
-  await BrowserService.page.waitForXPath(
-    `//*[@value="posting_on_behalf"]/parent::label`
-  );
-  let [companyNameChangeReason] = await BrowserService.page.$x(
-    `//*[@value="posting_on_behalf"]/parent::label`
-  );
-  await companyNameChangeReason.click();
-};
-
-JobsServices.fillIn_CompanyName = async (companyName) => {
-  await BrowserService.page.waitForXPath(
-    `//*[@data-testid="job-company-name-change-input"]`
-  );
-  let [JobCompanyNameInput] = await BrowserService.page.$x(
-    `//*[@data-testid="job-company-name-change-input"]`
-  );
-  await JobCompanyNameInput.click({ clickCount: 3 });
-  await JobCompanyNameInput.press("Backspace");
-  await JobCompanyNameInput.type(companyName);
-};
 
 JobsServices.fillIn_JobTitle = async (jobTitle) => {
   await BrowserService.page.waitForXPath(`//*[@data-testid="job-title"]`);
@@ -257,9 +224,7 @@ JobsServices.fillIn_location = async (data) => {
 };
 
 JobsServices.clickSaveAndContinue = async () => {
-  const [saveAndContinue] = await BrowserService.page.$x(
-    `//*[@type="submit"]/parent::div`
-  );
+  const [saveAndContinue] = await BrowserService.page.$x(`//*[@type="submit"]`);
 
   if (saveAndContinue) {
     await saveAndContinue.click({ clickCount: 3 });
@@ -343,57 +308,60 @@ JobsServices.fillIn_deadline = async (expectedHireDate) => {
   }
 };
 
-JobsServices.fillIn_paymentType = async (salaryRange, minSalary, maxSalary) => {
+JobsServices.fillInputField = async (selector, value) => {
+  const inputElement = await BrowserService.page.$x(selector);
+  if (inputElement && value !== undefined) {
+    await inputElement[0].click({ clickCount: 3 });
+    await inputElement[0].press("Backspace");
+    await inputElement[0].type(value);
+  }
+};
+
+JobsServices.fillIn_salary = async (salary) => {
+  const selectOptions = {
+    salaryRange: {
+      RANGE: "Range",
+      STARTING_AT: "Starting amount",
+      UP_TO: "Maximum amount",
+      EXACT_RATE: "Exact amount",
+    },
+    salaryPeriod: {
+      HOUR: "per hour",
+      DAY: "per day",
+      WEEK: "per week",
+      MONTH: "per month",
+      YEAR: "per year",
+    },
+  };
+
   const selectLabel = "Show pay by";
+  const rateLabel = "Rate";
 
-  if (salaryRange) {
-    switch (salaryRange) {
-      case "RANGE":
-        await JobsServices.clickSelect(selectLabel, "Range");
-        break;
-      case "STARTING_AT":
-        await JobsServices.clickSelect(selectLabel, "Starting amount");
-        break;
-      case "UP_TO":
-        await JobsServices.clickSelect(selectLabel, "Maximum amount");
-        break;
-      case "EXACT_RATE":
-        await JobsServices.clickSelect(selectLabel, "Exact amount");
-        break;
-      default:
-        break;
-    }
-    return true;
-  } else if (minSalary && maxSalary) {
-    await JobsServices.clickSelect(selectLabel, "Range");
-    return true;
-  } else {
-    return false;
+  const selectValue = selectOptions.salaryRange[salary.salaryRange];
+  const rateValue = selectOptions.salaryPeriod[salary.salaryPeriod];
+
+  if (selectValue) {
+    await JobsServices.clickSelect(selectLabel, selectValue);
   }
+
+  if (rateValue) {
+    await JobsServices.clickSelect(rateLabel, rateValue);
+  }
+
+  if (salary.salaryRange === "UP_TO") {
+    await JobsServices.fillInputField('//*[@id="local.temp-salary.minimum"]', salary.maxSalary);
+  } else if (["STARTING_AT", "EXACT_RATE"].includes(salary.salaryRange)) {
+    await JobsServices.fillInputField('//*[@id="local.temp-salary.minimum"]', salary.minSalary);
+  } else if (salary.salaryRange === "RANGE") {
+    await JobsServices.fillInputField('//*[@id="local.temp-salary.minimum"]', salary.minSalary);
+    await JobsServices.fillInputField('//*[@id="local.temp-salary.maximum"]', salary.maxSalary);
+  }
+
+  return true;
 };
 
-JobsServices.fillIn_paymentPer = async (salaryPeriod) => {
-  const selectLabel = "Rate";
-  switch (salaryPeriod) {
-    case "HOUR":
-      await JobsServices.clickSelect(selectLabel, "per hour");
-      break;
-    case "DAY":
-      await JobsServices.clickSelect(selectLabel, "per day");
-      break;
-    case "WEEK":
-      await JobsServices.clickSelect(selectLabel, "per week");
-      break;
-    case "MONTH":
-      await JobsServices.clickSelect(selectLabel, "per month");
-      break;
-    case "YEAR":
-      await JobsServices.clickSelect(selectLabel, "per year");
-      break;
-    default:
-      break;
-  }
-};
+
+
 
 JobsServices.clickSelect = async (label, value) => {
   const [selectButton] = await BrowserService.page.$x(
@@ -408,72 +376,6 @@ JobsServices.clickSelect = async (label, value) => {
     await selectChoice.click();
   }
 };
-JobsServices.fillIn_salaryFromAndTo = async (
-  minSalary,
-  maxSalary,
-  salaryRange
-) => {
-  let jobSalary1, jobSalary2;
-  switch (salaryRange) {
-    case "UP_TO":
-      [jobSalary1] = await BrowserService.page.$x(
-        `//*[@id="local.temp-salary.minimum"]`
-      );
-      if (maxSalary) {
-        await jobSalary1.click({ clickCount: 3 });
-        await jobSalary1.press("Backspace");
-        await jobSalary1.type(maxSalary);
-        break;
-      } else {
-        await jobSalary1.click({ clickCount: 3 });
-        await jobSalary1.press("Backspace");
-        break;
-      }
-    case "STARTING_AT":
-    case "EXACT_RATE":
-      [jobSalary1] = await BrowserService.page.$x(
-        `//*[@id="local.temp-salary.minimum"]`
-      );
-      if (minSalary) {
-        await jobSalary1.click({ clickCount: 3 });
-        await jobSalary1.press("Backspace");
-        await jobSalary1.type(minSalary);
-      } else {
-        await jobSalary1.click({ clickCount: 3 });
-        await jobSalary1.press("Backspace");
-      }
-      break;
-
-    case "RANGE":
-      [jobSalary1] = await BrowserService.page.$x(
-        `//*[@id="local.temp-salary.minimum"]`
-      );
-      [jobSalary2] = await BrowserService.page.$x(
-        `//*[@id="local.temp-salary.maximum"]`
-      );
-      if (minSalary) {
-        await jobSalary1.click({ clickCount: 3 });
-        await jobSalary1.press("Backspace");
-        await jobSalary1.type(minSalary);
-      } else {
-        await jobSalary1.click({ clickCount: 3 });
-        await jobSalary1.press("Backspace");
-      }
-      if (maxSalary) {
-        await jobSalary2.click({ clickCount: 3 });
-        await jobSalary2.press("Backspace");
-        await jobSalary2.type(maxSalary);
-      } else {
-        await jobSalary2.click({ clickCount: 3 });
-        await jobSalary2.press("Backspace");
-      }
-      break;
-    default:
-      break;
-  }
-  return true;
-};
-
 JobsServices.fillIn_paymentFrom = async (minSalary) => {
   let [jobSalary1] = await BrowserService.page.$x(
     `//*[@id="local.temp-salary.minimum"]`

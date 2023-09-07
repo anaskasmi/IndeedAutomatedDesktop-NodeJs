@@ -90,26 +90,6 @@ JobsController.openPostJobPage = async(req, res) => {
     }
 }
 
-JobsController.unlockCompanyNameInput = async(req, res) => {
-    req.setTimeout(0);
-    try {
-        await JobsServices.unlockCompanyNameInput();
-        return res.status(200).json({ "msg": "company name input unlocked" });
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
-}
-
-JobsController.fillIn_CompanyName = async(req, res) => {
-    req.setTimeout(0);
-    try {
-        await JobsServices.fillIn_CompanyName(req.body.companyName);
-        return res.status(200).json({ "msg": "company name filled In successfully" });
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
-}
-
 JobsController.fillIn_JobTitle = async(req, res) => {
     req.setTimeout(0);
     try {
@@ -220,54 +200,11 @@ JobsController.fillIn_deadline = async(req, res) => {
     }
 }
 
-
-JobsController.fillIn_paymentType = async(req, res) => {
+JobsController.fillIn_salary = async(req, res) => {
     req.setTimeout(0);
     try {
-        if (await JobsServices.fillIn_paymentType(req.body.salaryRange, req.body.minSalary, req.body.maxSalary))
-            return res.status(200).json({ "msg": "payment type filled in successfully", 'paymentTypeFound': true });
-        else {
-            return res.status(200).json({ "msg": "payment type not filled !", 'paymentTypeFound': false });
-        }
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
-}
-
-JobsController.fillIn_paymentFrom = async(req, res) => {
-    req.setTimeout(0);
-    try {
-        await JobsServices.fillIn_paymentFrom(req.body.minSalary);
-        return res.status(200).json({ "msg": "payment FROM, filled in successfully" });
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
-}
-
-JobsController.fillIn_paymentTo = async(req, res) => {
-    req.setTimeout(0);
-    try {
-        await JobsServices.fillIn_paymentTo(req.body.maxSalary, req.body.salaryRange);
-        return res.status(200).json({ "msg": "payment To, filled in successfully" });
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
-}
-JobsController.fillIn_salaryFromAndTo = async(req, res) => {
-    req.setTimeout(0);
-    try {
-        await JobsServices.fillIn_salaryFromAndTo(req.body.minSalary, req.body.maxSalary, req.body.salaryRange);
-        return res.status(200).json({ "msg": "payment salary, filled in successfully" });
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
-}
-
-JobsController.fillIn_paymentPer = async(req, res) => {
-    req.setTimeout(0);
-    try {
-        await JobsServices.fillIn_paymentPer(req.body.salaryPeriod);
-        return res.status(200).json({ "msg": "payment Per, filled in successfully" });
+        await JobsServices.fillIn_salary(req.body);
+        return res.status(200).json({ "msg": " salary, filled in successfully" });
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }

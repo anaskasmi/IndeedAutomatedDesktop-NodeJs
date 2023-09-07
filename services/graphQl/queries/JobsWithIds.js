@@ -1,27 +1,24 @@
 const { gql } = require("graphql-request");
 module.exports = gql`
-  fragment Jmfe_PaginationControl_BidirectionalCursorInfo on BidirectionalCursorInfo {
-    endCursor
-    startCursor
-    __typename
-  }
 
   query EntJobTableMfe_EmployerJobSearch_Optimized(
     $input: FindEmployerJobsInput!
-    $hqm_employer_on_by_default1: Boolean!
   ) {
     findEmployerJobs(input: $input) {
-      pageInfo {
-        ...Jmfe_PaginationControl_BidirectionalCursorInfo
-        hasNextPage
-        hasPreviousPage
-        __typename
-      }
       results {
         employerJob {
           id
           jobData {
             id
+            applyMethod {
+              method
+              ... on JobPostEmailApplyMethod {
+                emails
+                __typename
+              }
+              __typename
+            }
+            __typename      
             ... on HostedJobPost {
               legacyId
               __typename
@@ -35,9 +32,6 @@ module.exports = gql`
           ...Jmfm_SponsorshipStatus_EmployerJob
           ...Jmfm_IndividualJobMessage_EmployerJob
           ...EJM_BulkActions_EmployerJob
-          ...EJM_DateCreated_EmployerJob
-          ...EJM_PostedBy_EmployerJob
-          ...EJM_JobStar_EmployerJob
           ...Ijm_IndeedApplyQuery
           __typename
         }
@@ -51,67 +45,12 @@ module.exports = gql`
     id
     jobData {
       id
-      description
       formattedDescription {
         htmlDescription
       }
-      advertisingLocations {
-        active
-        jobKey
-        location
-        publicJobPageUrl
-        __typename
-      }
-      claimData {
-        __typename
-        claimVersion
-        status
-        isEditable
-        claimedBy {
-          id
-          hostedEmployerId
-          __typename
-        }
-      }
-      __typename
-      externalJobPageUrl
-      source {
-        id
-        __typename
-      }
-      applyMethod {
-        method
-        __typename
-      }
       company
       ... on HostedJobPost {
-        legacyId
         status
-        campaign {
-          __typename
-          id
-          status
-          type
-          isMigratedFromSponsorAll
-          budget
-          isSponsorAll
-          uuid
-          name
-        }
-        ujlActionDropdownAttributes: attributes(
-          keys: [
-            "isCpoEligible"
-            "itaAssociated"
-            "icrClaimStatus"
-            "d2i1mInterviewSessionUuid"
-            "expectedHireDate"
-            "sponsorshipOptionLocked"
-          ]
-        ) {
-          key
-          value
-          __typename
-        }
         hostedJobBudget {
           id
           __typename
@@ -128,63 +67,8 @@ module.exports = gql`
         }
         title
         country
-        language
         dateCreated
-        origin
-        hostedJobPostVisibility {
-          level
-          __typename
-        }
-        oneToOneDirectToInterviewInfo {
-          isEnabled
-          __typename
-        }
-        oneToOneDirectToMessagingInfo {
-          jobOptInInfo {
-            status
-            __typename
-          }
-          __typename
-        }
-        enabledAutomationsAttributes: attributes(
-          keys: ["employerAssistOptedIn"]
-        ) {
-          key
-          value
-          __typename
-        }
-        highQualityMarketplaceInfo @include(if: $hqm_employer_on_by_default1) {
-          isOptedIn
-          isEnabled
-          eligibilityState
-          pointOfContactAccountKey
-          responsiveness {
-            atRiskContacts
-            deadlineExceededContacts
-            __typename
-          }
-          __typename
-        }
-        __typename
       }
-    }
-    jobPostStatus {
-      surfaceStatuses {
-        isSponsorshipRequired
-        isSponsorshipTargeted
-        isSponsorshipApplied
-        __typename
-      }
-      __typename
-    }
-    applicationsCount {
-      total
-      milestoneCounts {
-        count
-        milestone
-        __typename
-      }
-      __typename
     }
     __typename
   }
@@ -202,22 +86,13 @@ module.exports = gql`
         title
         status
         origin
-        ujlJobStatusDropdownAttributes: attributes(
-          keys: ["icrClaimStatus", "itaAssociated"]
+        ujlActionDropdownAttributes: attributes(
+          keys: [
+            "expectedHireDate"
+          ]
         ) {
           key
           value
-          __typename
-        }
-        messagingTag {
-          structuredTags {
-            tagName
-            __typename
-          }
-          __typename
-        }
-        hostedJobPostVisibility {
-          level
           __typename
         }
         hostedJobBudget {
@@ -238,16 +113,6 @@ module.exports = gql`
       }
       __typename
     }
-    jobPostStatus {
-      surfaceStatuses {
-        isSponsorshipApplied
-        isSponsorshipRequired
-        isSponsorshipTargeted
-        __typename
-      }
-      __typename
-    }
-    __typename
   }
 
   fragment UjlCandidatesPipeline_EmployerJob on EmployerJob {
@@ -552,18 +417,6 @@ module.exports = gql`
             __typename
           }
         }
-        highQualityMarketplaceInfo {
-          __typename
-          eligibilityState
-          isOptedIn
-          isEnabled
-          pointOfContactAccountKey
-          responsiveness {
-            __typename
-            atRiskContacts
-            deadlineExceededContacts
-          }
-        }
         individualJobMessageAttributes: attributes(
           keys: [
             "isCpoEligible"
@@ -580,46 +433,6 @@ module.exports = gql`
         legacyId
         origin
         status
-        messagingTag {
-          msgTagResultExclude
-          isEstimated
-          jobKey
-          estimatedVisibility
-          structuredTags {
-            tagId
-            tagName
-            generalMessage
-            jobsMessage
-            policyLink
-            notification
-            translations {
-              jobsMessage {
-                locale
-                translatedText
-                __typename
-              }
-              generalMessage {
-                locale
-                translatedText
-                __typename
-              }
-              policyLink {
-                locale
-                translatedText
-                __typename
-              }
-              __typename
-            }
-            matchingStrings {
-              field
-              matchingText
-              __typename
-            }
-            __typename
-          }
-          __typename
-        }
-        __typename
       }
     }
     __typename
@@ -627,188 +440,7 @@ module.exports = gql`
 
   fragment EJM_BulkActions_EmployerJob on EmployerJob {
     id
-    ...EJM_BulkActions_AggregatedData
-    ...EJM_BulkActions_Eligibility_EmployerJob
-    ...EJM_BulkActions_BulkReportHireModal_EmployerJob
     ...EJM_BulkActions_ErrorModal_EmployerJob
-    __typename
-  }
-
-  fragment EJM_BulkActions_AggregatedData on EmployerJob {
-    ...EJM_BulkActions_Aggregated_Source_EmployerJob
-    ...EJM_BulkActions_Aggregated_JobKeys_EmployerJob
-    ...EJM_BulkActions_Aggregated_LegacyId_EmployerJob
-    ...EJM_BulkActions_Aggregated_UuId_EmployerJob
-    __typename
-  }
-
-  fragment EJM_BulkActions_Aggregated_Source_EmployerJob on EmployerJob {
-    jobData {
-      source {
-        id
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-
-  fragment EJM_BulkActions_Aggregated_JobKeys_EmployerJob on EmployerJob {
-    jobData {
-      advertisingLocations {
-        active
-        jobKey
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-
-  fragment EJM_BulkActions_Aggregated_LegacyId_EmployerJob on EmployerJob {
-    jobData {
-      __typename
-      ... on HostedJobPost {
-        legacyId
-        __typename
-      }
-    }
-    __typename
-  }
-
-  fragment EJM_BulkActions_Aggregated_UuId_EmployerJob on EmployerJob {
-    jobData {
-      __typename
-      ... on HostedJobPost {
-        id
-        __typename
-      }
-    }
-    __typename
-  }
-
-  fragment EJM_BulkActions_Eligibility_EmployerJob on EmployerJob {
-    ...EJM_BulkActions_Eligibility_Sources_EmployerJob
-    ...EJM_BulkActions_Eligibility_MultiLocation_EmployerJob
-    ...EJM_BulkActions_Eligibility_Pending_EmployerJob
-    ...EJM_BulkActions_Eligibility_CPA_EmployerJob
-    ...EJM_BulkActions_Eligibility_JobType_EmployerJob
-    ...EJM_BulkActions_Eligibility_ApplyMethod_EmployerJob
-    ...EJM_BulkActions_Eligibility_Active_EmployerJob
-    __typename
-  }
-
-  fragment EJM_BulkActions_Eligibility_Sources_EmployerJob on EmployerJob {
-    id
-    jobData {
-      source {
-        id
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-
-  fragment EJM_BulkActions_Eligibility_MultiLocation_EmployerJob on EmployerJob {
-    id
-    jobData {
-      advertisingLocations {
-        active
-        jobKey
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-
-  fragment EJM_BulkActions_Eligibility_Pending_EmployerJob on EmployerJob {
-    id
-    jobData {
-      advertisingLocations {
-        active
-        jobKey
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-
-  fragment EJM_BulkActions_Eligibility_CPA_EmployerJob on EmployerJob {
-    id
-    jobData {
-      __typename
-      ... on HostedJobPost {
-        hostedJobBudget {
-          __typename
-        }
-        __typename
-      }
-    }
-    __typename
-  }
-
-  fragment EJM_BulkActions_Eligibility_JobType_EmployerJob on EmployerJob {
-    id
-    jobData {
-      __typename
-      claimData {
-        claimVersion
-        status
-        isEditable
-        __typename
-      }
-    }
-    __typename
-  }
-
-  fragment EJM_BulkActions_Eligibility_ApplyMethod_EmployerJob on EmployerJob {
-    id
-    jobData {
-      __typename
-      applyMethod {
-        __typename
-        method
-      }
-    }
-    __typename
-  }
-
-  fragment EJM_BulkActions_Eligibility_Active_EmployerJob on EmployerJob {
-    id
-    jobData {
-      __typename
-      ... on HostedJobPost {
-        status
-        __typename
-      }
-    }
-    __typename
-  }
-
-  fragment EJM_BulkActions_BulkReportHireModal_EmployerJob on EmployerJob {
-    id
-    jobData {
-      ... on HostedJobPost {
-        id
-        legacyId
-        title
-        advertisingLocations {
-          active
-          location
-          __typename
-        }
-        claimData {
-          claimVersion
-          status
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
     __typename
   }
 
@@ -830,59 +462,6 @@ module.exports = gql`
         jobKey
         __typename
       }
-      claimData {
-        claimVersion
-        status
-        __typename
-      }
-    }
-    __typename
-  }
-
-  fragment EJM_DateCreated_EmployerJob on EmployerJob {
-    id
-    jobData {
-      ... on HostedJobPost {
-        legacyId
-        datePostedOnIndeed
-        hostedJobBudget {
-          ... on PeriodicSponsoredJobBudget {
-            endDate
-            grouping
-            __typename
-          }
-          __typename
-        }
-        __typename
-      }
-      ... on ExternalJobPost {
-        datePostedOnIndeed
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-
-  fragment EJM_PostedBy_EmployerJob on EmployerJob {
-    jobData {
-      applyMethod {
-        method
-        ... on JobPostEmailApplyMethod {
-          emails
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-
-  fragment EJM_JobStar_EmployerJob on EmployerJob {
-    employerJobGroupMembership {
-      isStarred
-      __typename
     }
     __typename
   }
@@ -913,15 +492,6 @@ module.exports = gql`
           customClassUuid
           __typename
         }
-        __typename
-      }
-      __typename
-    }
-    jobPostStatus {
-      surfaceStatuses {
-        isSponsorshipRequired
-        isSponsorshipTargeted
-        isSponsorshipApplied
         __typename
       }
       __typename

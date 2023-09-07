@@ -30,11 +30,10 @@ module.exports.normalizeJobs = async (jobsArray) => {
         : null,
       salaryPeriod: unormalizedJob.salary?.period,
       descriptionHtml: unormalizedJob.formattedDescription.htmlDescription,
-      description: unormalizedJob.description,
     });
     normalizedJob.expectedHireDate = unormalizedJob.attributes.find(
       (item) => item.key === "expectedHireDate"
-    ).value;
+    )?.value;
     // benefits
     normalizedJob.benefits = unormalizedJob.taxonomyAttributes.find(
       (item) => item.customClassUuid === "35828bc2-d934-48c2-a22d-0c8356cd07cc"
