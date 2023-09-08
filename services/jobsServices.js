@@ -727,9 +727,14 @@ JobsServices.publishDraftJob = async (jobId) => {
   await BrowserService.page.goto(
     `https://employers.indeed.com/sponsor/edit?employerJobId=${employerJobId}&linksource=jobstab&publishedId=${legacyId}`
   );
-  await JobsServices.fillIn_adDurationType();
+
+  await BrowserService.page.waitForXPath(`//*[@name="budgetShouldSetEndDate"]`);
+  const [budgetShouldSetEndDate] = await BrowserService.page.$x(`//*[@name="budgetShouldSetEndDate"]/parent::label`);
+  await budgetShouldSetEndDate.click();
+
   await JobsServices.fillIn_adDurationDate();
   await await JobsServices.fillIn_adBudget(5);
+  
   await JobsServices.clickSaveAndContinue();
 };
 
@@ -818,10 +823,10 @@ JobsServices.click_advanced = async () => {
 };
 
 JobsServices.fillIn_adDurationType = async () => {
-  await BrowserService.page.waitForXPath(`//*[@name="budgetShouldSetEndDate"]`);
-  const [budgetShouldSetEndDate] = await BrowserService.page.$x(`//*[@name="budgetShouldSetEndDate"]/parent::label`);
-  await budgetShouldSetEndDate.click();
+  await BrowserService.page.waitForXPath(`//*[@id="adEndDateSelect"]`);
+  await BrowserService.page.select(`#adEndDateSelect`, "CUSTOM");
 };
+
 
 JobsServices.fillIn_adDurationDate = async () => {
   //generate new date after X given days
