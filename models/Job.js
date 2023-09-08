@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
 const JobSchema = mongoose.Schema({
+  raw: { type: Object },
   job_id: { type: String },
   legacyId: { type: String },
   location: { type: String },

@@ -45,6 +45,18 @@ JobsController.scrapAllJobs = async(req, res) => {
     }
 
 }
+JobsController.duplicateJob = async(req, res) => {
+    req.setTimeout(0);
+    try {
+        let jobs = await JobsServices.duplicateJob(req.params.id);
+        return res.status(200).json({ "msg": "jobs scraped successfully", "jobs": jobs });
+
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ error: error.message });
+    }
+
+}
 JobsController.getJobDataFromDb = async(req, res) => {
     req.setTimeout(0);
     try {

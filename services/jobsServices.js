@@ -14,6 +14,9 @@ const Helpers = require("../utilities/Helpers");
 const closeJobMutation = require("./graphQl/mutations/closeJobMutation");
 const CookiesService = require("./cookiesService");
 const JobsWithIds = require("./graphQl/queries/JobsWithIds");
+const CreateDraftJobPost = require("./graphQl/mutations/CreateDraftJobPost");
+const PublishDraftJobPostToEmployerJob = require("./graphQl/mutations/PublishDraftJobPostToEmployerJob");
+const createDraftJobPostFromEmployerJob = require("./graphQl/mutations/createDraftJobPostFromEmployerJob");
 let JobsServices = {};
 
 JobsServices.openPostJobPage = async () => {
@@ -349,19 +352,28 @@ JobsServices.fillIn_salary = async (salary) => {
   }
 
   if (salary.salaryRange === "UP_TO") {
-    await JobsServices.fillInputField('//*[@id="local.temp-salary.minimum"]', salary.maxSalary);
+    await JobsServices.fillInputField(
+      '//*[@id="local.temp-salary.minimum"]',
+      salary.maxSalary
+    );
   } else if (["STARTING_AT", "EXACT_RATE"].includes(salary.salaryRange)) {
-    await JobsServices.fillInputField('//*[@id="local.temp-salary.minimum"]', salary.minSalary);
+    await JobsServices.fillInputField(
+      '//*[@id="local.temp-salary.minimum"]',
+      salary.minSalary
+    );
   } else if (salary.salaryRange === "RANGE") {
-    await JobsServices.fillInputField('//*[@id="local.temp-salary.minimum"]', salary.minSalary);
-    await JobsServices.fillInputField('//*[@id="local.temp-salary.maximum"]', salary.maxSalary);
+    await JobsServices.fillInputField(
+      '//*[@id="local.temp-salary.minimum"]',
+      salary.minSalary
+    );
+    await JobsServices.fillInputField(
+      '//*[@id="local.temp-salary.maximum"]',
+      salary.maxSalary
+    );
   }
 
   return true;
 };
-
-
-
 
 JobsServices.clickSelect = async (label, value) => {
   const [selectButton] = await BrowserService.page.$x(
@@ -466,7 +478,6 @@ JobsServices.fillIn_description = async (description) => {
   const jobId = (await BrowserService.page.url()).split("jobId=")[1];
 
   const mutation = gql`
-    ${draftJobPostFields}
     ${saveDraftJobPost}
   `;
 
@@ -541,6 +552,185 @@ JobsServices.scrapAllJobs = async () => {
   let normalizedJobs = await normalizeJobs(data.findEmployerJobs.results);
   await Job.deleteMany({});
   await Job.insertMany(normalizedJobs.reverse());
+};
+
+JobsServices.createDraftJobPost = async () => {
+  const variables = {
+    input: {
+      create: {
+        attributes: [
+          {
+            key: "descHasSanitizedIntlAttr",
+            value: "true",
+          },
+        ],
+      },
+    },
+  };
+  const headers = await CookiesService.getHeaders();
+  const client = new GraphQLClient(
+    "https://apis.indeed.com/graphql?locale=en-US&co=US",
+    {
+      headers: {
+        ...headers,
+        "indeed-client-sub-app": "job-posting",
+        "indeed-client-sub-app-component": "./JobDescriptionSheet",
+      },
+    }
+  );
+  let data = await client.request(CreateDraftJobPost, variables);
+  console.log(data);
+  const id = data.createDraftJobPost.result.draftJobPost.id;
+  return id;
+};
+
+JobsServices.duplicateJob = async (jobId) => {
+  let oldJob = (await JobsServices.getJobDataFromDb(jobId)).raw;
+  const newJobId = await JobsServices.createDraftJobPost();
+  const attributesPatch = oldJob.attributes.map((attribute) => {
+    return {
+      value: {
+        key: attribute.key,
+        value: attribute.value,
+      },
+      operation: "ADD",
+    };
+  });
+  const taxonomyAttributesPatch = oldJob.taxonomyAttributes.map(
+    (taxonomyAttribute) => {
+      delete taxonomyAttribute.__typename;
+      for (const attribute of taxonomyAttribute.attributes) {
+        delete attribute.__typename;
+      }
+      return {
+        value: taxonomyAttribute,
+        operation: "ADD",
+      };
+    }
+  );
+  taxonomyAttributesPatch.push({
+    value: {
+      customClassUuid: "e0ce087d-d2ab-4542-bb37-4efc7ae2cf7c",
+      attributes: [
+        {
+          uuid: "11111111-1111-1111-1111-111111111111",
+          label: "Other",
+          type: "OTHER",
+        },
+      ],
+    },
+    operation: "ADD",
+  });
+  taxonomyAttributesPatch.push({
+    value: {
+      customClassUuid: "ade373d2-bfb7-456e-a125-bc0c513556bf",
+      attributes: [
+        {
+          uuid: "11111111-1111-1111-1111-111111111111",
+          label: "Other",
+          type: "OTHER",
+        },
+      ],
+    },
+    operation: "ADD",
+  });
+  delete oldJob.applyMethod.__typename;
+  delete oldJob.applyMethod.emails.__typename;
+  const variables = {
+    input: {
+      id: newJobId,
+      patch: {
+        country: oldJob.country,
+        language: "en",
+        company: oldJob.company,
+        title: oldJob.title,
+        occupationUuid: oldJob.occupationUuid,
+        jobAddress: null,
+        salary: {
+          maximumMinor: oldJob.salary.maximumMinor,
+          minimumMinor: oldJob.salary.minimumMinor,
+          period: oldJob.salary.period,
+        },
+        applyMethod: {
+          email: {
+            emails: oldJob.applyMethod.emails,
+          },
+        },
+        description: oldJob.description,
+        advertisingLocationsPatch: [
+          {
+            value: {
+              location: oldJob.location.formatted.long,
+            },
+            operation: "ADD",
+          },
+        ],
+        taxonomyAttributesPatchByCustomClass: taxonomyAttributesPatch,
+        attributesPatch: attributesPatch,
+        jobTypesPatch: [
+          {
+            value: "FULL_TIME",
+            operation: "ADD",
+          },
+        ],
+      },
+    },
+  };
+
+  const headers = await CookiesService.getHeaders();
+  const client = new GraphQLClient(
+    "https://apis.indeed.com/graphql?locale=en-US&co=US",
+    {
+      headers: {
+        ...headers,
+        "indeed-client-sub-app": "job-posting",
+        "indeed-client-sub-app-component": "./JobDescriptionSheet",
+      },
+    }
+  );
+  await client.request(saveDraftJobPost, variables);
+  await JobsServices.publishDraftJob(newJobId);
+};
+
+JobsServices.publishDraftJob = async (jobId) => {
+  const variables = {
+    input: {
+      id: jobId,
+    },
+  };
+  const headers = await CookiesService.getHeaders();
+  const client = new GraphQLClient(
+    "https://apis.indeed.com/graphql?locale=en-US&co=US",
+    {
+      headers: {
+        ...headers,
+        "indeed-client-sub-app": "job-posting",
+        "indeed-client-sub-app-component": "./JobDescriptionSheet",
+      },
+    }
+  );
+  const employerJob = await client.request(
+    PublishDraftJobPostToEmployerJob,
+    variables
+  );
+  const employerJobId =
+    employerJob.publishDraftJobPostToEmployerJob.result.employerJob.id;
+  const legacyId =
+    employerJob.publishDraftJobPostToEmployerJob.result.employerJob.jobData
+      .legacyId;
+  await client.request(createDraftJobPostFromEmployerJob, {
+    input: {
+      publishAsNewJob: false,
+      id: employerJobId,
+    },
+  });
+  await BrowserService.page.goto(
+    `https://employers.indeed.com/sponsor/edit?employerJobId=${employerJobId}&linksource=jobstab&publishedId=${legacyId}`
+  );
+  await JobsServices.fillIn_adDurationType();
+  await JobsServices.fillIn_adDurationDate();
+  await await JobsServices.fillIn_adBudget(5);
+  await JobsServices.clickSaveAndContinue();
 };
 
 JobsServices.fillIn_isResumeRequired = async () => {
@@ -628,8 +818,9 @@ JobsServices.click_advanced = async () => {
 };
 
 JobsServices.fillIn_adDurationType = async () => {
-  await BrowserService.page.waitForXPath(`//*[@id="adEndDateSelect"]`);
-  await BrowserService.page.select(`#adEndDateSelect`, "CUSTOM");
+  await BrowserService.page.waitForXPath(`//*[@name="budgetShouldSetEndDate"]`);
+  const [budgetShouldSetEndDate] = await BrowserService.page.$x(`//*[@name="budgetShouldSetEndDate"]/parent::label`);
+  await budgetShouldSetEndDate.click();
 };
 
 JobsServices.fillIn_adDurationDate = async () => {
@@ -673,7 +864,6 @@ JobsServices.fillIn_webSite = async () => {
 };
 
 JobsServices.fillIn_adBudget = async (budget) => {
-  await BrowserService.page.select(`select#adEndDateSelect`, "CUSTOM");
 
   let [budgetValueInput] = await BrowserService.page.$x(`//*[@id="budget"]`);
   if (budgetValueInput && budget) {

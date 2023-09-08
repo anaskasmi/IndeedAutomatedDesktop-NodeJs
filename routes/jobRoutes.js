@@ -55,6 +55,7 @@ router.get('/fillIn_industry', JobsController.fillIn_industry)
 router.post('/review_potential_matches', JobsController.review_potential_matches)
 router.post('/skip_qualifications', JobsController.skip_qualifications)
 router.get('/skip_preview_page', JobsController.skip_preview_page)
+router.get('/duplicate_job/:id', JobsController.duplicateJob)
 
 
 //resume job routes 

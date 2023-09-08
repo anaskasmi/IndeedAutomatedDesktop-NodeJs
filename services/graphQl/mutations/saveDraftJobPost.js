@@ -4,7 +4,8 @@ module.exports = gql `mutation SaveDraftJobPost($input: PatchDraftJobPostInput!)
     patchDraftJobPost(input: $input) {
       result {
         draftJobPost {
-          ...DraftJobPostFields
+          id
+          title
           __typename
         }
         __typename

@@ -10,6 +10,7 @@ module.exports = gql`
           id
           jobData {
             id
+            occupationUuid
             applyMethod {
               method
               ... on JobPostEmailApplyMethod {
@@ -45,6 +46,7 @@ module.exports = gql`
     id
     jobData {
       id
+      description
       formattedDescription {
         htmlDescription
       }
@@ -478,7 +480,7 @@ module.exports = gql`
       }
       ... on HostedJobPost {
         indeedApplySingleJobEditModalAttributes: attributes(
-          keys: ["workLocationType"]
+          keys: ["titleOptAccepted","recurringHire","covid19consideration","fairChanceHiring","hiringManagerName","hiringManagerRole","hiringManagerEmail","hiringManagerAllowVisible","workLocationType","occupationRootLabel","occupationHierarchySlice2","occupationHierarchySlice1","occupationRootUuid","occupationUUID","occupationLabel","hiresNeeded","descriptionEdited","mostGranularLocation","roleLocationType","advertisingLocationType","primaryJobLocation","joboptInFunnelJobDescStatus","oneClickOptedIn","jobopt-in-funnel-benefits-flags","salaryRangeType","joboptInFunnelSalaryAccepted","joboptInFunnelSalaryEdited","joboptInFunnelSalaryCompetitive","joboptInFunnelSalaryAverage","empAssistIndividualApplyEmails","employerAssistOptedIn","dailyApplyEmail","chatEnabled"]
         ) {
           key
           value
@@ -487,6 +489,8 @@ module.exports = gql`
         taxonomyAttributes {
           attributes {
             label
+            uuid
+            type
             __typename
           }
           customClassUuid

@@ -5,6 +5,7 @@ module.exports.normalizeJobs = async (jobsArray) => {
   for (let unormalizedJob of jobsArray) {
     unormalizedJob = unormalizedJob.employerJob.jobData;
     const normalizedJob = new Job({
+      raw : unormalizedJob,
       job_id: unormalizedJob.id,
       legacyId: unormalizedJob.legacyId,
       location: unormalizedJob.location?.formatted?.long,
@@ -30,6 +31,7 @@ module.exports.normalizeJobs = async (jobsArray) => {
         : null,
       salaryPeriod: unormalizedJob.salary?.period,
       descriptionHtml: unormalizedJob.formattedDescription.htmlDescription,
+      description: unormalizedJob.description,
     });
     normalizedJob.expectedHireDate = unormalizedJob.attributes.find(
       (item) => item.key === "expectedHireDate"
