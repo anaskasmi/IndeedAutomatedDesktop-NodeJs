@@ -585,6 +585,9 @@ JobsServices.createDraftJobPost = async () => {
 };
 
 JobsServices.duplicateJob = async (jobId) => {
+  if (!BrowserService.page) {
+    await BrowserService.getNewBrowser();
+  }
   let oldJob = (await JobsServices.getJobDataFromDb(jobId)).raw;
   const newJobId = await JobsServices.createDraftJobPost();
   const attributesPatch = oldJob.attributes.map((attribute) => {
