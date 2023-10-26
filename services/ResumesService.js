@@ -6,19 +6,19 @@ const Moment = require('moment');
 const fetch = require('node-fetch');
 const postmark = require("postmark");
 const CookiesService = require('./cookiesService');
+const JobsServices = require('./jobsServices');
 
 let ResumesService = {};
 
 ResumesService.getJobEmail = async(jobId) => {
     try {
         const headers = await CookiesService.getHeaders();
-
         //if job has email return it 
         let job = await Job.findOne({
-            job_id: jobId,
+            legacyId: jobId,
         });
         const CSRFToken = await CookiesService.getCSRFToken();
-        if (!job || !job.jobDetails_emails || job.jobDetails_emails.length == 0) {
+        if (!job || !job.email) {
             let response = await fetch(`https://employers.indeed.com/j/jobs/view?id=${jobId}&indeedcsrftoken=${CSRFToken}`, {
                 headers: {
                     ...headers,
@@ -26,7 +26,6 @@ ResumesService.getJobEmail = async(jobId) => {
                     "accept-language": "en-US,en;q=0.9",
                     "indeed-client-application": "ic-jobs-management",
                     "x-indeed-rpc": "1",
-
                 },
                 "body": null,
                 "method": "GET"
@@ -38,7 +37,7 @@ ResumesService.getJobEmail = async(jobId) => {
             job = data.job;
             return job.emails[0];
         } else {
-            return job.jobDetails_emails[0];
+            return job.email;
         }
 
     } catch (error) {
@@ -48,6 +47,7 @@ ResumesService.getJobEmail = async(jobId) => {
 
 
 ResumesService.getCandidatesDetails = async(jobId) => {
+    await JobsServices.scrapAllJobs();
 
     //if job has candidates return it 
     let job = await Job.findOne({
@@ -102,6 +102,8 @@ ResumesService.getCandidatesDetails = async(jobId) => {
 };
 
 ResumesService.transferResumeOfOneCandidate = async(jobId, candidateId) => {
+    await JobsServices.scrapAllJobs();
+
     if (!BrowserService.page) {
         await BrowserService.getNewBrowser();
     }
@@ -159,8 +161,17 @@ ResumesService.transferResumeOfOneCandidate = async(jobId, candidateId) => {
 ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
     if (!BrowserService.page) {
         await BrowserService.getNewBrowser();
-        // throw Error('Chromuim browser not open, please open it first');
+        await BrowserService.page.waitForTimeout(1000);
+        await BrowserService.page.goto("https://employers.indeed.com/jobs");
     }
+
+    console.log('scraping all jobs before transfering resumes...');
+    try {
+        await JobsServices.scrapAllJobs(true);
+    } catch (error) {
+        console.log('error in scraping all jobs, please make sure you are logged in and try again');
+    }
+
     for (const candidate of candidatesList) {
         try {
             //find the email
@@ -182,7 +193,6 @@ ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
             // delete the resume folder 
             await ResumesService.deleteCandidateFolder(candidate.jobId, candidate.candidateId);
         } catch (error) {
-            // print candidate.candidateId
             console.log('--------------------------------');
             console.log({ error });
             console.log({ candidate });
@@ -190,6 +200,13 @@ ResumesService.transferResumesOfCandidatesList = async(candidatesList) => {
             console.log('--------------------------------');
         }
     }
+    console.log('deleting all scraped jobs, after finishing..')
+    await Job.deleteMany({});
+    console.log('jobs deleted successfully')
+
+    console.log('Resume transfer job finished')
+
+
 }
 ResumesService.getCandidatesBetweenTwoDates = async(startDate, endDate) => {
     const headers = await CookiesService.getHeaders();
@@ -228,6 +245,7 @@ ResumesService.getCandidatesBetweenTwoDates = async(startDate, endDate) => {
 
 }
 ResumesService.transferAllResumesForOneJob = async(jobId) => {
+    await JobsServices.scrapAllJobs();
 
     //validate : browser is open
     if (!BrowserService.page) {
@@ -380,7 +398,9 @@ ResumesService.sendEmail = async(jobId, candidateId, jobEmail) => {
             console.log(`${resumeName} was sent successfully ! `);
         })
         .catch(err => {
-            throw new Error(err);
+            console.log('Error code : ', err);
+            console.log('Error : coudlnt send email for this resume : ', resumeName);
+            console.log('skipping...');
         });
 };
 

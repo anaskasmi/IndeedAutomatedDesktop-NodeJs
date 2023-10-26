@@ -505,7 +505,7 @@ JobsServices.fillIn_description = async (description) => {
   await BrowserService.page.waitForTimeout(2000);
 };
 
-JobsServices.scrapAllJobs = async () => {
+JobsServices.scrapAllJobs = async (includeClosed = false) => {
   const variables = {
     input: {
       limit: 50,
@@ -537,6 +537,10 @@ JobsServices.scrapAllJobs = async () => {
     },
     hqm_employer_on_by_default1: false,
   };
+  if (includeClosed) {
+    delete variables.input.filter.allOf
+    variables.input.limit = 100;
+  }
   const headers = await CookiesService.getHeaders();
   const client = new GraphQLClient(
     "https://apis.indeed.com/graphql?locale=en-US&co=US",
@@ -732,12 +736,14 @@ JobsServices.publishDraftJob = async (jobId) => {
   );
 
   await BrowserService.page.waitForXPath(`//*[@name="budgetShouldSetEndDate"]`);
-  const [budgetShouldSetEndDate] = await BrowserService.page.$x(`//*[@name="budgetShouldSetEndDate"]/parent::label`);
+  const [budgetShouldSetEndDate] = await BrowserService.page.$x(
+    `//*[@name="budgetShouldSetEndDate"]/parent::label`
+  );
   await budgetShouldSetEndDate.click();
 
   await JobsServices.fillIn_adDurationDate();
   await await JobsServices.fillIn_adBudget(5);
-  
+
   await JobsServices.clickSaveAndContinue();
 };
 
@@ -830,7 +836,6 @@ JobsServices.fillIn_adDurationType = async () => {
   await BrowserService.page.select(`#adEndDateSelect`, "CUSTOM");
 };
 
-
 JobsServices.fillIn_adDurationDate = async () => {
   //generate new date after X given days
   let newEndDate = Moment(Moment()).add(1, "days");
@@ -872,7 +877,6 @@ JobsServices.fillIn_webSite = async () => {
 };
 
 JobsServices.fillIn_adBudget = async (budget) => {
-
   let [budgetValueInput] = await BrowserService.page.$x(`//*[@id="budget"]`);
   if (budgetValueInput && budget) {
     // add budget value
