@@ -329,7 +329,11 @@ ResumesService.downloadResumesForOneCandidate = async(jobId, candidateId) => {
     await BrowserService.page._client.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: path.join(__dirname, '..', 'resumes', jobId, candidateId) });
     try {
         await BrowserService.page.evaluate(() => window.stop());
-        await BrowserService.page.goto(`https://employers.indeed.com/c/resume?id=${candidateId}&ctx=&isPDFView=false`, { waitUntil: "networkidle2" });
+        await BrowserService.page.goto(`https://employers.indeed.com/candidates/view?id=${candidateId}`, { waitUntil: "networkidle2" });
+        const buttonTestId = 'download-resume-inline';
+        await BrowserService.page.click(`[data-testid="${buttonTestId}"]`);
+        await page.waitForTimeout(1000);
+      
     } catch (error) {}
     await BrowserService.page.waitForTimeout(4000);
 };
