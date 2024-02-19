@@ -731,20 +731,20 @@ JobsServices.publishDraftJob = async (jobId) => {
       id: employerJobId,
     },
   });
-  await BrowserService.page.goto(
-    `https://employers.indeed.com/sponsor/edit?employerJobId=${employerJobId}&linksource=jobstab&publishedId=${legacyId}`
-  );
+  // await BrowserService.page.goto(
+  //   `https://employers.indeed.com/sponsor/edit?employerJobId=${employerJobId}&linksource=jobstab&publishedId=${legacyId}`
+  // );
 
-  await BrowserService.page.waitForXPath(`//*[@name="budgetShouldSetEndDate"]`);
-  const [budgetShouldSetEndDate] = await BrowserService.page.$x(
-    `//*[@name="budgetShouldSetEndDate"]/parent::label`
-  );
-  await budgetShouldSetEndDate.click();
+  // await BrowserService.page.waitForXPath(`//*[@name="budgetShouldSetEndDate"]`);
+  // const [budgetShouldSetEndDate] = await BrowserService.page.$x(
+  //   `//*[@name="budgetShouldSetEndDate"]/parent::label`
+  // );
+  // await budgetShouldSetEndDate.click();
 
-  await JobsServices.fillIn_adDurationDate();
-  await await JobsServices.fillIn_adBudget(5);
+  // await JobsServices.fillIn_adDurationDate();
+  // await await JobsServices.fillIn_adBudget(5);
 
-  await JobsServices.clickSaveAndContinue();
+  // await JobsServices.clickSaveAndContinue();
 };
 
 JobsServices.fillIn_isResumeRequired = async () => {
