@@ -221,7 +221,7 @@ ResumesService.transferResumesOfCandidatesList = async (candidatesList) => {
       // await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, "anaskasmi98@gmail.com");
       if (!jobEmail) {
         console.log(`This Job has no email : ${candidate.jobTitle}`);
-        console.log("sending to default email : misenplace@crelate.net");
+        console.log("Sending to default email : misenplace@crelate.net");
         await ResumesService.sendEmail(
           candidate.jobId,
           candidate.candidateId,
@@ -277,7 +277,9 @@ ResumesService.getCandidatesBetweenTwoDates = async (startDate, endDate) => {
   );
 
   if (response.status != 200) {
-    throw Error("something went wrong, while fetching candidates");
+    throw Error(
+      "something went wrong, Most likely the cookies are expired, please refresh them"
+    );
   }
 
   let candidates = await response.json();
@@ -386,14 +388,16 @@ ResumesService.downloadResumesForOneCandidate = async (jobId, candidateId) => {
   try {
     await BrowserService.page.evaluate(() => window.stop());
     await BrowserService.page.goto(
-      `https://employers.indeed.com/candidates/view?id=${candidateId}`,
-      { waitUntil: "networkidle2" }
+      `https://employers.indeed.com/candidates/view?id=${candidateId}`
     );
+    // wait for xpath to appear
+    await BrowserService.page.waitForXPath(`//*[@data-testid="download-resume-inline"]`);
     const buttonTestId = "download-resume-inline";
     await BrowserService.page.click(`[data-testid="${buttonTestId}"]`);
-    await page.waitForTimeout(1000);
-  } catch (error) {}
-  await BrowserService.page.waitForTimeout(4000);
+    await BrowserService.page.waitForTimeout(4000);
+  } catch (error) {
+    console.log("Error : ", error);
+  }
 };
 
 ResumesService.verifyIsFileExistAndGetResumeName = async (
@@ -417,11 +421,13 @@ ResumesService.verifyIsFileExistAndGetResumeName = async (
     console.log("Error : No Resume file found in the job folder:  ");
     return false;
   }
+
   for (const fileName of filesInPath) {
     if (fileName.includes("Resume")) {
       return fileName;
     }
   }
+
   console.log(
     "Error : Resume was not found in the job folder, maybe internet is slow and its taking too long to download, number of other files found: ",
     filesInPath.length
@@ -440,48 +446,45 @@ ResumesService.sendEmail = async (jobId, candidateId, jobEmail, jobTitle) => {
       `Can't send ${jobId}/${candidateId}, because this File Doesnt exists`
     );
   }
-  let resumePath = path.join(
-    __dirname,
-    "..",
-    "resumes",
-    jobId,
-    candidateId,
-    resumeName
-  );
 
-  // Send an email:
-  var client = new postmark.ServerClient(process.env.POSTMARK_API_KEY);
+  try {
+    let resumePath = path.join(
+      __dirname,
+      "..",
+      "resumes",
+      jobId,
+      candidateId,
+      resumeName
+    );
 
-  //Step 2: Setting up message options
-  let messageParams = {
-    From: `resumes@jeanshorts.careers`,
-    // To: "anaskasmi98@gmail.com",
-    To: jobEmail,
-    Subject: jobTitle ?? resumeName,
-    TextBody: `Resume Name: ${resumeName}, Job id : ${jobId} Candidate id : ${candidateId}`,
-    MessageStream: "outbound",
-  };
+    // Send an email:
+    var client = new postmark.ServerClient(process.env.POSTMARK_API_KEY);
 
-  // read the resume file, add it to the attachements then send the email
-  fs.promises
-    .readFile(resumePath, { encoding: "base64" })
-    .then((data) => {
-      const file = {
-        Name: resumeName,
-        Content: data,
-        ContentType: "application/octet-stream",
-      };
-      messageParams.Attachments = [file];
-      return client.sendEmail(messageParams);
-    })
-    .then((response) => {
-      console.log(`${resumeName} was sent successfully ! `);
-    })
-    .catch((err) => {
-      console.log("Error code : ", err);
-      console.log("Error : coudlnt send email for this resume : ", resumeName);
-      console.log("skipping...");
-    });
+    //Step 2: Setting up message options
+    let messageParams = {
+      From: `resumes@jeanshorts.careers`,
+      // To: "anaskasmi98@gmail.com",
+      To: jobEmail,
+      Subject: jobTitle ?? resumeName,
+      TextBody: `Resume Name: ${resumeName}, Job id : ${jobId} Candidate id : ${candidateId}`,
+      MessageStream: "outbound",
+    };
+
+    // read the resume file, add it to the attachements then send the email
+    const data = await fs.promises.readFile(resumePath, { encoding: "base64" });
+    const file = {
+      Name: resumeName,
+      Content: data,
+      ContentType: "application/octet-stream",
+    };
+    messageParams.Attachments = [file];
+    await client.sendEmail(messageParams);
+    console.log(`${resumeName} was sent successfully ! `);
+  } catch (err) {
+    console.log("Error code : ", err);
+    console.log("Error : coudlnt send email for this resume : ", resumeName);
+    console.log("skipping...");
+  }
 };
 
 module.exports = ResumesService;
