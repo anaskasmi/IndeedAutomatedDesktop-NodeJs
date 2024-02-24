@@ -505,10 +505,14 @@ JobsServices.fillIn_description = async (description) => {
   await BrowserService.page.waitForTimeout(2000);
 };
 
-JobsServices.scrapAllJobs = async (includeClosed = false) => {
+JobsServices.scrapAllJobs = async (
+  excludedStatuses = ["CLOSED", "PAUSED"],
+  includedStatuses = ["PAUSED"],
+  limit = 50
+) => {
   const variables = {
     input: {
-      limit: 50,
+      limit,
       filter: {
         claimed: false,
         createdOnIndeed: true,
@@ -518,11 +522,11 @@ JobsServices.scrapAllJobs = async (includeClosed = false) => {
             anyOf: [
               {
                 not: {
-                  hostedJobStatus: ["CLOSED", "PAUSED"],
+                  hostedJobStatus: excludedStatuses,
                 },
               },
               {
-                hostedJobStatus: ["PAUSED"],
+                hostedJobStatus: includedStatuses,
               },
             ],
           },
@@ -537,10 +541,7 @@ JobsServices.scrapAllJobs = async (includeClosed = false) => {
     },
     hqm_employer_on_by_default1: false,
   };
-  if (includeClosed) {
-    delete variables.input.filter.allOf
-    variables.input.limit = 100;
-  }
+
   const headers = await CookiesService.getHeaders();
   const client = new GraphQLClient(
     "https://apis.indeed.com/graphql?locale=en-US&co=US",

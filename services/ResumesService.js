@@ -49,7 +49,7 @@ ResumesService.getJobEmail = async (jobId) => {
 };
 
 ResumesService.getCandidatesDetails = async (jobId) => {
-  await JobsServices.scrapAllJobs();
+  await JobsServices.scrapAllJobs([], ["CLOSED", "PAUSED", "OPEN"], 200);
 
   //if job has candidates return it
   let job = await Job.findOne({
@@ -115,7 +115,7 @@ ResumesService.getCandidatesDetails = async (jobId) => {
 };
 
 ResumesService.transferResumeOfOneCandidate = async (jobId, candidateId) => {
-  await JobsServices.scrapAllJobs();
+  await JobsServices.scrapAllJobs([], ["CLOSED", "PAUSED", "OPEN"], 200);
 
   if (!BrowserService.page) {
     await BrowserService.getNewBrowser();
@@ -192,9 +192,33 @@ ResumesService.transferResumesOfCandidatesList = async (candidatesList) => {
   }
 
   console.log("scraping all jobs before transfering resumes...");
+
+  // determine the oldest candidate using candidatesList[0].dateCreatedTimestamp
+  let olderstCandidate = candidatesList[0];
+  for (const candidate of candidatesList) {
+    if (
+      candidate.dateCreatedTimestamp < olderstCandidate.dateCreatedTimestamp
+    ) {
+      olderstCandidate = candidate;
+    }
+  }
+  let startDate = Moment(olderstCandidate.dateCreatedTimestamp).format(
+    "YYYY-MM-DD"
+  );
+  let endDate = Moment().format("YYYY-MM-DD");
+  let diffDates = Moment(endDate, "YYYY-MM-DD").diff(
+    Moment(startDate, "YYYY-MM-DD"),
+    "days"
+  );
+  const numberOfJobsToFetch = diffDates * 50;
   try {
-    await JobsServices.scrapAllJobs(true);
+    await JobsServices.scrapAllJobs(
+      [],
+      ["CLOSED", "PAUSED", "ACTIVE"],
+      numberOfJobsToFetch || 50
+    );
   } catch (error) {
+    console.log(error);
     console.log(
       "error in scraping all jobs, please make sure you are logged in and try again"
     );
@@ -218,23 +242,17 @@ ResumesService.transferResumesOfCandidatesList = async (candidatesList) => {
       );
 
       // transfer via email
-      // await ResumesService.sendEmail(candidate.jobId, candidate.candidateId, "anaskasmi98@gmail.com");
       if (!jobEmail) {
         console.log(`This Job has no email : ${candidate.jobTitle}`);
         console.log("Sending to default email : misenplace@crelate.net");
-        await ResumesService.sendEmail(
-          candidate.jobId,
-          candidate.candidateId,
-          "misenplace@crelate.net",
-          candidate.jobTitle
-        );
-      } else {
-        await ResumesService.sendEmail(
-          candidate.jobId,
-          candidate.candidateId,
-          jobEmail
-        );
       }
+
+      await ResumesService.sendEmail(
+        candidate.jobId,
+        candidate.candidateId,
+        jobEmail ?? "misenplace@crelate.net",
+        candidate.jobTitle ?? ""
+      );
 
       // delete the resume folder
       await ResumesService.deleteCandidateFolder(
@@ -302,7 +320,7 @@ ResumesService.getCandidatesBetweenTwoDates = async (startDate, endDate) => {
   }
 };
 ResumesService.transferAllResumesForOneJob = async (jobId) => {
-  await JobsServices.scrapAllJobs();
+  await JobsServices.scrapAllJobs([], ["CLOSED", "PAUSED", "OPEN"], 200);
 
   //validate : browser is open
   if (!BrowserService.page) {
@@ -391,7 +409,9 @@ ResumesService.downloadResumesForOneCandidate = async (jobId, candidateId) => {
       `https://employers.indeed.com/candidates/view?id=${candidateId}`
     );
     // wait for xpath to appear
-    await BrowserService.page.waitForXPath(`//*[@data-testid="download-resume-inline"]`);
+    await BrowserService.page.waitForXPath(
+      `//*[@data-testid="download-resume-inline"]`
+    );
     const buttonTestId = "download-resume-inline";
     await BrowserService.page.click(`[data-testid="${buttonTestId}"]`);
     await BrowserService.page.waitForTimeout(4000);
@@ -465,8 +485,10 @@ ResumesService.sendEmail = async (jobId, candidateId, jobEmail, jobTitle) => {
       From: `resumes@jeanshorts.careers`,
       // To: "anaskasmi98@gmail.com",
       To: jobEmail,
-      Subject: jobTitle ?? resumeName,
-      TextBody: `Resume Name: ${resumeName}, Job id : ${jobId} Candidate id : ${candidateId}`,
+      Subject: resumeName,
+      TextBody: `Resume Name: ${resumeName}, Job id : ${jobId} Candidate id : ${candidateId} ${
+        jobTitle ? "Job Title : " + jobTitle : ""
+      }`,
       MessageStream: "outbound",
     };
 
