@@ -157,7 +157,6 @@ ResumesService.transferResumeOfOneCandidate = async (jobId, candidateId) => {
   await ResumesService.downloadResumesForOneCandidate(jobId, candidateId);
 
   // transfer via email
-  // await ResumesService.sendEmail(jobId, candidateId, "anaskasmi98@gmail.com");
   await ResumesService.sendEmail(jobId, candidateId, job.jobDetails_emails[0]);
 
   //mark the date of the last transfer
@@ -250,7 +249,7 @@ ResumesService.transferResumesOfCandidatesList = async (candidatesList) => {
       await ResumesService.sendEmail(
         candidate.jobId,
         candidate.candidateId,
-        jobEmail ?? "misenplace@crelate.net",
+        jobEmail,
         candidate.jobTitle ?? ""
       );
 
@@ -483,12 +482,9 @@ ResumesService.sendEmail = async (jobId, candidateId, jobEmail, jobTitle) => {
     //Step 2: Setting up message options
     let messageParams = {
       From: `resumes@jeanshorts.careers`,
-      // To: "anaskasmi98@gmail.com",
       To: jobEmail,
       Subject: resumeName,
-      TextBody: `Resume Name: ${resumeName}, Job id : ${jobId} Candidate id : ${candidateId} ${
-        jobTitle ? "Job Title : " + jobTitle : ""
-      }`,
+      TextBody: "Job Title : " + jobTitle,
       MessageStream: "outbound",
     };
 
@@ -500,7 +496,18 @@ ResumesService.sendEmail = async (jobId, candidateId, jobEmail, jobTitle) => {
       ContentType: "application/octet-stream",
     };
     messageParams.Attachments = [file];
-    await client.sendEmail(messageParams);
+    if(jobEmail)  
+    {
+      await client.sendEmail(messageParams);
+    }
+    else {
+      messageParams.To = "john@misenpl.com";
+      await client.sendEmail(messageParams);
+      messageParams.To = "tonya@misenpl.com";
+      await client.sendEmail(messageParams);
+      messageParams.To = "misenplace@crelate.net";
+      await client.sendEmail(messageParams);
+    }
     console.log(`${resumeName} was sent successfully ! `);
   } catch (err) {
     console.log("Error code : ", err);
