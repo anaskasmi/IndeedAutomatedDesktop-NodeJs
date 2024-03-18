@@ -508,7 +508,7 @@ JobsServices.fillIn_description = async (description) => {
 JobsServices.scrapAllJobs = async (
   excludedStatuses = ["CLOSED", "PAUSED"],
   includedStatuses = ["PAUSED"],
-  limit = 50
+  limit = 100
 ) => {
   const variables = {
     input: {

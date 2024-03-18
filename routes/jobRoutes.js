@@ -59,10 +59,6 @@ router.get('/duplicate_job/:id', JobsController.duplicateJob)
 
 
 //resume job routes 
-router.post('/getJobEmail', ResumesController.getJobEmail)
-router.post('/getCandidatesDetails', ResumesController.getCandidatesDetails)
-router.post('/transferResumeOfOneCandidate', ResumesController.transferResumeOfOneCandidate)
-router.post('/transferAllResumesForOneJob', ResumesController.transferAllResumesForOneJob)
 router.post('/getCandidatesBetweenTwoDates', ResumesController.getCandidatesBetweenTwoDates)
 router.post('/transferResumesOfCandidatesList', ResumesController.transferResumesOfCandidatesList)
 
