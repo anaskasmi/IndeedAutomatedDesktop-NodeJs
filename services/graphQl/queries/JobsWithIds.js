@@ -288,10 +288,6 @@ module.exports = gql`
           value
           __typename
         }
-        oneToOneDirectToInterviewInfo {
-          isEnabled
-          __typename
-        }
         hostedJobBudget {
           id
           ... on PeriodicSponsoredJobBudget {
