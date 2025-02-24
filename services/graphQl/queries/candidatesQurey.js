@@ -1,6 +1,6 @@
 const { gql } = require('graphql-request')
 
-module.exports = gql `query FindCandidateSubmissions($input: FindCandidateSubmissionsInput!, $useExplainerPlatform: Boolean = false, $useRequirementMatchSnippets: Boolean = false, $first: Int, $after: String, $last: Int, $before: String) {
+module.exports = gql `query FindCandidateSubmissions($input: FindCandidateSubmissionsInput!, $first: Int, $after: String, $last: Int, $before: String) {
   findCandidateSubmissions(
     input: $input
     first: $first
@@ -193,39 +193,6 @@ fragment MilestoneFields on CandidateSubmissionCurrentMilestone {
 
 fragment JobsConnectionFields on CandidateSubmissionJobsConnection {
   edges {
-    explanations {
-      explanationTextSnippets {
-        text
-        explanationType
-        explanationCategory
-        __typename
-      }
-      relevantExperiences {
-        companyName
-        jobTitle
-        __typename
-      }
-      __typename
-    }
-    matchExplanations @include(if: $useExplainerPlatform) {
-      taxonomyMatchExplanations @skip(if: $useRequirementMatchSnippets) {
-        matchType
-        formatted {
-          snippet
-          __typename
-        }
-        __typename
-      }
-      requirementMatchExplanations @include(if: $useRequirementMatchSnippets) {
-        matchType
-        formatted {
-          snippet
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
     node {
       id
       jobData {
