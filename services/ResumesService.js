@@ -6,14 +6,15 @@ const postmark = require("postmark");
 const CookiesService = require("./cookiesService");
 const candidatesQurey = require("./graphQl/queries/candidatesQurey");
 const { GraphQLClient } = require("graphql-request");
-const { setTimeout } = require("timers/promises");
 
 let ResumesService = {};
+
+ResumesService.wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 ResumesService.transferResumesOfCandidatesList = async (candidatesList) => {
 	if (!BrowserService.page) {
 		await BrowserService.getNewBrowser();
-		await setTimeout(1000);
+		await ResumesService.wait(1000);
 		await BrowserService.page.goto("https://employers.indeed.com/jobs");
 	}
 
@@ -145,7 +146,7 @@ ResumesService.downloadResumeForCandidate = async (candidate) => {
 		await BrowserService.page.evaluate(() => window.stop());
 		await BrowserService.page.goto(candidate.downloadUrl);
 	} catch { }
-	await setTimeout(4000);
+	await ResumesService.wait(4000);
 };
 
 ResumesService.getResumeName = async (candidate) => {
