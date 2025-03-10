@@ -347,15 +347,6 @@ module.exports = gql`
           }
           __typename
         }
-        campaign {
-          id
-          status
-          name
-          __typename
-          uuid
-          type
-          isMigratedFromSponsorAll
-        }
         status
         claimData {
           __typename
@@ -396,11 +387,6 @@ module.exports = gql`
         hostedJobPostVisibility {
           __typename
           level
-        }
-        campaign {
-          id
-          status
-          __typename
         }
         dateCreated
         dateLastModified
