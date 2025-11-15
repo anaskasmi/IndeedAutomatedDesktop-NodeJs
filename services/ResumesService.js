@@ -60,9 +60,13 @@ ResumesService.getCandidatesBetweenTwoDates = async (startDate, endDate) => {
 					createdAfter: new Date(startDate).getTime(),
 					createdBefore: new Date(endDate).getTime(),
 				},
+				jobs: {
+					hostedJobPostStatuses: ["ACTIVE", "PAUSED"],
+				},
 				hiringMilestones: {
 					milestoneIds: [
 						"NEW",
+						"PENDING",
 						"PHONE_SCREENED",
 						"INTERVIEWED",
 						"OFFER_MADE",
